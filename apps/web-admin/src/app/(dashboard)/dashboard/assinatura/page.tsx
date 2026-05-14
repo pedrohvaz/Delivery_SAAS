@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useEffect, useRef } from 'react'
 import { Header } from '@/components/layout/header'
 import { usePlans, useMySubscription, useCheckout, useBillingPortal } from '@/hooks/use-plans'
 import { Check, CreditCard, Zap, Crown, ExternalLink, Loader2 } from 'lucide-react'
@@ -86,34 +85,35 @@ function PlanCard({
 }
 
 export default function AssinaturaPage() {
-  const searchParams = useSearchParams()
-  const checkoutPlan = searchParams.get('checkout')
-
   const { data: plans = [], isLoading: plansLoading } = usePlans()
   const { data: subscription, isLoading: subLoading } = useMySubscription()
   const checkout = useCheckout()
   const portal = useBillingPortal()
+  const autoCheckoutDone = useRef(false)
 
   useEffect(() => {
-    if (checkoutPlan && plans.length > 0) {
-      const plan = plans.find((p: any) => p.slug === checkoutPlan)
-      if (plan?.stripePriceId) {
-        checkout.mutate(checkoutPlan, {
-          onSuccess: (data) => { window.location.href = data.url },
-        })
-      }
-    }
-  }, [checkoutPlan, plans])
+    if (autoCheckoutDone.current) return
+    if (plansLoading || plans.length === 0) return
+    const params = new URLSearchParams(window.location.search)
+    const checkoutPlan = params.get('checkout')
+    if (!checkoutPlan) return
+    const plan = plans.find((p: any) => p.slug === checkoutPlan)
+    if (!plan?.stripePriceId) return
+    autoCheckoutDone.current = true
+    checkout.mutate(checkoutPlan, {
+      onSuccess: (data: any) => { window.location.href = data.url },
+    })
+  }, [plans, plansLoading])
 
   function handleSelectPlan(slug: string) {
     checkout.mutate(slug, {
-      onSuccess: (data) => { window.location.href = data.url },
+      onSuccess: (data: any) => { window.location.href = data.url },
     })
   }
 
   function handlePortal() {
     portal.mutate(undefined, {
-      onSuccess: (data) => { window.location.href = data.url },
+      onSuccess: (data: any) => { window.location.href = data.url },
     })
   }
 
@@ -129,24 +129,31 @@ export default function AssinaturaPage() {
     UNPAID: 'Não paga',
   }
 
+  const checkoutPending = checkout.isPending
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <Header title="Assinatura" />
       <main className="flex-1 overflow-y-auto p-6 space-y-6">
 
-        {/* Status atual */}
+        {checkoutPending && (
+          <div className="flex items-center justify-center gap-3 rounded-xl border bg-primary/5 p-4">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <p className="text-sm font-medium text-primary">Redirecionando para o pagamento...</p>
+          </div>
+        )}
+
         {subscription && (
-          <div className="rounded-xl border bg-card p-5 flex items-center justify-between">
+          <div className="rounded-xl border bg-card p-5 flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <Crown className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="font-semibold text-foreground">
-                  Plano {subscription.plan.name}
-                </p>
+                <p className="font-semibold text-foreground">Plano {subscription.plan.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  Status: <span className={cn('font-medium', subscription.status === 'ACTIVE' || subscription.status === 'TRIALING' ? 'text-green-600' : 'text-orange-500')}>
+                  Status:{' '}
+                  <span className={cn('font-medium', subscription.status === 'ACTIVE' || subscription.status === 'TRIALING' ? 'text-green-600' : 'text-orange-500')}>
                     {statusLabel[subscription.status] ?? subscription.status}
                   </span>
                   {subscription.currentPeriodEnd && (
@@ -158,7 +165,7 @@ export default function AssinaturaPage() {
             <button
               onClick={handlePortal}
               disabled={portal.isPending}
-              className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-accent transition"
+              className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-accent transition shrink-0"
             >
               {portal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
               Gerenciar assinatura
@@ -168,17 +175,16 @@ export default function AssinaturaPage() {
         )}
 
         {!subscription && !subLoading && (
-          <div className="rounded-xl border bg-orange-50 border-orange-200 p-5">
+          <div className="rounded-xl border bg-orange-50 border-orange-200 p-4">
             <p className="text-sm font-medium text-orange-800">
-              Você ainda não tem uma assinatura ativa. Escolha um plano abaixo para começar.
+              Você ainda não tem uma assinatura ativa. Escolha um plano abaixo para começar com 7 dias grátis.
             </p>
           </div>
         )}
 
-        {/* Planos */}
         <div>
           <h2 className="text-lg font-bold text-foreground mb-4">
-            {subscription ? 'Fazer upgrade' : 'Escolha seu plano'}
+            {subscription ? 'Mudar plano' : 'Escolha seu plano'}
           </h2>
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
@@ -192,7 +198,7 @@ export default function AssinaturaPage() {
                   plan={plan}
                   isCurrent={currentPlanSlug === plan.slug}
                   onSelect={() => handleSelectPlan(plan.slug)}
-                  loading={checkout.isPending && checkout.variables === plan.slug}
+                  loading={checkoutPending && checkout.variables === plan.slug}
                 />
               ))}
             </div>
