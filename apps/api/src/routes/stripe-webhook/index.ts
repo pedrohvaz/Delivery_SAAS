@@ -25,12 +25,90 @@ const stripeWebhookRoutes: FastifyPluginAsync = async (app) => {
 
     try {
       switch (event.type) {
+        // ─── Checkout pago — pré-cadastro (signupType=paid) ──────────────────
+        case 'checkout.session.completed': {
+          const session = event.data.object as any
+          const meta = session.metadata ?? {}
+
+          if (meta.signupType !== 'paid') break
+
+          // Verifica idempotência: se a conta já foi criada, sai
+          const existing = await app.prisma.user.findUnique({ where: { email: meta.email } })
+          if (existing) {
+            app.log.info({ email: meta.email }, 'Conta já criada via webhook')
+            break
+          }
+
+          const slugAlreadyUsed = await app.prisma.store.findUnique({ where: { slug: meta.storeSlug } })
+          if (slugAlreadyUsed) {
+            app.log.warn({ slug: meta.storeSlug }, 'Slug já em uso ao criar conta paga')
+            break
+          }
+
+          // Cria store + user em transação
+          const { store } = await app.prisma.$transaction(async (tx: any) => {
+            const store = await tx.store.create({
+              data: {
+                name: meta.storeName,
+                slug: meta.storeSlug,
+                phone: meta.phone || null,
+                stripeCustomerId: session.customer,
+              },
+            })
+            const user = await tx.user.create({
+              data: {
+                storeId: store.id,
+                name: meta.name,
+                email: meta.email,
+                password: meta.passwordHash,
+                role: 'ADMIN',
+              },
+            })
+            return { store, user }
+          })
+
+          // Métodos de pagamento padrão
+          await app.prisma.paymentMethod.createMany({
+            data: [
+              { storeId: store.id, type: 'PIX',         label: 'Pix',               isActive: true },
+              { storeId: store.id, type: 'CASH',         label: 'Dinheiro',          isActive: true },
+              { storeId: store.id, type: 'CREDIT_CARD',  label: 'Cartão de Crédito', isActive: true },
+              { storeId: store.id, type: 'DEBIT_CARD',   label: 'Cartão de Débito',  isActive: true },
+            ],
+          })
+
+          // Vincula o storeId na assinatura via metadata da subscription
+          if (session.subscription) {
+            try {
+              const stripe = getStripe()!
+              await stripe.subscriptions.update(session.subscription, {
+                metadata: { storeId: store.id },
+              })
+            } catch (err) {
+              app.log.error({ err }, 'Erro ao atualizar metadata da subscription')
+            }
+          }
+
+          app.log.info({ storeId: store.id, email: meta.email }, 'Conta criada via webhook após pagamento')
+          break
+        }
+
         // ─── Assinatura criada / atualizada ──────────────────────────────────
         case 'customer.subscription.created':
         case 'customer.subscription.updated': {
           const sub = event.data.object as any
-          const storeId = sub.metadata?.storeId
-          if (!storeId) break
+          // Tenta achar storeId via metadata ou via customerId da loja
+          let storeId = sub.metadata?.storeId
+          if (!storeId && sub.customer) {
+            const store = await app.prisma.store.findFirst({
+              where: { stripeCustomerId: sub.customer },
+            })
+            storeId = store?.id
+          }
+          if (!storeId) {
+            app.log.warn({ subId: sub.id }, 'Subscription sem storeId — ainda não vinculada')
+            break
+          }
 
           const stripePriceId = sub.items?.data?.[0]?.price?.id
           const plan = stripePriceId

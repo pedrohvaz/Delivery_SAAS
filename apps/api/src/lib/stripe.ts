@@ -58,6 +58,43 @@ export async function createCheckoutSession(params: {
   })
 }
 
+/** Cria checkout session SEM conta existente (pré-cadastro pago) */
+export async function createPreSignupCheckoutSession(params: {
+  priceId: string
+  customerEmail: string
+  metadata: Record<string, string>
+  successUrl: string
+  cancelUrl: string
+  trialDays?: number
+}) {
+  const stripe = getStripe()
+  if (!stripe) throw new Error('Stripe não configurado')
+
+  return stripe.checkout.sessions.create({
+    mode: 'subscription',
+    payment_method_types: ['card'],
+    line_items: [{ price: params.priceId, quantity: 1 }],
+    customer_email: params.customerEmail,
+    metadata: params.metadata,
+    subscription_data: {
+      ...(params.trialDays ? { trial_period_days: params.trialDays } : {}),
+      metadata: params.metadata,
+    },
+    success_url: params.successUrl,
+    cancel_url: params.cancelUrl,
+    allow_promotion_codes: true,
+  })
+}
+
+/** Recupera sessão do Stripe para verificar pagamento */
+export async function retrieveCheckoutSession(sessionId: string) {
+  const stripe = getStripe()
+  if (!stripe) throw new Error('Stripe não configurado')
+  return stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ['subscription'],
+  })
+}
+
 export async function createBillingPortalSession(customerId: string, returnUrl: string) {
   const stripe = getStripe()
   if (!stripe) throw new Error('Stripe não configurado')

@@ -1,9 +1,10 @@
 import type { FastifyPluginAsync } from 'fastify'
+import { z } from 'zod'
 import { authenticate } from '../../middlewares/authenticate'
 import { hashPassword, verifyPassword } from '../../lib/hash'
 import { registerSchema, loginSchema, refreshSchema } from './schemas'
 import type { JwtPayload } from '@delivery/types'
-import { createCheckoutSession, getStripe } from '../../lib/stripe.js'
+import { createCheckoutSession, createPreSignupCheckoutSession, retrieveCheckoutSession, getStripe } from '../../lib/stripe.js'
 
 // Helper para assinar refresh token (payload mínimo)
 function signRefresh(app: Parameters<FastifyPluginAsync>[0], sub: string): string {
@@ -113,6 +114,131 @@ const authRoutes: FastifyPluginAsync = async (app) => {
         user: { id: user.id, name: user.name, email: user.email, role: user.role },
         store: { id: store.id, name: store.name, slug: store.slug },
         checkoutUrl,
+      },
+    })
+  })
+
+  // ─── POST /auth/start-paid-signup ─────────────────────────────────
+  // Cria sessão Stripe Checkout SEM criar a conta ainda.
+  // Os dados de cadastro vão na metadata da sessão.
+  // Após o pagamento, o webhook cria a conta.
+  app.post('/start-paid-signup', async (request, reply) => {
+    const schema = z.object({
+      storeName: z.string().min(2),
+      storeSlug: z.string().min(2).max(60).regex(/^[a-z0-9-]+$/),
+      name: z.string().min(2),
+      email: z.string().email(),
+      password: z.string().min(6),
+      phone: z.string().optional(),
+      planSlug: z.string(),
+      successUrl: z.string().url(),
+      cancelUrl: z.string().url(),
+    })
+
+    const result = schema.safeParse(request.body)
+    if (!result.success) {
+      return reply.status(400).send({
+        error: 'Validation Error',
+        message: result.error.issues[0]?.message ?? 'Dados inválidos',
+        statusCode: 400,
+      })
+    }
+
+    const d = result.data
+
+    if (!getStripe()) {
+      return reply.status(503).send({ error: 'Stripe', message: 'Stripe não configurado', statusCode: 503 })
+    }
+
+    // Valida slug e email duplicados antes de mandar pra Stripe
+    const [existingStore, existingUser] = await Promise.all([
+      app.prisma.store.findUnique({ where: { slug: d.storeSlug } }),
+      app.prisma.user.findUnique({ where: { email: d.email } }),
+    ])
+    if (existingStore) {
+      return reply.status(409).send({ error: 'Conflict', message: 'Esse endereço de loja já está em uso', statusCode: 409 })
+    }
+    if (existingUser) {
+      return reply.status(409).send({ error: 'Conflict', message: 'Esse e-mail já está cadastrado', statusCode: 409 })
+    }
+
+    const plan = await app.prisma.plan.findUnique({ where: { slug: d.planSlug } })
+    if (!plan?.stripePriceId) {
+      return reply.status(404).send({ error: 'Not Found', message: 'Plano não encontrado ou sem preço no Stripe', statusCode: 404 })
+    }
+
+    const passwordHash = await hashPassword(d.password)
+
+    const session = await createPreSignupCheckoutSession({
+      priceId: plan.stripePriceId,
+      customerEmail: d.email,
+      metadata: {
+        signupType: 'paid',
+        storeName: d.storeName,
+        storeSlug: d.storeSlug,
+        name: d.name,
+        email: d.email,
+        passwordHash,
+        phone: d.phone ?? '',
+        planSlug: d.planSlug,
+      },
+      successUrl: d.successUrl,
+      cancelUrl: d.cancelUrl,
+      trialDays: 7,
+    })
+
+    return reply.send({ data: { checkoutUrl: session.url, sessionId: session.id } })
+  })
+
+  // ─── POST /auth/claim-session ─────────────────────────────────────
+  // Após pagamento, frontend troca sessionId por tokens de auth
+  app.post('/claim-session', async (request, reply) => {
+    const schema = z.object({ sessionId: z.string() })
+    const result = schema.safeParse(request.body)
+    if (!result.success) {
+      return reply.status(400).send({ error: 'Validation Error', message: 'sessionId inválido', statusCode: 400 })
+    }
+
+    let session
+    try {
+      session = await retrieveCheckoutSession(result.data.sessionId)
+    } catch {
+      return reply.status(404).send({ error: 'Not Found', message: 'Sessão não encontrada', statusCode: 404 })
+    }
+
+    if (session.payment_status !== 'paid' && session.status !== 'complete') {
+      return reply.status(402).send({ error: 'Payment Required', message: 'Pagamento ainda não confirmado', statusCode: 402 })
+    }
+
+    const email = session.metadata?.email || session.customer_email
+    if (!email) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Sessão sem e-mail', statusCode: 400 })
+    }
+
+    // Procura a conta criada pelo webhook
+    const user = await app.prisma.user.findUnique({
+      where: { email },
+      include: { store: true },
+    })
+
+    if (!user) {
+      return reply.status(404).send({
+        error: 'Processing',
+        message: 'Conta ainda sendo criada. Tente novamente em alguns segundos.',
+        statusCode: 404,
+      })
+    }
+
+    const payload: JwtPayload = { sub: user.id, storeId: user.storeId, role: user.role }
+    const accessToken = app.jwt.sign(payload, { expiresIn: '7d' })
+    const refreshToken = signRefresh(app, user.id)
+
+    return reply.send({
+      data: {
+        accessToken,
+        refreshToken,
+        user: { id: user.id, name: user.name, email: user.email, role: user.role },
+        store: { id: user.store.id, name: user.store.name, slug: user.store.slug, logoUrl: user.store.logoUrl },
       },
     })
   })
