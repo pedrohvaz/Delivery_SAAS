@@ -7,7 +7,8 @@
     "build": "echo 'skip build - using tsx at runtime'",
     "start": "tsx src/index.ts",
     "lint": "eslint src --ext .ts",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "seed:superadmin": "tsx src/scripts/create-superadmin.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.92.0",
