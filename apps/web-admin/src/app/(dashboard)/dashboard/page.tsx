@@ -16,6 +16,8 @@ import { currency } from '@/lib/utils'
 import { cn } from '@delivery/ui'
 import { relativeTime } from '@/hooks/use-orders'
 import { OnboardingWizard } from '@/components/onboarding/onboarding-wizard'
+import { useMySubscription } from '@/hooks/use-plans'
+import { Crown } from 'lucide-react'
 
 function GrowthBadge({ value }: { value: number | null }) {
   if (value === null) return null
@@ -35,10 +37,11 @@ export default function DashboardPage() {
   const { data: stockAlerts = [] } = useStockAlerts()
   const { data: categories = [] } = useCategories()
   const { data: settings } = useSettings()
+  const { data: subscription, isLoading: subLoading } = useMySubscription()
 
   // Detecta etapas do onboarding concluídas
   const completedSteps: string[] = []
-  if (store?.name && store?.phone) completedSteps.push('store-info') // tem dados básicos
+  if (store?.name) completedSteps.push('store-info')
   if (categories.length > 0) completedSteps.push('cardapio')
   if ((settings?.paymentMethods?.length ?? 0) > 0) completedSteps.push('pagamentos')
 
@@ -75,6 +78,21 @@ export default function DashboardPage() {
             </span>
           </div>
         </div>
+
+        {/* Banner de assinatura — aparece quando não há plano ativo */}
+        {!subLoading && !subscription && (
+          <Link href="/dashboard/assinatura"
+            className="flex items-center gap-4 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 p-4 text-white hover:opacity-95 transition">
+            <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <Crown className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-sm">Escolha seu plano e desbloqueie todos os recursos</p>
+              <p className="text-xs text-white/80 mt-0.5">7 dias grátis · Sem cartão de crédito · Cancele quando quiser</p>
+            </div>
+            <ArrowUpRight className="h-5 w-5 text-white/80 shrink-0" />
+          </Link>
+        )}
 
         {/* Onboarding wizard — só aparece nas primeiras semanas */}
         {completedSteps.length < 5 && (
