@@ -11,6 +11,9 @@ export const registerSchema = z.object({
   email: z.string().email('E-mail inválido'),
   password: z.string().min(6, 'Senha deve ter ao menos 6 caracteres'),
   phone: z.string().optional(),
+  planSlug: z.string().optional(),
+  successUrl: z.string().url().optional(),
+  cancelUrl: z.string().url().optional(),
 })
 
 export const loginSchema = z.object({

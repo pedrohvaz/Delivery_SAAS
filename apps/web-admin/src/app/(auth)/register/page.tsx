@@ -45,9 +45,19 @@ export default function RegisterPage() {
     setError('')
     setLoading(true)
     try {
-      await register({ storeName, storeSlug, name, email, password, phone })
-      const planSlug = new URLSearchParams(window.location.search).get('plan')
-      router.push(planSlug && planSlug !== 'gratis' ? `/dashboard/assinatura?checkout=${planSlug}` : '/dashboard/assinatura')
+      const planSlug = new URLSearchParams(window.location.search).get('plan') ?? undefined
+      const successUrl = `${window.location.origin}/dashboard?billing=success`
+      const cancelUrl = `${window.location.origin}/dashboard/assinatura?billing=canceled`
+      const { checkoutUrl } = await register({
+        storeName, storeSlug, name, email, password, phone,
+        planSlug, successUrl, cancelUrl,
+      })
+
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl
+        return
+      }
+      router.push('/dashboard/assinatura')
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??

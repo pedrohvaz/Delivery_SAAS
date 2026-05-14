@@ -3,6 +3,7 @@ import { authenticate } from '../../middlewares/authenticate'
 import { hashPassword, verifyPassword } from '../../lib/hash'
 import { registerSchema, loginSchema, refreshSchema } from './schemas'
 import type { JwtPayload } from '@delivery/types'
+import { createCheckoutSession, getStripe } from '../../lib/stripe.js'
 
 // Helper para assinar refresh token (payload mínimo)
 function signRefresh(app: Parameters<FastifyPluginAsync>[0], sub: string): string {
@@ -22,7 +23,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       })
     }
 
-    const { storeName, storeSlug, name, email, password, phone } = result.data
+    const { storeName, storeSlug, name, email, password, phone, planSlug, successUrl, cancelUrl } = result.data
 
     // Verifica se slug já está em uso
     const existingStore = await app.prisma.store.findUnique({ where: { slug: storeSlug } })
@@ -84,12 +85,34 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     const accessToken = app.jwt.sign(payload, { expiresIn: '7d' })
     const refreshToken = signRefresh(app, user.id)
 
+    // Se o usuário escolheu um plano pago, cria a checkout session do Stripe
+    let checkoutUrl: string | null = null
+    if (planSlug && planSlug !== 'gratis' && getStripe()) {
+      try {
+        const plan = await app.prisma.plan.findUnique({ where: { slug: planSlug } })
+        if (plan?.stripePriceId) {
+          const session = await createCheckoutSession({
+            priceId: plan.stripePriceId,
+            customerEmail: user.email,
+            storeId: store.id,
+            successUrl: successUrl ?? `${process.env.NEXT_PUBLIC_API_URL ?? ''}/dashboard?billing=success`,
+            cancelUrl: cancelUrl ?? `${process.env.NEXT_PUBLIC_API_URL ?? ''}/dashboard/assinatura?billing=canceled`,
+            trialDays: 7,
+          })
+          checkoutUrl = session.url
+        }
+      } catch (err) {
+        app.log.error({ err }, 'Erro ao criar Stripe Checkout no registro')
+      }
+    }
+
     return reply.status(201).send({
       data: {
         accessToken,
         refreshToken,
         user: { id: user.id, name: user.name, email: user.email, role: user.role },
         store: { id: store.id, name: store.name, slug: store.slug },
+        checkoutUrl,
       },
     })
   })
