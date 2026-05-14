@@ -27,6 +27,7 @@ import {
   Percent,
   Star,
   Gift,
+  CreditCard,
 } from 'lucide-react'
 import { useStockAlerts } from '@/hooks/use-stock'
 
@@ -48,6 +49,7 @@ const navItems = [
   { label: 'Mesas', href: '/dashboard/mesas', icon: Grid3X3 },
   { label: 'Relatórios', href: '/dashboard/relatorios', icon: BarChart2 },
   { label: 'Automação', href: '/dashboard/automacao', icon: Zap },
+  { label: 'Assinatura', href: '/dashboard/assinatura', icon: CreditCard },
   { label: 'Configurações', href: '/dashboard/configuracoes', icon: Settings },
 ]
 

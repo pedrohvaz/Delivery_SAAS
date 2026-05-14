@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/auth'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,8 @@ function toSlug(value: string) {
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const planSlug = searchParams.get('plan')
   const register = useAuthStore((s) => s.register)
 
   const [step, setStep] = useState<1 | 2>(1)
@@ -46,7 +48,7 @@ export default function RegisterPage() {
     setLoading(true)
     try {
       await register({ storeName, storeSlug, name, email, password, phone })
-      router.push('/dashboard')
+      router.push(planSlug && planSlug !== 'gratis' ? `/dashboard/assinatura?checkout=${planSlug}` : '/dashboard')
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
