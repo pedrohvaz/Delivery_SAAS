@@ -9,6 +9,28 @@ const loginSchema = z.object({
 })
 
 const superAdminAuthRoutes: FastifyPluginAsync = async (app) => {
+  // POST /super-admin/auth/setup — cria o primeiro superadmin (remover após uso)
+  app.post('/setup', async (request, reply) => {
+    const existing = await app.prisma.superAdmin.findFirst()
+    if (existing) {
+      return reply.status(409).send({ error: 'Conflict', message: 'Superadmin já existe', statusCode: 409 })
+    }
+    const schema = z.object({
+      name: z.string().min(2),
+      email: z.string().email(),
+      password: z.string().min(6),
+    })
+    const body = schema.safeParse(request.body)
+    if (!body.success) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Dados inválidos', statusCode: 400 })
+    }
+    const hashed = await bcrypt.hash(body.data.password, 10)
+    const admin = await app.prisma.superAdmin.create({
+      data: { name: body.data.name, email: body.data.email, password: hashed, isActive: true },
+    })
+    return reply.send({ data: { id: admin.id, email: admin.email, message: 'Superadmin criado com sucesso!' } })
+  })
+
   // POST /super-admin/auth/login
   app.post('/login', async (request, reply) => {
     const body = loginSchema.safeParse(request.body)
