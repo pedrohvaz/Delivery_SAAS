@@ -90,7 +90,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1">
                   <p className="font-bold text-sm">Escolha seu plano e desbloqueie todos os recursos</p>
-                  <p className="text-xs text-white/80 mt-0.5">7 dias grátis · Sem cartão · Cancele quando quiser</p>
+                  <p className="text-xs text-white/80 mt-0.5">15 dias grátis · Sem cartão · Cancele quando quiser</p>
                 </div>
                 <ArrowUpRight className="h-5 w-5 text-white/80 shrink-0" />
               </Link>

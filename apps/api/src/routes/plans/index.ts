@@ -99,6 +99,40 @@ const planRoutes: FastifyPluginAsync = async (app) => {
 
   // ─── SUPER ADMIN (CRUD) ─────────────────────────────────────────────────────
 
+  // POST /plans/admin/backfill-trials — dá trial Elite 15 dias para lojas sem assinatura
+  app.post('/admin/backfill-trials', { preHandler: [authenticateSuperAdmin] }, async (_request, reply) => {
+    const elitePlan = await app.prisma.plan.findUnique({ where: { slug: 'elite' } })
+    if (!elitePlan) return reply.status(404).send({ error: 'Not Found', message: 'Plano Elite não encontrado', statusCode: 404 })
+
+    // Lojas que ainda não têm assinatura
+    const storesWithoutSub = await app.prisma.store.findMany({
+      where: { subscription: null },
+      select: { id: true, name: true },
+    })
+
+    const trialEndsAt = new Date()
+    trialEndsAt.setDate(trialEndsAt.getDate() + 15)
+
+    let created = 0
+    for (const store of storesWithoutSub) {
+      try {
+        await app.prisma.subscription.create({
+          data: {
+            storeId: store.id,
+            planId: elitePlan.id,
+            status: 'TRIALING',
+            trialEndsAt,
+          },
+        })
+        created++
+      } catch (err) {
+        app.log.error({ err, storeId: store.id }, 'Falha ao criar trial')
+      }
+    }
+
+    return { data: { storesProcessed: storesWithoutSub.length, trialsCreated: created } }
+  })
+
   // GET /plans/admin/subscriptions — lista todas assinaturas com loja e plano
   app.get('/admin/subscriptions', { preHandler: [authenticateSuperAdmin] }, async (request) => {
     const { status } = request.query as { status?: string }

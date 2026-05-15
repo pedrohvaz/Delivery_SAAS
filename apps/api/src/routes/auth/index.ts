@@ -86,25 +86,23 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     const accessToken = app.jwt.sign(payload, { expiresIn: '7d' })
     const refreshToken = signRefresh(app, user.id)
 
-    // Se o usuário escolheu um plano pago, cria assinatura TRIALING (7 dias)
-    if (planSlug && planSlug !== 'gratis') {
-      try {
-        const plan = await app.prisma.plan.findUnique({ where: { slug: planSlug } })
-        if (plan) {
-          const trialEndsAt = new Date()
-          trialEndsAt.setDate(trialEndsAt.getDate() + 7)
-          await app.prisma.subscription.create({
-            data: {
-              storeId: store.id,
-              planId: plan.id,
-              status: 'TRIALING',
-              trialEndsAt,
-            },
-          })
-        }
-      } catch (err) {
-        app.log.error({ err }, 'Erro ao criar trial subscription')
+    // Toda nova conta começa com trial Elite por 15 dias
+    try {
+      const elitePlan = await app.prisma.plan.findUnique({ where: { slug: 'elite' } })
+      if (elitePlan) {
+        const trialEndsAt = new Date()
+        trialEndsAt.setDate(trialEndsAt.getDate() + 15)
+        await app.prisma.subscription.create({
+          data: {
+            storeId: store.id,
+            planId: elitePlan.id,
+            status: 'TRIALING',
+            trialEndsAt,
+          },
+        })
       }
+    } catch (err) {
+      app.log.error({ err }, 'Erro ao criar trial subscription Elite')
     }
 
     return reply.status(201).send({
