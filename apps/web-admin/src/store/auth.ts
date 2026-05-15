@@ -24,7 +24,7 @@ interface AuthState {
   refreshToken: string | null
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (data: RegisterData) => Promise<{ checkoutUrl: string | null }>
+  register: (data: RegisterData) => Promise<void>
   logout: () => void
   fetchMe: () => Promise<void>
 }
@@ -62,13 +62,12 @@ export const useAuthStore = create<AuthState>()(
 
       register: async (registerData) => {
         const { data } = await api.post('/auth/register', registerData)
-        const { accessToken, refreshToken, user, store, checkoutUrl } = data.data
+        const { accessToken, refreshToken, user, store } = data.data
 
         localStorage.setItem('accessToken', accessToken)
         localStorage.setItem('refreshToken', refreshToken)
 
         set({ user, store, accessToken, refreshToken, isAuthenticated: true })
-        return { checkoutUrl: checkoutUrl ?? null }
       },
 
       logout: () => {

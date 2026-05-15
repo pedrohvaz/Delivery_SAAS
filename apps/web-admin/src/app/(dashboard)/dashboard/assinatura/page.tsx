@@ -1,31 +1,31 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { usePlans, useMySubscription, useCheckout, useBillingPortal } from '@/hooks/use-plans'
-import { Check, CreditCard, Zap, Crown, ExternalLink, Loader2, ArrowRight } from 'lucide-react'
+import { Check, CreditCard, Zap, Crown, ExternalLink, Loader2, Clock, AlertTriangle } from 'lucide-react'
 import { cn } from '@delivery/ui'
 
+function daysRemaining(date: string | null): number {
+  if (!date) return 0
+  const diff = new Date(date).getTime() - Date.now()
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+}
+
 export default function AssinaturaPage() {
-  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null)
-  const [checkoutError, setCheckoutError] = useState('')
+  const [error, setError] = useState('')
 
   const { data: plans = [], isLoading: plansLoading } = usePlans()
   const { data: subscription, isLoading: subLoading } = useMySubscription()
   const checkout = useCheckout()
   const portal = useBillingPortal()
 
-  useEffect(() => {
-    const param = new URLSearchParams(window.location.search).get('checkout')
-    if (param) setCheckoutPlan(param)
-  }, [])
-
   function handleSelectPlan(slug: string) {
-    setCheckoutError('')
+    setError('')
     checkout.mutate(slug, {
       onSuccess: (data: any) => { window.location.href = data.url },
       onError: (err: any) => {
-        setCheckoutError(err?.response?.data?.message ?? 'Erro ao iniciar checkout. Tente novamente.')
+        setError(err?.response?.data?.message ?? 'Erro ao iniciar checkout.')
       },
     })
   }
@@ -38,8 +38,10 @@ export default function AssinaturaPage() {
 
   const currentPlanSlug = subscription?.plan?.slug
   const isLoading = plansLoading || subLoading
-
-  const preSelectedPlan = checkoutPlan ? plans.find((p: any) => p.slug === checkoutPlan) : null
+  const isTrialing = subscription?.status === 'TRIALING'
+  const isActive = subscription?.status === 'ACTIVE'
+  const trialDays = isTrialing ? daysRemaining(subscription.trialEndsAt) : 0
+  const isPaid = subscription && subscription.currentPeriodEnd && (isActive || subscription.status === 'PAST_DUE')
 
   const statusLabel: Record<string, string> = {
     TRIALING: 'Período de teste',
@@ -52,71 +54,102 @@ export default function AssinaturaPage() {
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <Header title="Assinatura" />
+      <Header title="Assinatura e Pagamentos" />
       <main className="flex-1 overflow-y-auto p-6 space-y-6">
 
-        {/* Banner de plano pré-selecionado */}
-        {preSelectedPlan && !isLoading && (
-          <div className="rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 p-5 text-white flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <p className="font-black text-lg">Plano {preSelectedPlan.name} selecionado</p>
-              <p className="text-sm text-white/80">
-                R$ {Number(preSelectedPlan.monthlyPrice).toFixed(0)}/mês · 7 dias grátis · Sem cartão agora
-              </p>
-            </div>
-            <button
-              onClick={() => handleSelectPlan(preSelectedPlan.slug)}
-              disabled={checkout.isPending}
-              className="flex items-center gap-2 rounded-xl bg-white text-orange-600 font-bold px-6 py-3 hover:shadow-lg transition shrink-0"
-            >
-              {checkout.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-              {checkout.isPending ? 'Redirecionando...' : 'Ir para o pagamento'}
-            </button>
-          </div>
-        )}
-
-        {checkoutError && (
+        {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {checkoutError}
+            {error}
           </div>
         )}
 
-        {/* Assinatura ativa */}
-        {subscription && (
-          <div className="rounded-xl border bg-card p-5 flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Crown className="h-5 w-5 text-primary" />
+        {/* Card de trial em andamento */}
+        {isTrialing && (
+          <div className="rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 p-6 text-white">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-0.5 text-xs font-bold">
+                  <Clock className="h-3 w-3" /> Período de teste
+                </div>
+                <h2 className="text-2xl font-black mt-2">Plano {subscription.plan.name}</h2>
+                <p className="text-sm text-white/90">
+                  Você tem <strong>{trialDays} dia{trialDays === 1 ? '' : 's'}</strong> restantes do seu teste grátis.
+                </p>
+                {subscription.trialEndsAt && (
+                  <p className="text-xs text-white/70 mt-1">
+                    Acaba em {new Date(subscription.trialEndsAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
+                  </p>
+                )}
               </div>
+              <button
+                onClick={() => handleSelectPlan(currentPlanSlug!)}
+                disabled={checkout.isPending}
+                className="rounded-xl bg-white text-orange-600 font-bold px-6 py-3 hover:shadow-lg transition flex items-center gap-2 shrink-0"
+              >
+                {checkout.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                {checkout.isPending ? 'Redirecionando...' : 'Assinar agora'}
+              </button>
+            </div>
+            <div className="mt-4 pt-4 border-t border-white/20 text-xs text-white/80">
+              Ao assinar agora você garante a continuidade do plano. Cancele quando quiser pelo painel.
+            </div>
+          </div>
+        )}
+
+        {/* Card de trial expirado sem assinatura */}
+        {isTrialing && trialDays === 0 && (
+          <div className="rounded-2xl border-2 border-red-300 bg-red-50 p-6">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-6 w-6 text-red-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold text-foreground">Plano {subscription.plan.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  Status:{' '}
-                  <span className={cn('font-medium', subscription.status === 'ACTIVE' || subscription.status === 'TRIALING' ? 'text-green-600' : 'text-orange-500')}>
-                    {statusLabel[subscription.status] ?? subscription.status}
-                  </span>
-                  {subscription.currentPeriodEnd && (
-                    <> · Renova em {new Date(subscription.currentPeriodEnd).toLocaleDateString('pt-BR')}</>
-                  )}
+                <h3 className="font-bold text-red-900">Período de teste encerrado</h3>
+                <p className="text-sm text-red-700 mt-1">
+                  Para continuar usando o plano {subscription.plan.name}, assine agora.
                 </p>
               </div>
             </div>
-            <button
-              onClick={handlePortal}
-              disabled={portal.isPending}
-              className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-accent transition shrink-0"
-            >
-              {portal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-              Gerenciar assinatura
-              <ExternalLink className="h-3 w-3 text-muted-foreground" />
-            </button>
           </div>
         )}
 
-        {!subscription && !subLoading && !preSelectedPlan && (
-          <div className="rounded-xl border bg-orange-50 border-orange-200 p-4">
+        {/* Card de assinatura paga ativa */}
+        {isPaid && (
+          <div className="rounded-2xl border bg-card p-6">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Crown className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Plano {subscription.plan.name}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Status:{' '}
+                    <span className={cn('font-medium', isActive ? 'text-green-600' : 'text-orange-500')}>
+                      {statusLabel[subscription.status]}
+                    </span>
+                    {subscription.currentPeriodEnd && (
+                      <> · Próxima cobrança em {new Date(subscription.currentPeriodEnd).toLocaleDateString('pt-BR')}</>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handlePortal}
+                disabled={portal.isPending}
+                className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-accent transition shrink-0"
+              >
+                {portal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                Gerenciar assinatura
+                <ExternalLink className="h-3 w-3 text-muted-foreground" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Sem assinatura nenhuma */}
+        {!subscription && !subLoading && (
+          <div className="rounded-2xl border bg-orange-50 border-orange-200 p-5">
             <p className="text-sm font-medium text-orange-800">
-              Você ainda não tem uma assinatura ativa. Escolha um plano abaixo para começar com 7 dias grátis.
+              Você está no plano <strong>Grátis</strong>. Faça upgrade para um dos planos pagos abaixo para desbloquear todos os recursos.
             </p>
           </div>
         )}
@@ -124,7 +157,7 @@ export default function AssinaturaPage() {
         {/* Lista de planos */}
         <div>
           <h2 className="text-lg font-bold text-foreground mb-4">
-            {subscription ? 'Mudar plano' : 'Escolha seu plano'}
+            {isTrialing || isPaid ? 'Mudar plano' : 'Escolha seu plano'}
           </h2>
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
@@ -135,12 +168,10 @@ export default function AssinaturaPage() {
               {plans.map((plan: any) => {
                 const isFree = Number(plan.monthlyPrice) === 0
                 const isCurrent = currentPlanSlug === plan.slug
-                const isSelected = checkoutPlan === plan.slug
                 return (
                   <div key={plan.slug} className={cn(
                     'relative rounded-2xl border-2 p-6 flex flex-col transition-all',
                     isCurrent ? 'border-primary bg-primary/5' :
-                    isSelected ? 'border-orange-400 bg-orange-50' :
                     plan.highlight ? 'border-orange-300 shadow-lg' :
                     'border-border hover:border-primary/40',
                   )}>
@@ -193,14 +224,24 @@ export default function AssinaturaPage() {
                         }
                       </button>
                     )}
-                    {isCurrent && !isFree && (
+                    {isCurrent && isTrialing && !isFree && (
+                      <button
+                        onClick={() => handleSelectPlan(plan.slug)}
+                        disabled={checkout.isPending}
+                        className="w-full rounded-xl py-2.5 text-sm font-bold bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:shadow-lg transition flex items-center justify-center gap-2"
+                      >
+                        {checkout.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                        Confirmar assinatura
+                      </button>
+                    )}
+                    {isCurrent && isPaid && (
                       <div className="w-full rounded-xl py-2.5 text-sm font-bold text-center bg-primary/10 text-primary">
                         Plano ativo
                       </div>
                     )}
-                    {isFree && (
+                    {isFree && !isCurrent && (
                       <div className="w-full rounded-xl py-2.5 text-sm font-bold text-center bg-muted text-muted-foreground">
-                        {isCurrent ? 'Plano atual' : 'Plano gratuito'}
+                        Plano gratuito
                       </div>
                     )}
                   </div>
@@ -211,7 +252,7 @@ export default function AssinaturaPage() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground">
-          💳 Pagamento seguro via Stripe · Cancele quando quiser · 7 dias grátis nos planos pagos
+          💳 Pagamento seguro via Stripe · Cancele quando quiser
         </p>
       </main>
     </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
-import { LayoutDashboard, Store, ShoppingBag, UserCircle, LogOut, CreditCard, Users, ShieldCheck, BarChart2, Activity, Settings2 } from 'lucide-react'
+import { LayoutDashboard, Store, ShoppingBag, UserCircle, LogOut, CreditCard, Users, ShieldCheck, BarChart2, Activity, Settings2, Receipt } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -40,6 +40,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: '/dashboard/relatorios',     label: 'Relatórios',       icon: BarChart2 },
     { href: '/dashboard/saude',          label: 'Saúde',            icon: Activity },
     { href: '/dashboard/planos',         label: 'Planos',           icon: CreditCard },
+    { href: '/dashboard/assinaturas',    label: 'Assinaturas',      icon: Receipt },
     { href: '/dashboard/configuracoes',  label: 'Configurações',    icon: Settings2 },
     { href: '/dashboard/conta',          label: 'Minha Conta',      icon: UserCircle },
   ]

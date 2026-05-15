@@ -99,6 +99,39 @@ const planRoutes: FastifyPluginAsync = async (app) => {
 
   // ─── SUPER ADMIN (CRUD) ─────────────────────────────────────────────────────
 
+  // GET /plans/admin/subscriptions — lista todas assinaturas com loja e plano
+  app.get('/admin/subscriptions', { preHandler: [authenticateSuperAdmin] }, async (request) => {
+    const { status } = request.query as { status?: string }
+    const where: any = {}
+    if (status && status !== 'ALL') where.status = status
+
+    const subscriptions = await app.prisma.subscription.findMany({
+      where,
+      include: {
+        plan: true,
+        store: { select: { id: true, name: true, slug: true, createdAt: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    // Métricas agregadas
+    const all = await app.prisma.subscription.findMany({
+      include: { plan: { select: { monthlyPrice: true } } },
+    })
+    const stats = {
+      total: all.length,
+      trialing: all.filter((s: any) => s.status === 'TRIALING').length,
+      active: all.filter((s: any) => s.status === 'ACTIVE').length,
+      pastDue: all.filter((s: any) => s.status === 'PAST_DUE').length,
+      canceled: all.filter((s: any) => s.status === 'CANCELED').length,
+      mrr: all
+        .filter((s: any) => s.status === 'ACTIVE')
+        .reduce((sum: number, s: any) => sum + Number(s.plan.monthlyPrice), 0),
+    }
+
+    return { data: subscriptions, stats }
+  })
+
   // POST /plans/admin — cria plano (cria também produto + preço no Stripe)
   app.post('/admin', { preHandler: [authenticateSuperAdmin] }, async (request, reply) => {
     const result = planSchema.safeParse(request.body)

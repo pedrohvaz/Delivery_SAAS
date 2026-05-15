@@ -79,20 +79,67 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Banner de assinatura — aparece quando não há plano ativo */}
-        {!subLoading && !subscription && (
-          <Link href="/dashboard/assinatura"
-            className="flex items-center gap-4 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 p-4 text-white hover:opacity-95 transition">
-            <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <Crown className="h-5 w-5 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="font-bold text-sm">Escolha seu plano e desbloqueie todos os recursos</p>
-              <p className="text-xs text-white/80 mt-0.5">7 dias grátis · Sem cartão de crédito · Cancele quando quiser</p>
-            </div>
-            <ArrowUpRight className="h-5 w-5 text-white/80 shrink-0" />
-          </Link>
-        )}
+        {/* Banner de assinatura */}
+        {!subLoading && (() => {
+          if (!subscription) {
+            return (
+              <Link href="/dashboard/assinatura"
+                className="flex items-center gap-4 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 p-4 text-white hover:opacity-95 transition">
+                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <Crown className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-sm">Escolha seu plano e desbloqueie todos os recursos</p>
+                  <p className="text-xs text-white/80 mt-0.5">7 dias grátis · Sem cartão · Cancele quando quiser</p>
+                </div>
+                <ArrowUpRight className="h-5 w-5 text-white/80 shrink-0" />
+              </Link>
+            )
+          }
+          if (subscription.status === 'TRIALING') {
+            const diff = subscription.trialEndsAt ? new Date(subscription.trialEndsAt).getTime() - Date.now() : 0
+            const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+            const expired = days === 0
+            return (
+              <Link href="/dashboard/assinatura"
+                className={cn(
+                  'flex items-center gap-4 rounded-xl p-4 text-white hover:opacity-95 transition',
+                  expired ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-orange-500 to-pink-500',
+                )}>
+                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <Crown className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-sm">
+                    {expired
+                      ? `Período de teste do plano ${subscription.plan.name} encerrado`
+                      : `Plano ${subscription.plan.name} · ${days} dia${days === 1 ? '' : 's'} de teste restantes`}
+                  </p>
+                  <p className="text-xs text-white/80 mt-0.5">
+                    {expired ? 'Assine agora para continuar usando todos os recursos' : 'Clique para confirmar sua assinatura e garantir o plano'}
+                  </p>
+                </div>
+                <ArrowUpRight className="h-5 w-5 text-white/80 shrink-0" />
+              </Link>
+            )
+          }
+          if (subscription.status === 'PAST_DUE') {
+            return (
+              <Link href="/dashboard/assinatura"
+                className="flex items-center gap-4 rounded-xl bg-red-500 p-4 text-white hover:opacity-95 transition">
+                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <Crown className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-sm">Pagamento pendente do plano {subscription.plan.name}</p>
+                  <p className="text-xs text-white/80 mt-0.5">Atualize seu método de pagamento para continuar usando o sistema</p>
+                </div>
+                <ArrowUpRight className="h-5 w-5 text-white/80 shrink-0" />
+              </Link>
+            )
+          }
+          return null
+        })()}
 
         {/* Onboarding wizard — só aparece nas primeiras semanas */}
         {completedSteps.length < 5 && (

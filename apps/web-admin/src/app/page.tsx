@@ -381,7 +381,7 @@ export default function LandingPage() {
                   </div>
 
                   <Link
-                    href={isFree ? '/register' : `/comprar/${plan.slug}`}
+                    href={`/register?plan=${plan.slug}`}
                     className={`block text-center rounded-2xl px-6 py-3.5 font-bold text-sm mb-6 transition-all ${
                       plan.highlight
                         ? 'bg-white text-orange-600 hover:shadow-lg hover:scale-105'

@@ -86,24 +86,24 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     const accessToken = app.jwt.sign(payload, { expiresIn: '7d' })
     const refreshToken = signRefresh(app, user.id)
 
-    // Se o usuário escolheu um plano pago, cria a checkout session do Stripe
-    let checkoutUrl: string | null = null
-    if (planSlug && planSlug !== 'gratis' && getStripe()) {
+    // Se o usuário escolheu um plano pago, cria assinatura TRIALING (7 dias)
+    if (planSlug && planSlug !== 'gratis') {
       try {
         const plan = await app.prisma.plan.findUnique({ where: { slug: planSlug } })
-        if (plan?.stripePriceId) {
-          const session = await createCheckoutSession({
-            priceId: plan.stripePriceId,
-            customerEmail: user.email,
-            storeId: store.id,
-            successUrl: successUrl ?? `${process.env.NEXT_PUBLIC_API_URL ?? ''}/dashboard?billing=success`,
-            cancelUrl: cancelUrl ?? `${process.env.NEXT_PUBLIC_API_URL ?? ''}/dashboard/assinatura?billing=canceled`,
-            trialDays: 7,
+        if (plan) {
+          const trialEndsAt = new Date()
+          trialEndsAt.setDate(trialEndsAt.getDate() + 7)
+          await app.prisma.subscription.create({
+            data: {
+              storeId: store.id,
+              planId: plan.id,
+              status: 'TRIALING',
+              trialEndsAt,
+            },
           })
-          checkoutUrl = session.url
         }
       } catch (err) {
-        app.log.error({ err }, 'Erro ao criar Stripe Checkout no registro')
+        app.log.error({ err }, 'Erro ao criar trial subscription')
       }
     }
 
@@ -113,7 +113,6 @@ const authRoutes: FastifyPluginAsync = async (app) => {
         refreshToken,
         user: { id: user.id, name: user.name, email: user.email, role: user.role },
         store: { id: store.id, name: store.name, slug: store.slug },
-        checkoutUrl,
       },
     })
   })
