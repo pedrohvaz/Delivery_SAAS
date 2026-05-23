@@ -37,140 +37,121 @@ export function StoreHeader({ store }: { store: StoreData }) {
   const cartTotal = subtotal()
   const nextOpen = !store.isOpen ? getNextOpenLabel(store.schedules) : null
 
-  const addressLine = [
-    store.address,
-    store.number,
-  ].filter(Boolean).join(', ')
-
-  const locationLine = [
-    store.city,
-    store.state,
-  ].filter(Boolean).join('/')
-
+  const addressLine = [store.address, store.number].filter(Boolean).join(', ')
   const timeRange = `${store.estimatedTime} - ${store.estimatedTime + 20}min`
 
   return (
-    <div className="bg-[#1c1c1e] w-full">
-      {/* ── Banner com overlay ── */}
-      <div className="relative w-full h-44">
+    <header className="relative w-full bg-white shadow-sm">
+      {/* Banner */}
+      <div className="relative w-full h-48 sm:h-56 overflow-hidden">
         {store.bannerUrl ? (
-          <img
-            src={store.bannerUrl}
-            alt={store.name}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          <img src={store.bannerUrl} alt={store.name} className="absolute inset-0 w-full h-full object-cover" />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#2a2a2e] to-[#111113]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-primary" />
         )}
-        {/* Overlay escuro */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1c1c1e] via-[#1c1c1e]/40 to-transparent" />
+        <div className="absolute inset-0 bg-black/40" />
 
-        {/* Topo: rating + localização */}
-        <div className="absolute top-3 left-0 right-0 px-4 flex items-center gap-2">
-          <div className="flex items-center gap-1 rounded-full bg-black/50 backdrop-blur-sm px-2.5 py-1 border border-white/10">
-            <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
-            <span className="text-[11px] font-bold text-white">4.9</span>
-          </div>
-          {locationLine && (
-            <div className="rounded-full bg-black/50 backdrop-blur-sm px-2.5 py-1 border border-white/10">
-              <span className="text-[11px] font-semibold text-white/80 uppercase tracking-wide">{locationLine}</span>
-            </div>
-          )}
-          {/* Carrinho topo direito */}
-          <div className="ml-auto flex items-center gap-2">
-            <Link
-              href={`/${store.slug}/minha-conta`}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-white hover:bg-white/20 transition"
-            >
-              <User className="h-3.5 w-3.5" />
-            </Link>
-            {itemCount > 0 && (
-              <button
-                onClick={toggleCart}
-                className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-lg active:scale-95 transition"
-              >
-                <div className="relative">
-                  <ShoppingCart className="h-3.5 w-3.5" />
-                  <span className="absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white text-[8px] font-black text-primary">
-                    {itemCount}
-                  </span>
-                </div>
-                <span>{currency(cartTotal)}</span>
-              </button>
-            )}
+        {/* Topo: user + status */}
+        <div className="absolute top-3 left-0 right-0 px-4 flex items-center justify-between">
+          <Link
+            href={`/${store.slug}/minha-conta`}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-white hover:bg-white/20 transition"
+          >
+            <User className="h-3.5 w-3.5" />
+          </Link>
+
+          <div className={`flex items-center gap-1.5 text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm ${store.isOpen ? 'bg-emerald-500/90' : 'bg-red-500/90'}`}>
+            <span className={`w-2 h-2 rounded-full bg-white shrink-0 ${store.isOpen ? 'animate-ping' : ''}`} />
+            {store.isOpen ? 'Aberto Agora' : (nextOpen ?? 'Fechado')}
           </div>
         </div>
       </div>
 
-      {/* ── Info da loja ── */}
-      <div className="relative z-10 px-4 -mt-9 pb-4">
-        {/* Logo + status na mesma linha */}
-        <div className="flex items-end justify-between gap-3">
-          {/* Logo */}
-          <div className="shrink-0 h-[72px] w-[72px] rounded-2xl overflow-hidden border-2 border-[#2c2c2e] bg-[#2c2c2e] shadow-xl">
-            {store.logoUrl ? (
-              <Image
-                src={store.logoUrl}
-                alt={store.name}
-                width={72}
-                height={72}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-primary/20">
-                <span className="text-2xl">🍽️</span>
-              </div>
+      {/* Info da loja */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-4 relative">
+        {/* Logo sobreposto ao banner */}
+        <div className="absolute -top-12 left-6 w-24 h-24 rounded-full bg-white shadow-md overflow-hidden flex items-center justify-center border-4 border-white">
+          {store.logoUrl ? (
+            <Image src={store.logoUrl} alt={store.name} width={96} height={96} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-primary/10 text-3xl">🍽️</div>
+          )}
+        </div>
+
+        <div className="pt-16 flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+              {store.name}
+            </h1>
+            {store.description && (
+              <p className="text-sm text-gray-500 mt-1 max-w-xl font-medium">{store.description}</p>
             )}
           </div>
 
-          {/* Status aberto/fechado */}
-          <div className={`flex items-center gap-1.5 pb-1 text-[12px] font-bold ${store.isOpen ? 'text-emerald-400' : 'text-red-400'}`}>
-            <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${store.isOpen ? 'bg-emerald-400' : 'bg-red-400'}`} />
-            {store.isOpen ? 'ABERTO AGORA' : (nextOpen ?? 'FECHADO')}
-          </div>
+          {/* Botão carrinho mobile/tablet (no desktop fica o sidebar) */}
+          {itemCount > 0 && (
+            <button
+              onClick={toggleCart}
+              className="lg:hidden flex items-center gap-2 rounded-full bg-primary hover:opacity-90 px-4 py-2 text-xs font-bold text-primary-foreground shadow-lg active:scale-95 transition self-start"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              <span>{itemCount} {itemCount === 1 ? 'item' : 'itens'}</span>
+              <span>·</span>
+              <span>{currency(cartTotal)}</span>
+            </button>
+          )}
         </div>
 
-        {/* Nome — linha própria com largura total */}
-        <h1 className="mt-2 text-[22px] font-black text-white leading-tight tracking-tight">
-          {store.name}
-        </h1>
-
-        {/* Linha de detalhes — sempre visível, sem truncate */}
-        <div className="mt-3 flex flex-col gap-1.5">
-          <div className="flex items-center gap-2 text-[12px] text-[#a0a0a8]">
-            <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+        {/* Rating e detalhes */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4 pt-4 border-t border-gray-100 text-xs sm:text-sm font-semibold text-gray-600">
+          <div className="flex items-center text-amber-500">
+            <Star className="w-4 h-4 fill-amber-500 mr-1" />
+            <span className="text-gray-500 font-normal">Avaliações</span>
+          </div>
+          <span className="text-gray-300">•</span>
+          <div className="flex items-center gap-1 text-gray-700">
+            <Clock className="w-4 h-4 text-gray-400" />
             <span>{timeRange}</span>
           </div>
           {addressLine && (
-            <div className="flex items-start gap-2 text-[12px] text-[#a0a0a8]">
-              <MapPin className="h-3.5 w-3.5 text-primary shrink-0 mt-px" />
-              <span className="leading-snug">{addressLine}</span>
-            </div>
+            <>
+              <span className="text-gray-300">•</span>
+              <div className="flex items-center gap-1 text-gray-700">
+                <MapPin className="w-4 h-4 text-gray-400" />
+                <span>{addressLine}</span>
+              </div>
+            </>
           )}
           {Number(store.minOrderValue) > 0 && (
-            <div className="flex items-center gap-2 text-[12px] text-[#a0a0a8]">
-              <span className="text-primary shrink-0 font-bold">$</span>
-              <span>Pedido mínimo <span className="text-white/70 font-medium">{currency(Number(store.minOrderValue))}</span></span>
-            </div>
+            <>
+              <span className="text-gray-300">•</span>
+              <span className="text-gray-700">
+                Pedido mínimo <span className="font-bold text-gray-900">{currency(Number(store.minOrderValue))}</span>
+              </span>
+            </>
           )}
+          <div className={`flex items-center gap-1 font-bold ${store.isOpen ? 'text-emerald-600' : 'text-red-500'}`}>
+            <span className={`h-2 w-2 rounded-full shrink-0 ${store.isOpen ? 'bg-emerald-500' : 'bg-red-500'}`} />
+            {store.isOpen ? 'Entrega Disponível' : 'Loja Fechada'}
+          </div>
         </div>
 
-        {/* Horários (expansível) */}
+        {/* Horários expansíveis */}
         {store.schedules.length > 0 && (
           <>
             <button
               onClick={() => setShowHours((v) => !v)}
-              className="flex items-center gap-1 mt-2 text-[11px] text-[#6e6e76] hover:text-[#a0a0a8] transition"
+              className="flex items-center gap-1 mt-2 text-[11px] text-gray-400 hover:text-gray-600 transition"
             >
               Ver horários de funcionamento
               <ChevronDown className={`h-3 w-3 transition-transform ${showHours ? 'rotate-180' : ''}`} />
             </button>
             {showHours && (
-              <div className="mt-2 rounded-xl bg-[#2c2c2e] p-3 space-y-1.5">
+              <div className="mt-2 rounded-xl bg-gray-50 border border-gray-100 p-3 space-y-1.5">
                 {store.schedules.map((s) => (
                   <div key={s.dayOfWeek} className="flex justify-between text-[12px]">
-                    <span className="font-medium text-white/70 w-24">{DAY_NAMES[s.dayOfWeek]}</span>
-                    <span className="text-[#a0a0a8]">{s.openTime} – {s.closeTime}</span>
+                    <span className="font-medium text-gray-700 w-24">{DAY_NAMES[s.dayOfWeek]}</span>
+                    <span className="text-gray-500">{s.openTime} – {s.closeTime}</span>
                   </div>
                 ))}
               </div>
@@ -178,6 +159,6 @@ export function StoreHeader({ store }: { store: StoreData }) {
           </>
         )}
       </div>
-    </div>
+    </header>
   )
 }
