@@ -45,6 +45,7 @@ export default function CheckoutPage() {
   const [district, setDistrict] = useState('')
   const [city, setCity] = useState('')
   const [zipCode, setZipCode] = useState('')
+  const [state, setState] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('')
   const [notes, setNotes] = useState('')
   const [couponCode, setCouponCode] = useState('')
@@ -94,6 +95,7 @@ export default function CheckoutPage() {
         setStreet(data.logradouro ?? '')
         setDistrict(data.bairro ?? '')
         setCity(data.localidade ?? '')
+        setState(data.uf ?? '')
       }
     } catch {
       setCepError('Não foi possível buscar o CEP. Preencha o endereço manualmente.')
@@ -212,6 +214,11 @@ export default function CheckoutPage() {
     setError('')
 
     if (!paymentMethod) { setError('Selecione uma forma de pagamento'); return }
+    const minOrder = Number(store?.minOrderValue ?? 0)
+    if (minOrder > 0 && cartSubtotal < minOrder) {
+      setError(`Pedido mínimo de ${currency(minOrder)}`)
+      return
+    }
     if (orderType === 'DELIVERY' && (!street || !number || !district || !city)) {
       setError('Preencha o endereço de entrega')
       return
@@ -236,7 +243,7 @@ export default function CheckoutPage() {
           notes: item.notes,
           addons: item.addons,
         })),
-        address: orderType === 'DELIVERY' ? { street, number, complement, district, city, state: 'SP', zipCode } : undefined,
+        address: orderType === 'DELIVERY' ? { street, number, complement, district, city, state, zipCode } : undefined,
         paymentMethod,
         notes,
         couponCode: couponCode.trim() || undefined,

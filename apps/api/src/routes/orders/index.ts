@@ -89,6 +89,20 @@ const orderRoutes: FastifyPluginAsync = async (app) => {
       app.prisma.store.update({ where: { id: store.id }, data: { isOpen: true } }).catch(() => {})
     }
 
+    // Valida pedido mínimo
+    const minOrder = Number(store.minOrderValue)
+    const subtotalPreview = d.items.reduce((sum, item) => {
+      const addonsTotal = item.addons.reduce((a, b) => a + b.price, 0)
+      return sum + (item.price + addonsTotal) * item.quantity
+    }, 0)
+    if (minOrder > 0 && subtotalPreview < minOrder) {
+      return reply.status(422).send({
+        error: 'Min Order',
+        message: `Pedido mínimo de R$ ${minOrder.toFixed(2).replace('.', ',')}`,
+        statusCode: 422,
+      })
+    }
+
     // Valida endereço para delivery
     if (d.type === 'DELIVERY' && !d.address) {
       return reply.status(400).send({ error: 'Validation Error', message: 'Endereço obrigatório para delivery', statusCode: 400 })
@@ -271,7 +285,7 @@ const orderRoutes: FastifyPluginAsync = async (app) => {
           customer: asaasCustomer.id,
           value: total,
           dueDate: dueDateStr,
-          description: `Pedido #${orderNumber} — ${store.name}`,
+          description: `Pedido #${createdOrder.orderNumber} — ${store.name}`,
           externalReference: createdOrder.id,
         })
 
