@@ -20,8 +20,6 @@ const superAdminUsersRoutes: FastifyPluginAsync = async (app) => {
     }
     if (role) where.role = role
 
-    const rawTotal = await app.prisma.user.count()
-
     const [users, total] = await Promise.all([
       app.prisma.user.findMany({
         where,
@@ -36,9 +34,7 @@ const superAdminUsersRoutes: FastifyPluginAsync = async (app) => {
       app.prisma.user.count({ where }),
     ])
 
-    app.log.info({ rawTotal, filteredTotal: total, returned: users.length, skip, take }, 'super-admin/users query')
-
-    return reply.send({ data: users, total, rawTotal, page: Number(page), totalPages: Math.ceil(total / take) })
+    return reply.send({ data: users, total, page: Number(page), totalPages: Math.ceil(total / take) })
   })
 
   // PATCH /super-admin/users/:id/toggle-active — ativar/desativar usuário
