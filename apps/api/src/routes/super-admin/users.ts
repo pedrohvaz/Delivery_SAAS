@@ -38,7 +38,7 @@ const superAdminUsersRoutes: FastifyPluginAsync = async (app) => {
 
     app.log.info({ rawTotal, filteredTotal: total, returned: users.length, skip, take }, 'super-admin/users query')
 
-    return reply.send({ data: users, total, page: Number(page), totalPages: Math.ceil(total / take) })
+    return reply.send({ data: users, total, rawTotal, page: Number(page), totalPages: Math.ceil(total / take) })
   })
 
   // PATCH /super-admin/users/:id/toggle-active — ativar/desativar usuário

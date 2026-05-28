@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "pnpm install --frozen-lockfile && pnpm turbo run build --filter=@delivery/database..."
+buildCommand = "pnpm install --frozen-lockfile && pnpm turbo run build --filter=@delivery/database... && pnpm exec prisma migrate deploy --schema=packages/database/prisma/schema.prisma"
 
 [deploy]
 startCommand = "pnpm --filter @delivery/api start"
