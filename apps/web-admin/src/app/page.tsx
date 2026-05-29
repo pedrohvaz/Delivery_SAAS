@@ -1,496 +1,527 @@
 'use client'
 
-import Link from 'next/link'
-import { useState } from 'react'
-import {
-  Bike, ShoppingBag, QrCode, MessageCircle, BarChart3, CreditCard, Tag, Gift,
-  Star, Check, ArrowRight, Smartphone, Clock, Zap, Trophy, Users, ChevronDown,
-  Sparkles, Rocket, ShieldCheck,
-} from 'lucide-react'
-import { usePlans } from '@/hooks/use-plans'
+import { useState, useEffect } from "react";
+import Navbar from "@/components/landing/Navbar";
+import Features from "@/components/landing/Features";
+import Segments from "@/components/landing/Segments";
+import ActiveSimulateDemo from "@/components/landing/ActiveSimulateDemo";
+import AutomationShowcase from "@/components/landing/AutomationShowcase";
+import Planos from "@/components/landing/Planos";
+import FloatingWhatsapp from "@/components/landing/FloatingWhatsapp";
+import { BadgeCheck, ArrowRight, ShieldAlert, CheckCircle2, XCircle, Home } from "lucide-react";
+import { motion } from "motion/react";
 
-const FEATURES = [
-  { icon: ShoppingBag, title: 'Cardápio Digital', desc: 'Vitrine online lindona, com fotos, complementos e categorias ilimitadas.', color: 'from-orange-400 to-pink-500' },
-  { icon: Bike, title: 'Pedidos em Tempo Real', desc: 'Receba pedidos via WhatsApp, app e link próprio. Tudo em uma tela só.', color: 'from-purple-400 to-indigo-500' },
-  { icon: QrCode, title: 'QR Code de Mesa', desc: 'Cliente escaneia, pede e paga sem garçom. Aumente o ticket médio.', color: 'from-pink-400 to-rose-500' },
-  { icon: CreditCard, title: 'Pagamento Online', desc: 'PIX automático com Asaas e Mercado Pago. Receba antes mesmo de produzir.', color: 'from-green-400 to-emerald-500' },
-  { icon: MessageCircle, title: 'WhatsApp Automático', desc: 'Cliente recebe atualização em cada etapa do pedido. Sem você levantar o dedo.', color: 'from-emerald-400 to-teal-500' },
-  { icon: BarChart3, title: 'Relatórios Completos', desc: 'Saiba o que vende, quando vende e para quem. Decisões com dados, não achismos.', color: 'from-blue-400 to-cyan-500' },
-  { icon: Tag, title: 'Cupons e Promoções', desc: 'Crie cupons percentuais, fixos ou frete grátis. Fidelize com cashback.', color: 'from-yellow-400 to-orange-500' },
-  { icon: Gift, title: 'Programa de Fidelidade', desc: 'Cliente acumula pontos e troca por descontos. Quem come, volta.', color: 'from-violet-400 to-purple-500' },
-  { icon: Trophy, title: 'Sorteios Integrados', desc: 'Sorteios entre clientes para bombar suas redes. Tudo automático.', color: 'from-amber-400 to-yellow-500' },
-]
+export default function App() {
+  const [currentPage, setCurrentPage] = useState<"home" | "planos" | "simulador">("home");
 
-const STATS = [
-  { value: '24/7', label: 'Disponível' },
-  { value: '<5min', label: 'Para começar' },
-  { value: '0%', label: 'Taxa por pedido' },
-  { value: '∞', label: 'Pedidos por mês' },
-]
+  const handleNavigate = (page: "home" | "planos" | "simulador", section?: string) => {
+    setCurrentPage(page);
+    window.location.hash = page === "planos" ? "#planos-page" : page === "simulador" ? "#simulador-page" : section ? `#${section}` : "";
+    
+    if (page === "home") {
+      if (section) {
+        setTimeout(() => {
+          const el = document.getElementById(section);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 120);
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
-// Planos vêm da API (/plans). Fallback abaixo só caso a API ainda não tenha planos cadastrados.
-const FALLBACK_PLANS = [
-  { slug: 'gratis', name: 'Grátis', tagline: 'Pra começar sem medo', monthlyPrice: 0,
-    color: 'from-gray-400 to-gray-500', highlight: false, badge: null,
-    features: ['Cardápio digital ilimitado', 'Até 50 pedidos por mês', '1 usuário', 'PIX manual', 'Relatórios básicos'] },
-  { slug: 'pro', name: 'Pro', tagline: 'Pra quem quer crescer', monthlyPrice: 79,
-    color: 'from-orange-500 to-pink-500', highlight: true, badge: 'MAIS POPULAR',
-    features: ['Pedidos ilimitados', 'WhatsApp automatizado', 'PIX automático', 'Cupons + cashback', 'PDV completo', '5 usuários'] },
-  { slug: 'elite', name: 'Elite', tagline: 'Pra dominar o mercado', monthlyPrice: 199,
-    color: 'from-purple-500 to-indigo-600', highlight: false, badge: null,
-    features: ['Tudo do Pro', 'Programa de fidelidade', 'Sorteios', 'QR Code mesas', 'IA atendente', 'Domínio próprio', 'Multi-lojas'] },
-]
+  // Hash-based client routing to support back-button, bookmarking, and deep links
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash;
+      if (hash === "#planos-page") {
+        setCurrentPage("planos");
+        window.scrollTo({ top: 0 });
+      } else if (hash === "#simulador-page") {
+        setCurrentPage("simulador");
+        window.scrollTo({ top: 0 });
+      } else {
+        setCurrentPage("home");
+        if (hash) {
+          const id = hash.replace("#", "");
+          const el = document.getElementById(id);
+          if (el) {
+            setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 120);
+          }
+        }
+      }
+    };
 
-const FAQ = [
-  {
-    q: 'Preciso pagar comissão por pedido?',
-    a: 'Não. Você paga apenas a mensalidade da plataforma. 100% das vendas são suas — diferente do iFood que cobra 12-30% de cada pedido.',
-  },
-  {
-    q: 'Funciona para qualquer tipo de negócio?',
-    a: 'Sim. Pizzarias, hamburguerias, açaís, doçarias, restaurantes, lanchonetes, mercados, farmácias — qualquer negócio que vende com delivery ou retirada.',
-  },
-  {
-    q: 'Quanto tempo leva para começar?',
-    a: 'Menos de 5 minutos. Você se cadastra, monta seu cardápio (pode importar pelo WhatsApp), configura áreas de entrega e já está vendendo.',
-  },
-  {
-    q: 'Posso aceitar pagamento online?',
-    a: 'Sim! Integramos com Asaas e Mercado Pago para PIX automático. O cliente paga e o dinheiro cai direto na sua conta.',
-  },
-  {
-    q: 'E o WhatsApp funciona como?',
-    a: 'Conectamos com a Evolution API para automatizar mensagens: pedido recebido, em produção, saiu pra entrega, entregue. Tudo sem você digitar nada.',
-  },
-  {
-    q: 'Tem teste grátis?',
-    a: 'Sim, primeira semana é grátis. Sem cartão de crédito. Se não gostar, é só não pagar.',
-  },
-]
+    window.addEventListener("hashchange", handleHash);
+    handleHash(); // Run on mount
 
-export default function LandingPage() {
-  const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const { data: apiPlans } = usePlans()
-  const plans = (apiPlans && apiPlans.length > 0 ? apiPlans : FALLBACK_PLANS) as Array<typeof FALLBACK_PLANS[number] & { stripePriceId?: string | null }>
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
+    <div className="min-h-screen bg-[#F8F9FA] text-[#111111] flex flex-col selection:bg-[#FF6B00] selection:text-white">
+      {/* Navigation Header */}
+      <Navbar currentPage={currentPage} onNavigate={handleNavigate} />
 
-      {/* ── HEADER ── */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-gray-100">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white text-lg shadow-lg">🛵</div>
-            <span className="font-black text-lg bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">DeliveryFlow</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <a href="#planos" className="text-sm font-semibold text-gray-700 hover:text-orange-500 transition hidden sm:block">Planos</a>
-            <Link href="/login" className="text-sm font-semibold text-gray-700 hover:text-orange-500 transition hidden sm:block">Entrar</Link>
-            <Link href="/register" className="rounded-full bg-gradient-to-r from-orange-500 to-pink-500 px-5 py-2.5 text-sm font-bold text-white hover:shadow-lg hover:shadow-orange-500/40 transition-all hover:-translate-y-0.5">
-              Começar grátis
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* ── HERO ── */}
-      <section className="relative px-4 sm:px-6 pt-12 pb-24 sm:pt-20 sm:pb-32 overflow-hidden">
-        {/* Background blobs */}
-        <div className="absolute top-0 left-1/4 h-96 w-96 rounded-full bg-orange-300/30 blur-3xl -z-10 animate-pulse" />
-        <div className="absolute top-20 right-1/4 h-96 w-96 rounded-full bg-pink-300/30 blur-3xl -z-10 animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute bottom-0 left-1/2 h-96 w-96 rounded-full bg-purple-300/20 blur-3xl -z-10" />
-
-        <div className="mx-auto max-w-5xl text-center space-y-8">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500/10 to-pink-500/10 border border-orange-500/20 px-4 py-1.5 text-xs font-bold text-orange-600">
-            <Sparkles className="h-3.5 w-3.5" />
-            7 DIAS GRÁTIS · SEM CARTÃO DE CRÉDITO
-          </div>
-
-          {/* Title */}
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05]">
-            Seu delivery
-            <br />
-            <span className="bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
-              sem comissão
-            </span>
-            <br />
-            por pedido.
-          </h1>
-
-          <p className="mx-auto max-w-2xl text-lg sm:text-xl text-gray-600 leading-relaxed">
-            Cardápio digital, PDV, controle de mesas com QR Code, WhatsApp automático e relatórios.
-            <strong className="text-gray-900"> Tudo num lugar só</strong>, e por menos do que o iFood te cobra em <strong className="text-gray-900">um único pedido</strong>.
-          </p>
-
-          {/* CTAs */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-            <Link href="/register" className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 px-8 py-4 text-base font-bold text-white shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:shadow-orange-500/40 transition-all hover:-translate-y-0.5">
-              Começar grátis agora
-              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <a href="#features" className="inline-flex items-center justify-center gap-2 rounded-full bg-white border-2 border-gray-200 px-8 py-4 text-base font-bold text-gray-900 hover:border-orange-500 hover:text-orange-500 transition">
-              Ver funcionalidades
-            </a>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-12 max-w-3xl mx-auto">
-            {STATS.map((s) => (
-              <div key={s.label} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 hover:shadow-lg hover:-translate-y-1 transition-all">
-                <div className="text-3xl sm:text-4xl font-black bg-gradient-to-br from-orange-500 to-pink-500 bg-clip-text text-transparent">{s.value}</div>
-                <div className="text-xs font-medium text-gray-500 mt-1 uppercase tracking-wide">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── COMPARATIVO ── */}
-      <section className="px-4 sm:px-6 py-20 bg-gradient-to-br from-gray-900 to-gray-800 text-white">
-        <div className="mx-auto max-w-5xl space-y-12">
-          <div className="text-center space-y-3">
-            <h2 className="text-3xl sm:text-5xl font-black">
-              Por que pagar <span className="text-red-400 line-through">12-30% de comissão</span>?
-            </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              A diferença entre marketplaces e ter sua própria operação está no seu bolso.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-6">
-            {/* iFood */}
-            <div className="rounded-3xl bg-red-900/20 border border-red-500/30 p-8 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-red-500/20 flex items-center justify-center text-xl">📉</div>
-                <h3 className="text-xl font-bold text-red-300">Marketplaces tradicionais</h3>
-              </div>
-              <ul className="space-y-3 text-gray-300">
-                {['12% a 30% de comissão por pedido', 'Cliente é deles, não seu', 'Sem WhatsApp automático', 'Sem PDV nem caixa', 'Você compete com 50 lojas iguais', 'Anúncios pagos pra aparecer'].map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-sm">
-                    <span className="text-red-400 mt-0.5">✕</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* DeliveryFlow */}
-            <div className="rounded-3xl bg-gradient-to-br from-orange-500/20 to-pink-500/20 border border-orange-500/40 p-8 space-y-4 relative overflow-hidden">
-              <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 blur-3xl opacity-30" />
-              <div className="flex items-center gap-3 relative">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-xl">🚀</div>
-                <h3 className="text-xl font-bold text-orange-300">DeliveryFlow</h3>
-              </div>
-              <ul className="space-y-3 text-gray-200 relative">
-                {[
-                  'Mensalidade fixa, sem % por pedido',
-                  'Seus clientes, seu cadastro, seu CRM',
-                  'WhatsApp 100% automatizado',
-                  'PDV, caixa, fluxo financeiro completo',
-                  'Sua marca, sua loja, sua identidade',
-                  'Link próprio que você divulga onde quiser',
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-400 shrink-0 mt-0.5" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FEATURES ── */}
-      <section id="features" className="px-4 sm:px-6 py-24">
-        <div className="mx-auto max-w-7xl space-y-16">
-          <div className="text-center space-y-4 max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 px-4 py-1.5 text-xs font-bold text-orange-600">
-              <Zap className="h-3.5 w-3.5" />
-              TUDO QUE VOCÊ PRECISA
-            </div>
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight">
-              Mais que um sistema.
-              <br />
-              <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-                Uma operação completa.
-              </span>
-            </h2>
-            <p className="text-lg text-gray-600">
-              Cada funcionalidade pensada pra você vender mais, gastar menos e dormir tranquilo.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="group relative rounded-3xl bg-white border border-gray-100 p-6 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-                <div className={`absolute -top-12 -right-12 h-24 w-24 rounded-full bg-gradient-to-br ${f.color} opacity-10 group-hover:opacity-20 blur-2xl transition-opacity`} />
-                <div className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${f.color} flex items-center justify-center mb-4 shadow-lg`}>
-                  <f.icon className="h-6 w-6 text-white" />
+      {/* Conditionally Render Current Page */}
+      {currentPage === "home" ? (
+        <motion.div
+          key="home-page"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="flex-1"
+        >
+          {/* Hero Section */}
+          <section className="bg-gradient-to-b from-white to-[#FFF9F5] pt-12 pb-16 px-6 md:px-12 border-b border-[#E0E0E0] overflow-hidden relative">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              {/* Hero Content (7 columns) */}
+              <div className="lg:col-span-7 flex flex-col gap-6 text-left relative z-10">
+                <div className="inline-flex items-center gap-1.5 self-start bg-white border border-[#FF6B00]/20 rounded-full px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-[#FF6B00] shadow-sm">
+                  <BadgeCheck className="w-3.5 h-3.5" /> CARDÁPIO ONLINE & AUTOMATO
                 </div>
-                <h3 className="font-bold text-lg mb-2">{f.title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* ── DEMO SECTION ── */}
-      <section className="px-4 sm:px-6 py-24 bg-gradient-to-br from-orange-50 to-pink-50">
-        <div className="mx-auto max-w-6xl grid lg:grid-cols-2 gap-16 items-center">
-          <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white border border-orange-200 px-4 py-1.5 text-xs font-bold text-orange-600">
-              <Smartphone className="h-3.5 w-3.5" />
-              TESTADO EM CELULAR E COMPUTADOR
-            </div>
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-              Funciona em qualquer
-              <br />
-              <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">tela, qualquer lugar.</span>
-            </h2>
-            <p className="text-lg text-gray-700 leading-relaxed">
-              Atenda pedidos do balcão, da cozinha, da entrega ou do escritório.
-              Tudo sincronizado em tempo real entre todos os dispositivos.
-            </p>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { icon: Clock, t: 'Tempo real' },
-                { icon: ShieldCheck, t: '100% seguro' },
-                { icon: Rocket, t: 'Super rápido' },
-                { icon: Users, t: 'Multi-usuário' },
-              ].map(({ icon: Icon, t }) => (
-                <div key={t} className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-                  <Icon className="h-5 w-5 text-orange-500" /> {t}
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black font-display tracking-tight text-[#111111] leading-[1.05]">
+                  Chega de pagar comissão pro <span className="text-[#FF6B00] relative italic inline-block">iFood</span>
+                </h1>
+
+                <p className="text-[#444444] text-sm md:text-base leading-relaxed max-w-xl">
+                  Crie o seu próprio cardápio digital integrado ao WhatsApp de forma automatizada. Receba pedidos direto no seu celular, organize sua expedição e garanta <strong className="text-[#111111]">taxa 0% de comissão</strong> sobre seu faturamento.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3 mt-2">
+                  <button
+                    onClick={() => handleNavigate("planos")}
+                    className="h-12 px-6 rounded-xl text-xs font-bold uppercase tracking-wider bg-[#FF6B00] hover:bg-[#111111] text-white transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-[#FF6B00]/20"
+                  >
+                    Ver Planos de Assinatura
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleNavigate("simulador")}
+                    className="h-12 px-6 rounded-xl text-xs font-bold uppercase tracking-wider bg-white border border-[#E0E0E0] hover:border-[#FF6B00] text-[#111111] hover:text-[#FF6B00] transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    Testar Simulador Interativo
+                  </button>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Mock device */}
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-pink-500 rounded-3xl blur-2xl opacity-30" />
-            <div className="relative rounded-3xl bg-gray-900 p-2 shadow-2xl">
-              <div className="rounded-2xl bg-white aspect-[9/16] sm:aspect-[3/4] overflow-hidden p-4 space-y-3">
-                <div className="h-2 w-16 mx-auto rounded-full bg-gray-300" />
-                <div className="h-12 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">🛵 Sua Loja</div>
-                {[1,2,3,4].map(i => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-orange-300 to-pink-300" />
-                    <div className="flex-1 space-y-1">
-                      <div className="h-2.5 w-3/4 rounded-full bg-gray-300" />
-                      <div className="h-2 w-1/2 rounded-full bg-gray-200" />
-                    </div>
-                    <div className="h-6 w-12 rounded-full bg-orange-100 text-orange-600 text-xs font-bold flex items-center justify-center">R$ 29</div>
+                {/* Quick trust cues */}
+                <div className="flex flex-wrap items-center gap-y-2 gap-x-5 mt-4 pt-4 border-t border-[#E0E0E0]/60 text-xs text-[#555555]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00]" />
+                    <span>Zero taxas escondidas</span>
                   </div>
-                ))}
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00]" />
+                    <span>Pronto em menos de 5 min</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00]" />
+                    <span>Suporte via Whats</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hero Device Mockup Asset (5 columns) */}
+              <div className="lg:col-span-5 relative mt-8 lg:mt-0 flex justify-center">
+                {/* Ambient glows */}
+                <div className="absolute -inset-4 bg-[#FF6B00]/5 blur-2xl rounded-full pointer-events-none" />
+
+                {/* Stacked layered card mockups */}
+                <div className="relative w-full max-w-[340px] aspect-[10/11] bg-white border border-[#E0E0E0] rounded-2xl p-4 shadow-xl overflow-hidden group">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-2.5 mb-3.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                    </div>
+                    <span className="text-[10px] font-mono text-neutral-400">bylink.delivery/seuestabelecimento</span>
+                  </div>
+
+                  {/* Main Illustration Photo (Burger with high contrast) */}
+                  <div className="w-full h-36 rounded-xl bg-neutral-100 overflow-hidden relative mb-3">
+                    <img
+                      src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=80"
+                      alt="Hambúrguer Gourmet"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute top-2.5 right-2.5 bg-[#FF6B00] text-white text-[9px] font-bold px-2 py-0.5 rounded-md font-mono">
+                      TAXA ZERO%
+                    </span>
+                  </div>
+
+                  {/* Mock items list */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center p-2 bg-[#F8F9FA] rounded-lg border border-[#E0E0E0]/60">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-[#FF6B00]/10 text-[#FF6B00] font-mono text-[10px] font-bold flex items-center justify-center">1x</span>
+                        <span className="text-xs font-bold text-[#111111]">Hamburgão Duplo Crisp</span>
+                      </div>
+                      <span className="font-mono text-xs font-bold text-[#111111]">R$ 32,90</span>
+                    </div>
+
+                    <div className="flex justify-between items-center p-2 bg-[#F8F9FA] rounded-lg border border-[#E0E0E0]/60">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-[#FF6B00]/10 text-[#FF6B00] font-mono text-[10px] font-bold flex items-center justify-center">1x</span>
+                        <span className="text-xs font-bold text-[#111111]">Batata Rustica Cheddar</span>
+                      </div>
+                      <span className="font-mono text-xs font-bold text-[#111111]">R$ 18,00</span>
+                    </div>
+                  </div>
+
+                  {/* Simulated Customer Order Success feedback */}
+                  <div className="absolute bottom-3 left-3 right-3 bg-neutral-900 border border-white/5 rounded-xl p-3 shadow-lg flex items-center gap-3 animate-pulse">
+                    <div className="w-10 h-10 rounded-full bg-[#25D366]/10 flex items-center justify-center text-[#25D366]">
+                      <CheckCircle2 className="w-5 h-5 stroke-[2.5]" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider font-mono">Status do Pedido</p>
+                      <p className="text-xs font-bold text-white leading-tight">Enviado com sucesso!</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      {/* ── SOCIAL PROOF / TESTIMONIAL ── */}
-      <section className="px-4 sm:px-6 py-24">
-        <div className="mx-auto max-w-4xl text-center space-y-12">
-          <div className="space-y-4">
-            <div className="flex justify-center gap-1">
-              {[1,2,3,4,5].map((i) => <Star key={i} className="h-6 w-6 fill-yellow-400 text-yellow-400" />)}
+          {/* Stats Quick strip banner */}
+          <section className="bg-white border-b border-[#E0E0E0] py-6 px-6">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6 text-center divide-y sm:divide-y-0 sm:divide-x divide-[#E0E0E0]/60">
+              <div className="py-2">
+                <span className="block text-2xl lg:text-3xl font-black font-mono text-[#FF6B00]">0%</span>
+                <span className="block text-xs font-bold text-[#555555] uppercase tracking-wider mt-1">
+                  Taxa de comissão por pedido
+                </span>
+              </div>
+              <div className="py-2">
+                <span className="block text-2xl lg:text-3xl font-black font-mono text-[#111111]">24/7</span>
+                <span className="block text-xs font-bold text-[#555555] uppercase tracking-wider mt-1">
+                  Disponibilidade permanente
+                </span>
+              </div>
+              <div className="py-2">
+                <span className="block text-2xl lg:text-3xl font-black font-mono text-[#111111]">&lt; 5 min</span>
+                <span className="block text-xs font-bold text-[#555555] uppercase tracking-wider mt-1">
+                  Tempo médio de configuração
+                </span>
+              </div>
             </div>
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight">
-              Lojistas que dormem
-              <br />
-              <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">tranquilos</span>
-            </h2>
-          </div>
+          </section>
 
-          <blockquote className="text-xl sm:text-2xl font-medium text-gray-700 leading-relaxed">
-            "Saí do iFood e em 2 meses já tinha pago o ano todo da plataforma só com o que eu economizei de comissão.
-            Meu lucro <strong>dobrou</strong>."
-          </blockquote>
+          {/* Interactive Ordering simulation wrapper teaser */}
+          <section id="simulador-teaser" className="py-20 px-6 md:px-12 border-b border-[#E0E0E0] bg-gradient-to-br from-neutral-900 to-neutral-950 text-white relative overflow-hidden select-none">
+            {/* Ambient glows */}
+            <div className="absolute -right-40 -top-40 w-96 h-96 bg-[#FF6B00]/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -left-40 -bottom-40 w-96 h-96 bg-purple-600/5 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="flex items-center justify-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-400 to-pink-400 flex items-center justify-center text-white font-bold text-lg">M</div>
-            <div className="text-left">
-              <div className="font-bold">Marcos Silva</div>
-              <div className="text-sm text-gray-500">Pizzaria do Marcão · São Paulo</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── PRICING ── */}
-      <section id="planos" className="px-4 sm:px-6 py-24">
-        <div className="mx-auto max-w-7xl space-y-16">
-          <div className="text-center space-y-4 max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 px-4 py-1.5 text-xs font-bold text-orange-600">
-              <Sparkles className="h-3.5 w-3.5" />
-              ESCOLHA SEU PLANO
-            </div>
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight">
-              Comece grátis.
-              <br />
-              <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-                Cresça no seu ritmo.
+            <div className="max-w-4xl mx-auto text-center flex flex-col items-center gap-6 relative z-10">
+              <span className="text-xs font-bold uppercase tracking-widest text-[#FF6B00] bg-white/5 px-3.5 py-1.5 rounded-full inline-block border border-white/10 font-mono">
+                📱 SIMULADOR EM TEMPO REAL
               </span>
-            </h2>
-            <p className="text-lg text-gray-600">
-              Sem fidelidade. Cancele quando quiser. Mude de plano a qualquer momento.
-            </p>
-          </div>
+              <h2 className="text-3xl md:text-5xl font-black font-display tracking-tight text-white leading-tight">
+                Veja o fluxo do cliente <span className="text-[#FF6B00] italic">na prática</span>
+              </h2>
+              <p className="text-neutral-400 text-sm md:text-base max-w-xl leading-relaxed">
+                Quer ver como o seu cliente envia os pedidos e como eles chegam em tempo real sem intermediários? Criamos uma página dedicada para você simular toda a jornada de compra de forma interativa.
+              </p>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {plans.map((plan) => {
-              const isFree = Number(plan.monthlyPrice) === 0
-              const ctaText = isFree ? 'Começar grátis' : plan.highlight ? `Assinar ${plan.name}` : 'Escolher plano'
-              return (
-                <div
-                  key={plan.slug}
-                  className={`relative rounded-3xl p-8 flex flex-col transition-all duration-300 ${
-                    plan.highlight
-                      ? 'bg-gradient-to-br from-orange-500 to-pink-500 text-white shadow-2xl shadow-orange-500/30 scale-105 lg:scale-110 ring-4 ring-orange-500/20'
-                      : 'bg-white border-2 border-gray-100 hover:border-orange-300 hover:-translate-y-1 hover:shadow-xl'
-                  }`}
+              <div className="mt-4">
+                <button
+                  onClick={() => handleNavigate("simulador")}
+                  className="h-12 px-8 rounded-xl text-xs font-black uppercase tracking-widest bg-[#FF6B00] hover:bg-white hover:text-neutral-900 text-white transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-[#FF6B00]/20"
                 >
-                  {plan.badge && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-yellow-400 px-4 py-1 text-xs font-black text-orange-900 shadow-lg">
-                      ⚡ {plan.badge}
-                    </div>
-                  )}
+                  Abrir Simulador Interativo
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
 
-                  <div className="space-y-2 mb-6">
-                    <h3 className={`text-2xl font-black ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
-                      {plan.name}
-                    </h3>
-                    <p className={`text-sm ${plan.highlight ? 'text-white/80' : 'text-gray-500'}`}>
-                      {plan.tagline}
+              {/* Steps display cards */}
+              <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3.5 w-full pt-10 border-t border-white/5 font-sans">
+                <div className="bg-white/5 p-3.5 rounded-xl border border-white/5 hover:border-white/10 transition-all text-left">
+                  <p className="text-xs font-bold text-white mb-1">🛒 1. Monte o Carrinho</p>
+                  <p className="text-[10px] text-neutral-400">Selecione hambúrgueres e adicionais da lanchonete simulada.</p>
+                </div>
+                <div className="bg-white/5 p-3.5 rounded-xl border border-white/5 hover:border-white/10 transition-all text-left">
+                  <p className="text-xs font-bold text-white mb-1">📋 2. Escolha a Entrega</p>
+                  <p className="text-[10px] text-neutral-400">Selecione entrega em domicílio ou balcão para retirada física.</p>
+                </div>
+                <div className="bg-white/5 p-3.5 rounded-xl border border-white/5 hover:border-white/10 transition-all text-left">
+                  <p className="text-xs font-bold text-white mb-1">🔑 3. Valide o PIX</p>
+                  <p className="text-[10px] text-neutral-400">Confirme a transação instantânea e ative o robô de validação.</p>
+                </div>
+                <div className="bg-white/5 p-3.5 rounded-xl border border-white/5 hover:border-white/10 transition-all text-left">
+                  <p className="text-xs font-bold text-white mb-1">💬 4. WhatsApp Direto</p>
+                  <p className="text-[10px] text-neutral-400">Assista à mensagem gerada exatamente como cai no estabelecimento.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Features bento list */}
+          <section id="funcionalidades" className="py-16 bg-white border-b border-[#E0E0E0] px-6 md:px-12 scroll-mt-20">
+            <div className="max-w-7xl mx-auto">
+              <Features />
+            </div>
+          </section>
+
+          {/* WhatsApp Automation Showcase Section */}
+          <AutomationShowcase />
+
+          {/* ByLink vs Marketplace Confrontation section */}
+          <section id="comparativo" className="py-16 px-6 md:px-12 bg-neutral-950 border-b border-black text-white overflow-hidden scroll-mt-20">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-12">
+                <span className="text-xs font-bold uppercase tracking-widest text-[#FF6B00] bg-white/5 border border-white/5 px-3 py-1.5 rounded-full inline-block font-mono">
+                  Economia Real
+                </span>
+                <h2 className="text-3xl md:text-4xl font-extrabold font-display tracking-tight text-white mt-3">
+                  Quem lucra de verdade com o seu produto?
+                </h2>
+                <p className="text-neutral-400 text-sm mt-2">
+                  Compare as condições reais de faturamento operando com marketplaces convencionais em oposição ao seu canal direto ByLink.
+                </p>
+              </div>
+
+              {/* Table Container holding clean grid rows */}
+              <div className="border border-neutral-800 rounded-2xl overflow-hidden bg-neutral-900/40">
+                {/* Headers row */}
+                <div className="grid grid-cols-12 bg-neutral-900/80 p-4 border-b border-neutral-800 font-display text-xs font-extrabold uppercase tracking-wider">
+                  <div className="col-span-6 text-neutral-400">Comparativo Operacional</div>
+                  <div className="col-span-3 text-red-400">Marketplaces (iFood)</div>
+                  <div className="col-span-3 text-[#FF6B00]">ByLink Delivery</div>
+                </div>
+
+                {/* Row 1 */}
+                <div className="grid grid-cols-12 p-4 border-b border-neutral-800 text-xs items-center">
+                  <div className="col-span-6">
+                    <p className="font-bold text-white">Comissão sobre pedido</p>
+                    <p className="text-neutral-500 text-[10px] mt-0.5">Dinheiro retirado de cada entrega feita.</p>
+                  </div>
+                  <div className="col-span-3 text-red-400 font-bold font-mono">12% a 27% por pedido</div>
+                  <div className="col-span-3 text-green-400 font-bold font-mono flex items-center gap-1">
+                    <CheckCircle2 className="w-4 h-4 text-green-400" /> 0% (Taxa ZERO)
+                  </div>
+                </div>
+
+                {/* Row 2 */}
+                <div className="grid grid-cols-12 p-4 border-b border-neutral-800 text-xs items-center">
+                  <div className="col-span-6">
+                    <p className="font-bold text-white">Domínio dos Clientes</p>
+                    <p className="text-neutral-500 text-[10px] mt-0.5">Acesso ao contato e whatsapp para ofertas futuras.</p>
+                  </div>
+                  <div className="col-span-3 text-neutral-400 font-semibold flex items-center gap-1.5">
+                    <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" /> Bloqueado (Os dados são deles)
+                  </div>
+                  <div className="col-span-3 text-green-400 font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" /> Liberado (A base é 100% sua)
+                  </div>
+                </div>
+
+                {/* Row 3 */}
+                <div className="grid grid-cols-12 p-4 border-b border-neutral-800 text-xs items-center">
+                  <div className="col-span-6">
+                    <p className="font-bold text-white">Validação do Pix</p>
+                    <p className="text-neutral-500 text-[10px] mt-0.5">Como você recebe pagamentos eletrônicos.</p>
+                  </div>
+                  <div className="col-span-3 text-neutral-400">Demorado / Taxas adicionais</div>
+                  <div className="col-span-3 text-green-400 font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-green-400 animate-pulse" /> Automático e cai na hora
+                  </div>
+                </div>
+
+                {/* Row 4 */}
+                <div className="grid grid-cols-12 p-4 text-xs items-center">
+                  <div className="col-span-6">
+                    <p className="font-bold text-white">Relacionamento & Fidelidade</p>
+                    <p className="text-neutral-500 text-[10px] mt-0.5">Ações para reatar contatos sumidos.</p>
+                  </div>
+                  <div className="col-span-3 text-neutral-400">Inexistente (Sempre disputando atenção)</div>
+                  <div className="col-span-3 text-green-400 font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-green-400" /> CRM integrado com WhatsApp
+                  </div>
+                </div>
+              </div>
+
+              {/* Core conclusion warning badge */}
+              <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 bg-neutral-900 border border-neutral-800 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-red-400/10 flex items-center justify-center text-red-400 flex-shrink-0">
+                    <ShieldAlert className="w-5 h-5 stroke-[2.3]" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs font-bold text-white">Contas rápidas no final do mês:</p>
+                    <p className="text-[11px] text-neutral-400 leading-normal">
+                      Faturando R$ 15.000,00 mensais, os marketplaces retêm cerca de <strong>R$ 3.000,00</strong> em comissões. Na ByLink, seu custo é fixo e irrisório.
                     </p>
                   </div>
-
-                  <div className="mb-6">
-                    <div className="flex items-baseline gap-1">
-                      <span className={`text-2xl font-bold ${plan.highlight ? 'text-white/80' : 'text-gray-500'}`}>R$</span>
-                      <span className={`text-6xl font-black ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
-                        {Number(plan.monthlyPrice).toFixed(0)}
-                      </span>
-                      <span className={`text-sm ${plan.highlight ? 'text-white/80' : 'text-gray-500'}`}>
-                        {isFree ? 'pra sempre' : '/mês'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/register?plan=${plan.slug}`}
-                    className={`block text-center rounded-2xl px-6 py-3.5 font-bold text-sm mb-6 transition-all ${
-                      plan.highlight
-                        ? 'bg-white text-orange-600 hover:shadow-lg hover:scale-105'
-                        : 'bg-gray-900 text-white hover:bg-gray-800 hover:shadow-lg'
-                    }`}
-                  >
-                    {ctaText}
-                  </Link>
-
-                  <ul className="space-y-3 flex-1">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className={`flex items-start gap-2 text-sm ${plan.highlight ? 'text-white/95' : 'text-gray-700'}`}>
-                        <div className={`mt-0.5 h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${
-                          plan.highlight ? 'bg-white/20' : 'bg-gradient-to-br ' + plan.color
-                        }`}>
-                          <Check className="h-3 w-3 text-white" />
-                        </div>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
-              )
-            })}
-          </div>
 
-          <p className="text-center text-sm text-gray-500">
-            💳 Aceitamos cartão e PIX · 🔒 Pagamento 100% seguro · 🚀 Ative na hora
-          </p>
-        </div>
-      </section>
+                <button
+                  onClick={() => handleNavigate("planos")}
+                  className="px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-[#FF6B00] hover:bg-white hover:text-[#111111] text-white transition-all whitespace-nowrap scroll-smooth cursor-pointer"
+                >
+                  Quero economizar agora
+                </button>
+              </div>
+            </div>
+          </section>
 
-      {/* ── FAQ ── */}
-      <section className="px-4 sm:px-6 py-24 bg-gray-50">
-        <div className="mx-auto max-w-3xl space-y-12">
-          <div className="text-center space-y-4">
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight">Dúvidas? Aqui!</h2>
-            <p className="text-lg text-gray-600">Tudo que você precisa saber antes de começar.</p>
-          </div>
-
-          <div className="space-y-3">
-            {FAQ.map((item, i) => (
+          {/* Segments gallery list */}
+          <section id="segmentos" className="py-16 px-6 md:px-12 border-b border-[#E0E0E0] scroll-mt-20">
+            <div className="max-w-7xl mx-auto">
+              <Segments />
+            </div>
+          </section>
+        </motion.div>
+      ) : currentPage === "simulador" ? (
+        /* Standalone Dedicated Simulator Page Container */
+        <motion.div
+          key="simulador-page"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="flex-1 bg-gradient-to-b from-white to-[#F8F9FA] py-12 px-6 md:px-12"
+        >
+          <div className="max-w-7xl mx-auto">
+            {/* Breadcrumb / Back button bar */}
+            <div className="flex items-center gap-2 mb-8 text-xs text-neutral-500">
               <button
-                key={i}
-                onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="w-full text-left rounded-2xl bg-white border border-gray-200 p-6 hover:border-orange-300 transition group"
+                onClick={() => handleNavigate("home")}
+                className="hover:text-[#FF6B00] transition-colors flex items-center gap-1 font-bold uppercase tracking-wider cursor-pointer font-sans"
               >
-                <div className="flex items-center justify-between gap-4">
-                  <span className="font-bold text-lg">{item.q}</span>
-                  <ChevronDown className={`h-5 w-5 text-orange-500 shrink-0 transition-transform ${openFaq === i ? 'rotate-180' : ''}`} />
-                </div>
-                {openFaq === i && (
-                  <p className="text-gray-600 mt-3 leading-relaxed">{item.a}</p>
-                )}
+                <Home className="w-3.5 h-3.5" />
+                Principal
               </button>
-            ))}
+              <span className="font-mono text-neutral-300">/</span>
+              <span className="text-neutral-800 font-bold uppercase tracking-wider font-sans">Simulador Interativo</span>
+            </div>
+
+            {/* Title / Description */}
+            <div className="flex flex-col items-center justify-center text-center max-w-3xl mx-auto mb-10">
+              <span className="text-xs font-bold uppercase tracking-widest text-[#FF6B00] bg-[#FFF5F0] px-3.5 py-1.5 rounded-full inline-block border border-[#FF6B00]/10 font-mono">
+                ⚡ TESTE DE CARDÁPIO COMPLETO
+              </span>
+              <h1 className="text-3xl md:text-5xl font-black font-display tracking-tight text-[#111111] mt-4 leading-tight">
+                Simulador de <span className="text-[#FF6B00] italic">Pedidos Sem Taxas</span>
+              </h1>
+              <p className="text-[#555555] text-sm md:text-base mt-2 max-w-xl font-sans leading-relaxed">
+                Adicione itens, complete os dados de entrega / balcão e pague via chave PIX para acionar em tempo real o fluxo integrado do WhatsApp, tudo sem taxas para o seu bolso!
+              </p>
+            </div>
+
+            <ActiveSimulateDemo />
+          </div>
+        </motion.div>
+      ) : (
+        /* Standalone Dedicated Plans Page Container */
+        <motion.div
+          key="planos-page"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="flex-1 bg-gradient-to-b from-white to-[#F8F9FA] py-12 px-6 md:px-12"
+        >
+          <div className="max-w-7xl mx-auto">
+            {/* Breadcrumb / Back button bar */}
+            <div className="flex items-center gap-2 mb-10 text-xs text-neutral-500">
+              <button
+                onClick={() => handleNavigate("home")}
+                className="hover:text-[#FF6B00] transition-colors flex items-center gap-1 font-bold uppercase tracking-wider cursor-pointer font-sans"
+              >
+                <Home className="w-3.5 h-3.5" />
+                Principal
+              </button>
+              <span className="font-mono text-neutral-300">/</span>
+              <span className="text-neutral-800 font-bold uppercase tracking-wider font-sans">Nossos Planos</span>
+            </div>
+
+            <Planos />
+          </div>
+        </motion.div>
+      )}
+
+      {/* Aesthetic pairing corporate Footer */}
+      <footer className="bg-white border-t border-[#E0E0E0] pt-12 pb-8 px-6 md:px-12 text-[#111111] mt-auto">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          <div className="text-left">
+            <p className="text-lg font-black tracking-tight mb-3 font-display">
+              ByLink<span className="text-[#FF6B00]">Delivery</span>
+            </p>
+            <p className="text-xs text-[#555555] leading-normal font-sans">
+              Ajudamos restaurantes, lanchonetes e micro-comércios a reconquistarem o controle de suas vendas e o relacionamento direto com seus clientes faturando livre de taxas abusivas.
+            </p>
+          </div>
+
+          <div className="text-left">
+            <h4 className="font-extrabold font-display text-xs uppercase tracking-widest mb-3.5 text-[#FF6B00]">
+              Empresa
+            </h4>
+            <ul className="space-y-2 text-xs text-[#555555] font-sans">
+              <li>
+                <button
+                  onClick={() => handleNavigate("home", "funcionalidades")}
+                  className="hover:text-[#FF6B00] transition-colors cursor-pointer"
+                >
+                  Funcionalidades
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleNavigate("home", "segmentos")}
+                  className="hover:text-[#FF6B00] transition-colors cursor-pointer"
+                >
+                  Nossos Segmentos
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleNavigate("planos")}
+                  className="hover:text-[#FF6B00] transition-colors cursor-pointer text-[#FF6B00] font-bold"
+                >
+                  Planos de Crescimento
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div className="text-left">
+            <h4 className="font-extrabold font-display text-xs uppercase tracking-widest mb-3.5 text-[#FF6B00]">
+              Contato
+            </h4>
+            <ul className="space-y-2 text-xs text-[#555555] font-mono">
+              <li>Suporte: <span className="text-[#111111] font-bold">suporte@bylink.com.br</span></li>
+              <li>WhatsApp: <span className="text-[#111111] font-bold">(11) 99999-9999</span></li>
+              <li>Atendimento: Seg a Sex, das 9h às 18h</li>
+            </ul>
+          </div>
+
+          <div className="text-left">
+            <h4 className="font-extrabold font-display text-xs uppercase tracking-widest mb-3.5 text-[#FF6B00]">
+              Sua Marca, Seu Lucro
+            </h4>
+            <p className="text-xs text-[#555555] leading-relaxed font-sans">
+              Assine nosso plano PRO e teste grátis todo o nosso ecossistema sem risco algum.
+            </p>
           </div>
         </div>
-      </section>
 
-      {/* ── FINAL CTA ── */}
-      <section className="relative px-4 sm:px-6 py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-pink-500" />
-        <div className="absolute top-0 left-1/4 h-96 w-96 rounded-full bg-yellow-300/30 blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 h-96 w-96 rounded-full bg-purple-500/30 blur-3xl" />
-
-        <div className="relative mx-auto max-w-3xl text-center text-white space-y-8">
-          <h2 className="text-4xl sm:text-6xl font-black tracking-tight">
-            Pronto para parar de pagar
-            <br />
-            comissão pro iFood?
-          </h2>
-          <p className="text-xl text-white/90">
-            Crie sua conta em menos de 5 minutos. Sem cartão de crédito. Sem letra miúda.
-          </p>
-          <Link href="/register" className="group inline-flex items-center justify-center gap-2 rounded-full bg-white text-orange-600 px-10 py-5 text-lg font-black hover:shadow-2xl hover:-translate-y-1 transition-all">
-            Começar grátis agora
-            <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
-          </Link>
-          <p className="text-sm text-white/70">
-            ⚡ Mais de 1.000 lojistas já mudaram de vida
-          </p>
-        </div>
-      </section>
-
-      {/* ── FOOTER ── */}
-      <footer className="px-4 sm:px-6 py-12 bg-gray-900 text-gray-400">
-        <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white">🛵</div>
-            <span className="font-black text-white">DeliveryFlow</span>
+        <div className="max-w-7xl mx-auto pt-6 border-t border-[#E0E0E0]/60 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-[#555555] font-mono">
+          <span>&copy; {new Date().getFullYear()} ByLink Delivery Ltda. CNPJ: 00.000.000/0001-00.</span>
+          <div className="flex gap-4">
+            <span className="hover:text-[#FF6B00] transition-colors">Privacidade</span>
+            <span>&bull;</span>
+            <span className="hover:text-[#FF6B00] transition-colors">Termos</span>
           </div>
-          <div className="flex gap-6 text-sm">
-            <a href="#features" className="hover:text-white transition">Funcionalidades</a>
-            <a href="#planos" className="hover:text-white transition">Planos</a>
-            <Link href="/login" className="hover:text-white transition">Entrar</Link>
-            <Link href="/register" className="hover:text-white transition">Cadastrar</Link>
-          </div>
-          <p className="text-xs">© {new Date().getFullYear()} DeliveryFlow. Todos os direitos reservados.</p>
-        </div>
-        <div className="mx-auto max-w-6xl mt-6 pt-6 border-t border-gray-800 text-center">
-          <p className="text-xs text-gray-500">
-            Produzido por{' '}
-            <span className="font-semibold bg-gradient-to-r from-orange-400 to-pink-400 bg-clip-text text-transparent">
-              Pedro Vaz
-            </span>
-          </p>
         </div>
       </footer>
+
+      {/* Floating Interactive Trigger */}
+      <FloatingWhatsapp />
     </div>
-  )
+  );
 }
