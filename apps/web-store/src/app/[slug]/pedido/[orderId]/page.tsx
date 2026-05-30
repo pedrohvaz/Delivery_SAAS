@@ -5,11 +5,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
+import Link from 'next/link'
 import { CheckCircle2, Clock, ChefHat, Bike, PackageCheck, XCircle, ArrowLeft, Star, Bell, BellOff } from 'lucide-react'
 import { api } from '@/lib/api'
 import { currency } from '@/lib/utils'
 import { cn } from '@delivery/ui'
 import { usePushNotifications } from '@/hooks/use-push-notifications'
+import { useCustomerAuth } from '@/store/customer-auth'
 
 interface OrderData {
   id: string
@@ -96,6 +98,84 @@ function ReviewWidget({ orderId }: { orderId: string }) {
           </button>
         </>
       )}
+    </div>
+  )
+}
+
+function CreateAccountPrompt({ slug }: { slug: string }) {
+  const isAuthenticated = useCustomerAuth((s) => s.isAuthenticated)
+  const register = useCustomerAuth((s) => s.register)
+  const [prefill, setPrefill] = useState<{ name: string; phone: string } | null>(null)
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [done, setDone] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+  const [exists, setExists] = useState(false)
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('customer_prefill')
+      if (raw) setPrefill(JSON.parse(raw))
+    } catch { /* ignora */ }
+  }, [])
+
+  if (isAuthenticated || dismissed || !prefill || prefill.phone.length < 10) return null
+
+  if (done) {
+    return (
+      <div className="rounded-2xl bg-green-50 border border-green-200 p-4 text-center space-y-1">
+        <p className="font-semibold text-green-700">Conta criada! 🎉</p>
+        <p className="text-sm text-green-700">Seus próximos pedidos vão ser mais rápidos, em qualquer loja.</p>
+      </div>
+    )
+  }
+
+  async function handleCreate() {
+    setError('')
+    if (password.length < 6) { setError('A senha deve ter ao menos 6 caracteres'); return }
+    if (password !== confirm) { setError('As senhas não conferem'); return }
+    setLoading(true)
+    try {
+      await register({ name: prefill!.name || 'Cliente', phone: prefill!.phone, password })
+      try { sessionStorage.removeItem('customer_prefill') } catch { /* ignora */ }
+      setDone(true)
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status === 409) {
+        setExists(true)
+        setError('Você já tem uma conta com este telefone.')
+      } else {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Não foi possível criar a conta'
+        setError(msg)
+      }
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <div className="rounded-2xl bg-white border p-5 space-y-3">
+      <div className="space-y-1">
+        <p className="font-bold text-sm">Crie sua conta e peça mais rápido 🚀</p>
+        <p className="text-xs text-muted-foreground">Salvamos seu endereço e seus dados para usar em qualquer loja. Defina uma senha:</p>
+      </div>
+      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Senha (mín. 6 caracteres)" autoComplete="new-password"
+        className="w-full h-11 rounded-xl border px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
+      <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Confirme a senha" autoComplete="new-password"
+        className="w-full h-11 rounded-xl border px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      {exists ? (
+        <Link href={`/${slug}/entrar?redirect=${encodeURIComponent(`/${slug}/minha-conta`)}`}
+          className="block w-full rounded-xl bg-primary py-2.5 text-center text-sm font-bold text-primary-foreground hover:bg-primary/90 transition">
+          Entrar na minha conta
+        </Link>
+      ) : (
+        <button onClick={handleCreate} disabled={loading || password.length < 6}
+          className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50">
+          {loading ? 'Criando...' : 'Criar conta'}
+        </button>
+      )}
+      <button onClick={() => setDismissed(true)} className="w-full text-center text-xs text-muted-foreground hover:underline">Agora não</button>
     </div>
   )
 }
@@ -244,6 +324,9 @@ export default function OrderTrackPage() {
             <p className="text-sm text-muted-foreground capitalize">{order.paymentMethod.replace('_', ' ').toLowerCase()}</p>
           </div>
         )}
+
+        {/* Convite para criar conta (apenas visitantes) */}
+        {!isCancelled && <CreateAccountPrompt slug={slug} />}
 
         {/* Avaliação — só quando entregue */}
         {isDone && <ReviewWidget orderId={orderId} />}

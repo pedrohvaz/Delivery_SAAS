@@ -291,6 +291,7 @@ model AddonOption {
 model Customer {
   id        String   @id @default(uuid())
   storeId   String
+  accountId String?  // vínculo opcional com a conta global (estilo iFood)
   name      String
   phone     String?
   email     String?
@@ -300,12 +301,55 @@ model Customer {
   updatedAt DateTime @updatedAt
 
   store     Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  account   CustomerAccount?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
   addresses CustomerAddress[]
   orders    Order[]
   loyalty   CustomerLoyalty[]
   raffleEntries RaffleEntry[]
 
   @@unique([storeId, phone])
+  @@index([accountId])
+}
+
+// ─────────────────────────────────────────
+// CONTA GLOBAL DO CLIENTE (vale para todas as lojas — estilo iFood)
+// ─────────────────────────────────────────
+
+model CustomerAccount {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?  @unique
+  phone     String   @unique // identificador primário de login (somente dígitos)
+  password  String
+  cpf       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses CustomerAccountAddress[]
+  profiles  Customer[] // perfis store-scoped vinculados a esta conta
+}
+
+model CustomerAccountAddress {
+  id         String   @id @default(uuid())
+  accountId  String
+  label      String?  // "Casa", "Trabalho"
+  street     String
+  number     String
+  complement String?
+  district   String
+  city       String
+  state      String
+  zipCode    String
+  reference  String?
+  lat        Float?
+  lng        Float?
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  account CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
 }
 
 model CustomerAddress {
