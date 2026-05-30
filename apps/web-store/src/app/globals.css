@@ -39,3 +39,12 @@
     display: none;
   }
 }
+
+/* Vitrine (marketplace): fontes Outfit/JetBrains escopadas — não afetam outras páginas */
+.mkt-scope,
+.mkt-scope .font-sans {
+  font-family: var(--font-outfit), 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+.mkt-scope .font-mono {
+  font-family: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+}

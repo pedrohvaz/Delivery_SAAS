@@ -38,11 +38,52 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        // Tons intermediários usados pela vitrine (marketplace) — aditivos
+        slate: {
+          250: '#d7dde7',
+          350: '#aab6c6',
+          405: '#909cb0',
+          450: '#7c8ba2',
+          505: '#5f6f88',
+          655: '#3e4c63',
+          750: '#28344a',
+          850: '#161f33',
+          905: '#0c1322',
+        },
+        orange: {
+          550: '#f1670f',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      // Extensões usadas pela vitrine (todas aditivas — não afetam classes existentes)
+      spacing: {
+        '4.5': '1.125rem',
+      },
+      borderWidth: {
+        '3': '3px',
+      },
+      boxShadow: {
+        '3xs': '0 1px 1px 0 rgb(15 23 42 / 0.03)',
+      },
+      backdropBlur: {
+        xs: '2px',
+      },
+      transitionDuration: {
+        '10000': '10000ms',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-5px)' },
+        },
+      },
+      animation: {
+        float: 'float 3s ease-in-out infinite',
+        'spin-slow': 'spin 3s linear infinite',
       },
     },
   },
