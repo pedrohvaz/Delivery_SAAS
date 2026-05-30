@@ -288,9 +288,13 @@ export default function StorePage() {
                       <span className="h-4 w-1 rounded-full bg-primary inline-block" />
                       {cat.name}
                     </h2>
-                    <div className="space-y-3">
+                    <div className={store?.layoutStyle === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 gap-3' : 'space-y-3'}>
                       {cat.products.map((product) => (
-                        <ProductCard key={product.id} product={product} onClick={() => setSelectedProduct(product)} />
+                        store?.layoutStyle === 'grid' ? (
+                          <ProductCardGrid key={product.id} product={product} onClick={() => setSelectedProduct(product)} />
+                        ) : (
+                          <ProductCard key={product.id} product={product} onClick={() => setSelectedProduct(product)} />
+                        )
                       ))}
                     </div>
                   </section>
@@ -362,6 +366,51 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
             {currency(Number(product.price))}
           </span>
           <div className="flex items-center gap-1.5 bg-primary hover:opacity-90 text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-lg transition-all shadow-sm group-hover:shadow-md">
+            <Plus className="w-3.5 h-3.5" />
+            <span>Adicionar</span>
+          </div>
+        </div>
+      </div>
+    </button>
+  )
+}
+
+// ─── Card de produto (grade vertical) ────────────────────────────────────────
+function ProductCardGrid({ product, onClick }: { product: Product; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="group bg-white rounded-xl flex flex-col border border-gray-200 hover:border-gray-300 hover:shadow-xl transition-all duration-300 ease-out hover:scale-[1.01] active:scale-[0.99] text-left w-full overflow-hidden"
+    >
+      <div className="w-full aspect-[4/3] bg-gray-100 overflow-hidden">
+        {product.imageUrl ? (
+          <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-3xl">🍽️</div>
+        )}
+      </div>
+      <div className="flex flex-col gap-1 p-3 flex-1">
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="font-bold text-gray-900 text-sm">{product.name}</span>
+          {product.tags.slice(0, 2).map((tag) => (
+            <span key={tag} className={cn('rounded-full px-1.5 py-0.5 text-[9px] font-bold border', TAG_STYLES[tag.toLowerCase()] ?? 'bg-gray-100 text-gray-500 border-gray-200')}>
+              {tag}
+            </span>
+          ))}
+        </div>
+        {product.description && (
+          <p className="text-gray-500 text-xs leading-snug line-clamp-2">{product.description}</p>
+        )}
+        {product.addonGroups.length > 0 && (
+          <span className="text-[10px] font-extrabold text-primary tracking-wider uppercase opacity-80">
+            ✦ Opções de Adicionais
+          </span>
+        )}
+        <div className="flex items-center justify-between mt-auto pt-2">
+          <span className="font-extrabold text-gray-900 text-sm">
+            {currency(Number(product.price))}
+          </span>
+          <div className="flex items-center gap-1 bg-primary text-primary-foreground text-xs font-bold px-2.5 py-1 rounded-lg shadow-sm">
             <Plus className="w-3.5 h-3.5" />
             <span>Adicionar</span>
           </div>
