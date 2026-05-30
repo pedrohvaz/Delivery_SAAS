@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { authenticate } from '../../middlewares/authenticate.js'
 import { z } from 'zod'
+import { cacheDel } from '../../lib/cache.js'
 
 const updateStoreInfoSchema = z.object({
   name: z.string().min(2).optional(),
@@ -75,11 +76,13 @@ const settingsRoutes: FastifyPluginAsync = async (app) => {
       where: { id: request.user.storeId },
       data: body.data,
       select: {
+        slug: true,
         name: true, phone: true, whatsapp: true, address: true, number: true,
         complement: true, district: true, city: true, state: true, zipCode: true,
         description: true, instagram: true, facebook: true,
       },
     })
+    await cacheDel(`store:${updated.slug}`, `menu:${updated.slug}`)
     return { data: updated }
   })
 
@@ -184,6 +187,7 @@ const settingsRoutes: FastifyPluginAsync = async (app) => {
         ...(d.customDomain !== undefined ? { customDomain: d.customDomain || null } : {}),
       },
       select: {
+        slug: true,
         asaasApiKey: true, asaasSandbox: true, minOrderValue: true, estimatedTime: true,
         evolutionApiUrl: true, evolutionApiKey: true, evolutionInstance: true,
         primaryColor: true, layoutStyle: true, bannerUrl: true,
@@ -193,6 +197,9 @@ const settingsRoutes: FastifyPluginAsync = async (app) => {
         orderSoundUrl: true, customDomain: true,
       },
     })
+
+    // Invalida o cache público da vitrine para a alteração refletir na hora
+    await cacheDel(`store:${updated.slug}`, `menu:${updated.slug}`)
 
     return { data: updated }
   })
