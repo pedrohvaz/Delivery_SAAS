@@ -151,12 +151,16 @@ export default function CheckoutPage() {
     setCouponError('')
   }
 
-  // Redireciona se carrinho vazio
+  // Flag para evitar que o guardião de carrinho vazio dispare durante a submissão
+  const submittingRef = useRef(false)
+
+  // Redireciona se carrinho vazio (mas não enquanto estamos enviando o pedido)
   useEffect(() => {
+    if (submittingRef.current) return
     if (items.length === 0) router.replace(`/${slug}`)
   }, [items.length, slug, router])
 
-  if (items.length === 0) return null
+  if (items.length === 0 && !submittingRef.current) return null
 
   // Skeleton enquanto carrega dados da loja
   if (storeLoading) {
@@ -252,6 +256,7 @@ export default function CheckoutPage() {
           : undefined,
       })
 
+      submittingRef.current = true
       clearCart()
       if (data.data.requiresPayment) {
         router.push(`/${slug}/pedido/${data.data.id}/pagar`)
