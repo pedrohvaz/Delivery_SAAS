@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { authenticate } from '../../middlewares/authenticate.js'
+import { getOptionalCustomerAccountId } from '../../middlewares/optional-customer.js'
 import { z } from 'zod'
 import { asaasCreateCustomer, asaasCreatePixCharge, asaasGetPixQrCode } from '../../lib/asaas.js'
 import { isStoreOpenNow } from '../schedules/index.js'
@@ -50,6 +51,7 @@ const createOrderSchema = z.object({
   couponCode: z.string().optional(),
   notes: z.string().optional(),
   scheduledTo: z.string().datetime().optional(),
+  saveAddress: z.boolean().optional(), // salva o endereço na conta global (se logado)
 })
 
 const orderRoutes: FastifyPluginAsync = async (app) => {
@@ -65,6 +67,9 @@ const orderRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const d = result.data
+
+    // Conta global do cliente (opcional — a rota continua pública para visitantes)
+    const accountId = await getOptionalCustomerAccountId(request)
 
     // Busca a loja
     const store = await app.prisma.store.findUnique({
@@ -120,17 +125,30 @@ const orderRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
-    // Busca ou cria cliente pelo telefone (opcional para TABLE)
+    // Busca ou cria cliente pelo telefone (opcional para TABLE).
+    // Se autenticado e sem nome/telefone no body, usa os dados da conta global.
     let customer: { id: string } | null = null
-    const phone = d.customerPhone
-    if (phone && phone.length >= 8) {
+    let resolvedName = d.customerName
+    let resolvedPhone = d.customerPhone
+    if (accountId && (!resolvedName || !resolvedPhone)) {
+      const acc = await app.prisma.customerAccount.findUnique({
+        where: { id: accountId },
+        select: { name: true, phone: true },
+      })
+      resolvedName = resolvedName ?? acc?.name
+      resolvedPhone = resolvedPhone ?? acc?.phone
+    }
+    if (resolvedPhone && resolvedPhone.length >= 8) {
       customer = await app.prisma.customer.findUnique({
-        where: { storeId_phone: { storeId: store.id, phone } },
+        where: { storeId_phone: { storeId: store.id, phone: resolvedPhone } },
       })
       if (!customer) {
         customer = await app.prisma.customer.create({
-          data: { storeId: store.id, name: d.customerName ?? 'Cliente', phone },
+          data: { storeId: store.id, name: resolvedName ?? 'Cliente', phone: resolvedPhone, accountId: accountId ?? undefined },
         })
+      } else if (accountId) {
+        // Vincula o perfil store-scoped à conta global (idempotente)
+        await app.prisma.customer.update({ where: { id: customer.id }, data: { accountId } })
       }
     }
 
@@ -268,6 +286,31 @@ const orderRoutes: FastifyPluginAsync = async (app) => {
       return order
     })
 
+    // Salva o endereço na agenda da conta global (se o cliente logado pediu).
+    // Não derruba o pedido em caso de erro (mesmo padrão do Asaas abaixo).
+    if (accountId && d.type === 'DELIVERY' && d.address && d.saveAddress) {
+      try {
+        const addr = d.address
+        const exists = await app.prisma.customerAccountAddress.findFirst({
+          where: { accountId, street: addr.street, number: addr.number, zipCode: addr.zipCode },
+          select: { id: true },
+        })
+        if (!exists) {
+          const count = await app.prisma.customerAccountAddress.count({ where: { accountId } })
+          await app.prisma.customerAccountAddress.create({
+            data: {
+              accountId,
+              street: addr.street, number: addr.number, complement: addr.complement,
+              district: addr.district, city: addr.city, state: addr.state, zipCode: addr.zipCode,
+              reference: addr.reference, isDefault: count === 0,
+            },
+          })
+        }
+      } catch (err) {
+        app.log.error({ err }, 'Erro ao salvar endereço na conta do cliente')
+      }
+    }
+
     // Cria cobrança PIX via Asaas (se loja tiver API key configurada)
     let requiresPayment = false
     if (d.paymentMethod === 'PIX' && store.asaasApiKey) {
@@ -277,8 +320,8 @@ const orderRoutes: FastifyPluginAsync = async (app) => {
         const dueDateStr = dueDate.toISOString().split('T')[0]!
 
         const asaasCustomer = await asaasCreateCustomer(store.asaasApiKey, store.asaasSandbox, {
-          name: d.customerName ?? 'Cliente',
-          phone: d.customerPhone ?? '',
+          name: resolvedName ?? 'Cliente',
+          phone: resolvedPhone ?? '',
         })
 
         const charge = await asaasCreatePixCharge(store.asaasApiKey, store.asaasSandbox, {

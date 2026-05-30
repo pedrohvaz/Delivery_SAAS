@@ -65,6 +65,12 @@ export interface JwtPayload {
   role: Role
 }
 
+// Token da conta global do cliente (vitrine) — namespace separado do admin
+export interface CustomerJwtPayload {
+  sub: string          // customerAccountId
+  type: 'customer'
+}
+
 // ─────────────────────────────────────────
 // Store
 // ─────────────────────────────────────────

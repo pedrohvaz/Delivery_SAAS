@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, MapPin, User, CreditCard, CheckCircle2, Tag, X } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowLeft, MapPin, User, CreditCard, CheckCircle2, Tag, X, Plus } from 'lucide-react'
 import { api } from '@/lib/api'
 import { currency } from '@/lib/utils'
 import { useCartStore, itemTotal } from '@/store/cart'
+import { useCustomerAuth } from '@/store/customer-auth'
 
 interface DeliveryArea {
   id: string; type: string; fee: number; freeFrom: number | null
@@ -17,6 +19,11 @@ interface StoreData {
   id: string; name: string; slug: string; estimatedTime: number
   paymentMethods: { id: string; type: string; label: string }[]
   deliveryAreas: DeliveryArea[]
+}
+
+interface SavedAddress {
+  id: string; label: string | null; street: string; number: string; complement: string | null
+  district: string; city: string; state: string; zipCode: string; reference: string | null; isDefault: boolean
 }
 
 function Input({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
@@ -63,10 +70,48 @@ export default function CheckoutPage() {
   const [returningCustomer, setReturningCustomer] = useState<string | null>(null)
   const phoneSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Conta global do cliente (opcional)
+  const account = useCustomerAuth((s) => s.account)
+  const isAuthenticated = useCustomerAuth((s) => s.isAuthenticated)
+  const [saveAddress, setSaveAddress] = useState(true)
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+  const [showAddressForm, setShowAddressForm] = useState(false)
+
   const { data: store, isLoading: storeLoading } = useQuery({
     queryKey: ['store', slug],
     queryFn: () => api.get<{ data: StoreData }>(`/store/${slug}`).then((r) => r.data.data),
   })
+
+  // Endereços salvos da conta (somente se logado)
+  const { data: savedAddresses } = useQuery({
+    queryKey: ['customer-addresses', isAuthenticated],
+    queryFn: () => api.get<{ data: SavedAddress[] }>('/customer/addresses').then((r) => r.data.data),
+    enabled: isAuthenticated,
+  })
+
+  function applyAddress(a: SavedAddress) {
+    setSelectedAddressId(a.id)
+    setStreet(a.street); setNumber(a.number); setComplement(a.complement ?? '')
+    setDistrict(a.district); setCity(a.city); setState(a.state); setZipCode(a.zipCode)
+    setShowAddressForm(false)
+  }
+
+  // Pré-preenche nome/telefone com os dados da conta (sem sobrescrever o que o usuário digitou)
+  useEffect(() => {
+    if (!account) return
+    setName((p) => p || account.name)
+    setPhone((p) => p || maskPhone(account.phone))
+  }, [account])
+
+  // Seleciona o endereço padrão automaticamente
+  useEffect(() => {
+    if (orderType !== 'DELIVERY') return
+    if (!savedAddresses || savedAddresses.length === 0) return
+    if (selectedAddressId || showAddressForm) return
+    const def = savedAddresses.find((a) => a.isDefault) ?? savedAddresses[0]
+    if (def) applyAddress(def)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedAddresses, orderType])
 
   const [cepLoading, setCepLoading] = useState(false)
   const [cepError, setCepError] = useState('')
@@ -254,7 +299,14 @@ export default function CheckoutPage() {
         scheduledTo: isScheduled && scheduledDate && scheduledTime
           ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
           : undefined,
+        // Salva o endereço na conta só se for novo (não veio da agenda) e o usuário marcou a opção
+        saveAddress: isAuthenticated && orderType === 'DELIVERY' && saveAddress && !selectedAddressId,
       })
+
+      // Guarda nome/telefone para o convite de cadastro na tela de acompanhamento (visitante)
+      try {
+        sessionStorage.setItem('customer_prefill', JSON.stringify({ name, phone: phone.replace(/\D/g, '') }))
+      } catch { /* sessionStorage indisponível — ignora */ }
 
       submittingRef.current = true
       clearCart()
@@ -288,6 +340,18 @@ export default function CheckoutPage() {
           <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
         )}
 
+        {/* Conta global do cliente */}
+        {!isAuthenticated ? (
+          <div className="rounded-xl bg-primary/5 border border-primary/20 px-4 py-3 text-sm flex items-center justify-between gap-2">
+            <span className="text-foreground">Já tem conta? Entre para usar seus dados salvos.</span>
+            <Link href={`/${slug}/entrar?redirect=${encodeURIComponent(`/${slug}/checkout`)}`} className="text-primary font-semibold hover:underline whitespace-nowrap">Entrar</Link>
+          </div>
+        ) : (
+          <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-2.5 text-sm text-green-700">
+            Conectado como <span className="font-semibold">{account?.name}</span>
+          </div>
+        )}
+
         {/* Tipo do pedido */}
         <div className="rounded-2xl bg-white border p-4 space-y-3">
           <p className="font-semibold text-sm flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" />Como quer receber?</p>
@@ -318,6 +382,35 @@ export default function CheckoutPage() {
         {orderType === 'DELIVERY' && (
           <div className="rounded-2xl bg-white border p-4 space-y-3">
             <p className="font-semibold text-sm flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" />Endereço de entrega</p>
+
+            {/* Endereços salvos da conta global */}
+            {isAuthenticated && savedAddresses && savedAddresses.length > 0 && !showAddressForm && (
+              <div className="space-y-2">
+                {savedAddresses.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => applyAddress(a)}
+                    className={`w-full text-left rounded-xl border p-3 transition ${selectedAddressId === a.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}
+                  >
+                    <p className="text-sm font-medium text-foreground">
+                      {a.label ? `${a.label} · ` : ''}{a.street}, {a.number}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{a.district} — {a.city}/{a.state}</p>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => { setSelectedAddressId(null); setShowAddressForm(true); setStreet(''); setNumber(''); setComplement(''); setDistrict(''); setCity(''); setState(''); setZipCode('') }}
+                  className="flex items-center gap-1.5 text-sm text-primary font-medium hover:underline pt-1"
+                >
+                  <Plus className="h-4 w-4" /> Usar outro endereço
+                </button>
+              </div>
+            )}
+
+            {(!isAuthenticated || !savedAddresses || savedAddresses.length === 0 || showAddressForm) && (
+            <>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-foreground">CEP</label>
               <div className="relative">
@@ -375,6 +468,16 @@ export default function CheckoutPage() {
               </div>
               <Input label="Cidade *" placeholder="Cidade" value={city} onChange={(e) => setCity(e.target.value)} required />
             </div>
+            </>
+            )}
+
+            {/* Salvar endereço na conta (logado, digitando um endereço novo) */}
+            {isAuthenticated && (showAddressForm || !savedAddresses || savedAddresses.length === 0) && (
+              <label className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+                <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} className="h-4 w-4 rounded border-input text-primary focus:ring-primary/40" />
+                <span className="text-sm text-foreground">Salvar este endereço na minha conta</span>
+              </label>
+            )}
           </div>
         )}
 

@@ -15,6 +15,7 @@ import productRoutes from './routes/products/index.js'
 import addonRoutes from './routes/addons/index.js'
 import storePublicRoutes from './routes/store/index.js'
 import orderRoutes from './routes/orders/index.js'
+import customerAccountRoutes from './routes/customer/index.js'
 import paymentRoutes from './routes/payments/index.js'
 import settingsRoutes from './routes/settings/index.js'
 import deliveryAreaRoutes from './routes/delivery-areas/index.js'
@@ -93,6 +94,7 @@ export function buildApp() {
   app.register(addonRoutes, { prefix: '/addons' })
   app.register(storePublicRoutes, { prefix: '/store' })
   app.register(orderRoutes, { prefix: '/orders' })
+  app.register(customerAccountRoutes, { prefix: '/customer' })
   app.register(paymentRoutes, { prefix: '/payments' })
   app.register(settingsRoutes, { prefix: '/settings' })
   app.register(deliveryAreaRoutes, { prefix: '/delivery-areas' })
