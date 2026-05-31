@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { currency } from '@/lib/utils'
-import { ShoppingBag, MapPin, ChevronRight, Trash2, Plus } from 'lucide-react'
+import { ShoppingBag, MapPin, ChevronRight, Trash2, Plus, Star } from 'lucide-react'
 import { cn } from '@delivery/ui'
 import { useCustomerAuth } from '@/store/customer-auth'
 
@@ -28,6 +28,59 @@ interface AccountOrder {
   id: string; orderNumber: number; status: string; total: number; type: string; createdAt: string
   store: { name: string; slug: string; logoUrl: string | null }
   items: { name: string; quantity: number }[]
+  review: { rating: number } | null
+}
+
+// Avaliação inline de um pedido entregue (na lista de pedidos da conta)
+function AccountOrderReview({ orderId, initialRating }: { orderId: string; initialRating: number | null }) {
+  const qc = useQueryClient()
+  const [saved, setSaved] = useState<number | null>(initialRating)
+  const [open, setOpen] = useState(false)
+  const [rating, setRating] = useState(0)
+  const [hover, setHover] = useState(0)
+  const [saving, setSaving] = useState(false)
+
+  if (saved != null) {
+    return (
+      <div className="flex items-center gap-1.5 border-t px-4 py-2.5 text-xs text-muted-foreground">
+        <span>Sua avaliação:</span>
+        {[1, 2, 3, 4, 5].map((s) => <Star key={s} className={`h-3.5 w-3.5 ${s <= saved ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />)}
+      </div>
+    )
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="w-full border-t px-4 py-2.5 text-left text-xs font-semibold text-primary hover:bg-primary/5 transition flex items-center gap-1.5">
+        <Star className="h-3.5 w-3.5" /> Avaliar este pedido
+      </button>
+    )
+  }
+
+  async function submit() {
+    if (!rating) return
+    setSaving(true)
+    try {
+      await api.post(`/reviews/${orderId}`, { rating })
+      setSaved(rating)
+      qc.invalidateQueries({ queryKey: ['account-orders'] })
+    } catch { /* ignora */ } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="flex items-center gap-2 border-t px-4 py-2.5">
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((s) => (
+          <button key={s} type="button" onMouseEnter={() => setHover(s)} onMouseLeave={() => setHover(0)} onClick={() => setRating(s)}>
+            <Star className={`h-5 w-5 transition-colors ${s <= (hover || rating) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
+          </button>
+        ))}
+      </div>
+      <button onClick={submit} disabled={!rating || saving} className="ml-auto rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition">
+        {saving ? 'Enviando...' : 'Enviar'}
+      </button>
+    </div>
+  )
 }
 
 function AddAddressForm({ onDone }: { onDone: () => void }) {
@@ -178,28 +231,33 @@ export function AccountDashboard() {
           const st = STATUS_LABELS[order.status] ?? { label: order.status, color: 'bg-muted text-muted-foreground' }
           const isActive = !['DELIVERED', 'CANCELLED'].includes(order.status)
           return (
-            <Link key={order.id} href={`/${order.store.slug}/pedido/${order.id}`}
-              className="flex items-center gap-3 bg-white rounded-2xl border p-4 hover:shadow-sm transition">
-              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
-                {order.store.logoUrl
-                  ? <img src={order.store.logoUrl} alt="" className="h-full w-full object-cover" />
-                  : <span className="text-xs font-bold text-muted-foreground">#{order.orderNumber}</span>}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-foreground truncate">{order.store.name}</span>
-                  {isActive && <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />}
+            <div key={order.id} className="bg-white rounded-2xl border overflow-hidden">
+              <Link href={`/${order.store.slug}/pedido/${order.id}`}
+                className="flex items-center gap-3 p-4 hover:bg-muted/30 transition">
+                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                  {order.store.logoUrl
+                    ? <img src={order.store.logoUrl} alt="" className="h-full w-full object-cover" />
+                    : <span className="text-xs font-bold text-muted-foreground">#{order.orderNumber}</span>}
                 </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', st.color)}>{st.label}</span>
-                  <span className="text-xs text-muted-foreground truncate">
-                    {order.items?.slice(0, 2).map((i) => `${i.quantity}x ${i.name}`).join(', ')}
-                  </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-foreground truncate">{order.store.name}</span>
+                    {isActive && <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', st.color)}>{st.label}</span>
+                    <span className="text-xs text-muted-foreground truncate">
+                      {order.items?.slice(0, 2).map((i) => `${i.quantity}x ${i.name}`).join(', ')}
+                    </span>
+                  </div>
+                  <p className="text-sm font-semibold text-primary mt-0.5">{currency(order.total)}</p>
                 </div>
-                <p className="text-sm font-semibold text-primary mt-0.5">{currency(order.total)}</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-            </Link>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </Link>
+              {order.status === 'DELIVERED' && (
+                <AccountOrderReview orderId={order.id} initialRating={order.review?.rating ?? null} />
+              )}
+            </div>
           )
         })}
       </div>

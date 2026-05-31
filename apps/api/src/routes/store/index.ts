@@ -14,8 +14,22 @@ const storePublicRoutes: FastifyPluginAsync = async (app) => {
         city: true, state: true, isOpen: true, estimatedTime: true, minOrderValue: true,
       },
     })
-    await cacheSet('stores:list', stores, 120) // cache 2 min
-    return reply.send({ data: stores })
+
+    // Notas (média + total) por loja, a partir das avaliações dos clientes
+    const ratings = await app.prisma.orderReview.groupBy({
+      by: ['storeId'],
+      _avg: { rating: true },
+      _count: true,
+    })
+    const ratingMap = new Map(ratings.map((r) => [r.storeId, { avg: r._avg.rating ?? 0, count: r._count }]))
+    const withRatings = stores.map((s) => ({
+      ...s,
+      ratingAvg: ratingMap.get(s.id)?.avg ?? 0,
+      ratingCount: ratingMap.get(s.id)?.count ?? 0,
+    }))
+
+    await cacheSet('stores:list', withRatings, 120) // cache 2 min
+    return reply.send({ data: withRatings })
   })
 
   // ─── GET /store/:slug ─────────────────────────────────────────────
