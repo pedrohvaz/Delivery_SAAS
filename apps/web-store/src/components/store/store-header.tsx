@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { ShoppingCart, Clock, MapPin, Star, User, ChevronDown } from 'lucide-react'
 import { useCartStore } from '@/store/cart'
+import { useCustomerAuth } from '@/store/customer-auth'
 import { currency } from '@/lib/utils'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -32,6 +33,8 @@ function getNextOpenLabel(schedules: Schedule[]): string | null {
 
 export function StoreHeader({ store }: { store: StoreData }) {
   const { totalItems, subtotal, toggleCart } = useCartStore()
+  const account = useCustomerAuth((s) => s.account)
+  const isAuthenticated = useCustomerAuth((s) => s.isAuthenticated)
   const [showHours, setShowHours] = useState(false)
   const itemCount = totalItems()
   const cartTotal = subtotal()
@@ -55,9 +58,20 @@ export function StoreHeader({ store }: { store: StoreData }) {
         <div className="absolute top-3 left-0 right-0 px-4 flex items-center justify-between">
           <Link
             href={`/${store.slug}/minha-conta`}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-white hover:bg-white/20 transition"
+            className="flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-white hover:bg-white/20 transition px-3 py-1.5 text-xs font-bold"
+            title="Minha conta"
           >
-            <User className="h-3.5 w-3.5" />
+            {isAuthenticated && account ? (
+              <>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shrink-0">{account.name?.[0]?.toUpperCase() ?? '?'}</span>
+                <span className="max-w-[90px] truncate">{account.name?.split(' ')[0]}</span>
+              </>
+            ) : (
+              <>
+                <User className="h-3.5 w-3.5" />
+                <span>Entrar</span>
+              </>
+            )}
           </Link>
 
           <div className={`flex items-center gap-1.5 text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm ${store.isOpen ? 'bg-emerald-500/90' : 'bg-red-500/90'}`}>
