@@ -13,6 +13,7 @@ import {
 import { useDeliverymen, useAssignDeliveryman } from '@/hooks/use-deliverymen'
 import { useAuthStore } from '@/store/auth'
 import { currency } from '@/lib/utils'
+import { CustomerReview } from './customer-review'
 
 const CANCEL_REASONS = [
   'Produto indisponível',
@@ -125,6 +126,9 @@ export function OrderModal({ order, onClose, initialCancelling = false }: Props)
               </a>
             )}
           </div>
+
+          {/* Avaliar cliente (privado) */}
+          {order.customer && <CustomerReview orderId={order.id} />}
 
           {/* Endereço (só delivery) */}
           {order.type === 'DELIVERY' && order.address && (

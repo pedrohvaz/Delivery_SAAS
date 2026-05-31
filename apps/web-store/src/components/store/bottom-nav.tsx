@@ -2,7 +2,7 @@
 
 import { usePathname, useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Home, ShoppingBag, ReceiptText, User } from 'lucide-react'
+import { Home, ShoppingBag, ReceiptText, Star, User } from 'lucide-react'
 import { useCartStore } from '@/store/cart'
 
 // Rotas onde o menu inferior NÃO deve aparecer (fluxos de tela cheia / CTA próprio embaixo)
@@ -22,6 +22,7 @@ export function StoreBottomNav() {
   const base = `/${slug}`
   const isMenu = pathname === base
   const isPedidos = pathname.includes('/pedido/')
+  const isAvaliacoes = pathname.includes('/avaliacoes')
   const isPerfil = pathname.includes('/minha-conta')
 
   const openSacola = () => { openCart(); router.push(base) }
@@ -54,6 +55,11 @@ export function StoreBottomNav() {
           <Link href={`${base}/minha-conta`} className={tab}>
             <ReceiptText className={icn(isPedidos)} />
             <span className={lbl(isPedidos)}>Pedidos</span>
+          </Link>
+
+          <Link href={`${base}/avaliacoes`} className={tab}>
+            <Star className={icn(isAvaliacoes)} />
+            <span className={lbl(isAvaliacoes)}>Avaliações</span>
           </Link>
 
           <Link href={`${base}/minha-conta`} className={tab}>
