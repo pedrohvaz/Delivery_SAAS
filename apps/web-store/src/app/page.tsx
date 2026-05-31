@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import Link from 'next/link'
 import {
   Search, MapPin, SlidersHorizontal, Sparkles, TrendingUp, Compass,
-  X, ChevronDown, Navigation, Bike, CheckCircle, Info, Heart,
+  X, ChevronDown, Navigation, Bike, Info, Heart,
   ChevronLeft, ChevronRight, Sun, Moon, User,
 } from 'lucide-react'
 import { api } from '@/lib/api'
@@ -131,9 +131,24 @@ export default function HomePage() {
           <span className="bg-orange-600 rounded-md text-[9px] px-2 py-0.5 font-bold uppercase tracking-wide text-white">PRO</span>
           <span className="truncate opacity-90 font-mono">Sua loja favorita, a um clique. Peça em qualquer estabelecimento da plataforma.</span>
         </div>
-        <div className="hidden md:flex items-center gap-4 text-white/60 font-mono">
-          <span className="flex items-center gap-1.5"><CheckCircle className="h-3 w-3 text-emerald-400" /> Cardápios Integrados</span>
-        </div>
+        {/* Minha conta — canto superior direito */}
+        <Link
+          href="/conta"
+          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/15 transition shrink-0"
+          title="Minha conta"
+        >
+          {isAuthenticated && account ? (
+            <>
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white shrink-0">{account.name?.[0]?.toUpperCase() ?? '?'}</span>
+              <span className="max-w-[100px] truncate">{account.name?.split(' ')[0]}</span>
+            </>
+          ) : (
+            <>
+              <User className="h-3.5 w-3.5 text-orange-400" />
+              <span>Minha conta</span>
+            </>
+          )}
+        </Link>
       </div>
 
       {/* Hero */}
@@ -158,27 +173,8 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Conta + Tema + Cidade */}
+            {/* Tema + Cidade */}
             <div className="flex items-center gap-2 self-start sm:self-auto font-mono text-xs flex-wrap">
-              {/* Minha conta / Entrar */}
-              <Link
-                href="/conta"
-                className="flex items-center gap-2 rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 px-3 py-3 text-white border border-slate-800 hover:border-slate-700 transition-all shadow-sm"
-                title="Minha conta"
-              >
-                {isAuthenticated && account ? (
-                  <>
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-[11px] font-bold text-white shrink-0">{account.name?.[0]?.toUpperCase() ?? '?'}</span>
-                    <span className="font-bold line-clamp-1 max-w-[80px] text-slate-200 hidden sm:block">{account.name?.split(' ')[0]}</span>
-                  </>
-                ) : (
-                  <>
-                    <User className="h-4 w-4 text-orange-500 shrink-0" />
-                    <span className="font-bold text-slate-200">Entrar</span>
-                  </>
-                )}
-              </Link>
-
               <button
                 onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
                 className="flex items-center justify-center h-11 w-11 rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 text-white border border-slate-800 transition-all shadow-sm active:scale-95"
