@@ -3,14 +3,16 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'motion/react'
+import Link from 'next/link'
 import {
   Search, MapPin, SlidersHorizontal, Sparkles, TrendingUp, Compass,
   X, ChevronDown, Navigation, Bike, CheckCircle, Info, Heart,
-  ChevronLeft, ChevronRight, Sun, Moon,
+  ChevronLeft, ChevronRight, Sun, Moon, User,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { BackgroundFoodCarousel } from '@/components/marketplace/BackgroundFoodCarousel'
 import { StoreCard, type MarketStore } from '@/components/marketplace/StoreCard'
+import { useCustomerAuth } from '@/store/customer-auth'
 
 const PROMO_BANNERS = [
   { id: 1, title: 'Festival Japa & Fusion', subtitle: 'Sushis frescos de salmão maçaricado, temakis e combinados incríveis com ingredientes premium.', badge: 'COMIDA JAPONESA', image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80', color: 'from-rose-600/90 via-neutral-900/40 to-transparent', tagColor: 'bg-rose-500/20 text-rose-300 border-rose-500/30', actionQuery: 'Sushi', buttonText: 'Pedir Combinados' },
@@ -46,6 +48,10 @@ export default function HomePage() {
   const [currentBanner, setCurrentBanner] = useState(0)
   const [isBannerHovered, setIsBannerHovered] = useState(false)
   const [favorites, setFavorites] = useState<string[]>([])
+
+  // Conta global do cliente
+  const account = useCustomerAuth((s) => s.account)
+  const isAuthenticated = useCustomerAuth((s) => s.isAuthenticated)
 
   // Tema persistido (escopado a esta página via classe `dark` no root)
   useEffect(() => {
@@ -152,8 +158,27 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Tema + Cidade */}
+            {/* Conta + Tema + Cidade */}
             <div className="flex items-center gap-2 self-start sm:self-auto font-mono text-xs flex-wrap">
+              {/* Minha conta / Entrar */}
+              <Link
+                href="/conta"
+                className="flex items-center gap-2 rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 px-3 py-3 text-white border border-slate-800 hover:border-slate-700 transition-all shadow-sm"
+                title="Minha conta"
+              >
+                {isAuthenticated && account ? (
+                  <>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-[11px] font-bold text-white shrink-0">{account.name?.[0]?.toUpperCase() ?? '?'}</span>
+                    <span className="font-bold line-clamp-1 max-w-[80px] text-slate-200 hidden sm:block">{account.name?.split(' ')[0]}</span>
+                  </>
+                ) : (
+                  <>
+                    <User className="h-4 w-4 text-orange-500 shrink-0" />
+                    <span className="font-bold text-slate-200">Entrar</span>
+                  </>
+                )}
+              </Link>
+
               <button
                 onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
                 className="flex items-center justify-center h-11 w-11 rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 text-white border border-slate-800 transition-all shadow-sm active:scale-95"
