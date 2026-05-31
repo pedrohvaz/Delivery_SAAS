@@ -531,7 +531,7 @@ function MobileCartButton({ slug }: { slug: string }) {
   if (count === 0) return null
 
   return (
-    <div className="lg:hidden fixed bottom-6 left-4 right-4 z-40">
+    <div className="lg:hidden fixed bottom-20 left-4 right-4 z-40">
       <button
         onClick={openCart}
         className="w-full bg-primary hover:opacity-90 text-primary-foreground font-extrabold rounded-2xl shadow-xl shadow-primary/30 py-4 px-5 flex items-center justify-between active:scale-[0.98] transition-all"
