@@ -91,6 +91,7 @@ model Store {
   automationConfig  AutomationConfig?
   conversations     Conversation[]
   reviews           OrderReview[]
+  customerReviews   CustomerReview[]
   loyaltyConfig     LoyaltyConfig?
   customerLoyalties CustomerLoyalty[]
   raffles           Raffle[]
@@ -306,6 +307,7 @@ model Customer {
   orders    Order[]
   loyalty   CustomerLoyalty[]
   raffleEntries RaffleEntry[]
+  reviewsReceived CustomerReview[]
 
   @@unique([storeId, phone])
   @@index([accountId])
@@ -403,7 +405,8 @@ model Order {
   table       Table?       @relation(fields: [tableId], references: [id])
   items       OrderItem[]
   payments    Payment[]
-  review      OrderReview?
+  review         OrderReview?
+  customerReview CustomerReview?
 
   @@unique([storeId, orderNumber])
 }
@@ -703,6 +706,24 @@ model OrderReview {
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+
+// Avaliação que a LOJA faz do CLIENTE (privada — só lojistas veem)
+model CustomerReview {
+  id         String   @id @default(uuid())
+  orderId    String   @unique
+  storeId    String
+  customerId String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  store    Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([storeId])
 }
 
 // ─────────────────────────────────────────
