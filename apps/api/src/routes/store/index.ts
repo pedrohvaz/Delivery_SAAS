@@ -10,7 +10,7 @@ const storePublicRoutes: FastifyPluginAsync = async (app) => {
     const stores = await app.prisma.store.findMany({
       orderBy: { name: 'asc' },
       select: {
-        id: true, name: true, slug: true, logoUrl: true, description: true,
+        id: true, name: true, slug: true, logoUrl: true, bannerUrl: true, description: true,
         city: true, state: true, isOpen: true, estimatedTime: true, minOrderValue: true,
       },
     })

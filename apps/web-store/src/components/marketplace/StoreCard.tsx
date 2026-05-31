@@ -10,6 +10,7 @@ export interface MarketStore {
   name: string
   slug: string
   logoUrl: string | null
+  bannerUrl: string | null
   description: string | null
   city: string | null
   state: string | null
@@ -54,8 +55,16 @@ export function StoreCard({ store, isFavorite, onToggleFavorite }: StoreCardProp
       onClick={go}
       className="group relative cursor-pointer overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-orange-100 dark:hover:border-orange-950/40 transition-colors duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-100 shadow-3xs hover:shadow-xl hover:shadow-slate-950/10"
     >
-      {/* Capa em gradiente */}
+      {/* Capa: banner real da loja (se houver), com gradiente de fallback */}
       <div className={`relative h-28 w-full bg-gradient-to-r ${gradientFor(store.slug)} overflow-hidden shrink-0`}>
+        {store.bannerUrl && (
+          <img
+            src={store.bannerUrl}
+            alt={store.name}
+            referrerPolicy="no-referrer"
+            className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        )}
         <div className="absolute inset-0 bg-black/15 group-hover:bg-black/25 transition-all duration-300 pointer-events-none" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:14px_24px] opacity-25" />
         <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-xl pointer-events-none" />
