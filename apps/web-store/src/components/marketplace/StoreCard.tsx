@@ -2,7 +2,7 @@
 
 import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
-import { Clock, ShoppingBag, MapPin, ChevronRight, Lock, Heart, Bike } from 'lucide-react'
+import { Clock, ShoppingBag, MapPin, ChevronRight, Lock, Heart, Bike, Star } from 'lucide-react'
 import { currency } from '@/lib/utils'
 
 export interface MarketStore {
@@ -17,6 +17,8 @@ export interface MarketStore {
   isOpen: boolean
   estimatedTime: number
   minOrderValue: number
+  ratingAvg: number
+  ratingCount: number
 }
 
 // Paleta de gradientes para a capa (substitui as imagens de banner que o backend não tem)
@@ -112,10 +114,18 @@ export function StoreCard({ store, isFavorite, onToggleFavorite }: StoreCardProp
             <span className="font-mono text-[11px] font-semibold tracking-wide uppercase text-orange-600 line-clamp-1">
               {store.city ? `${store.city}${store.state ? ` • ${store.state}` : ''}` : 'Loja parceira'}
             </span>
-            <div className="inline-flex items-center gap-1 rounded-lg bg-slate-50 dark:bg-slate-950 px-2 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-100 dark:border-slate-800 shadow-3xs shrink-0">
-              <Clock className="h-3 w-3 text-orange-500" />
-              <span>{store.estimatedTime} min</span>
-            </div>
+            {store.ratingCount > 0 ? (
+              <div className="inline-flex items-center gap-1 rounded-lg bg-amber-50 dark:bg-amber-950/20 px-2 py-1 text-xs font-bold text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-900/40 shadow-3xs shrink-0">
+                <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                <span>{store.ratingAvg.toFixed(1)}</span>
+                <span className="text-[10px] text-amber-500 font-normal">({store.ratingCount})</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-1 rounded-lg bg-slate-50 dark:bg-slate-950 px-2 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-100 dark:border-slate-800 shadow-3xs shrink-0">
+                <Clock className="h-3 w-3 text-orange-500" />
+                <span>{store.estimatedTime} min</span>
+              </div>
+            )}
           </div>
 
           <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white line-clamp-1 group-hover:text-orange-600 transition-colors">

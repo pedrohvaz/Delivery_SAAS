@@ -238,6 +238,7 @@ const customerRoutes: FastifyPluginAsync = async (app) => {
         id: true, orderNumber: true, status: true, total: true, type: true, createdAt: true,
         store: { select: { name: true, slug: true, logoUrl: true } },
         items: { select: { name: true, quantity: true }, take: 3 },
+        review: { select: { rating: true } },
       },
     })
     return { data: orders }
