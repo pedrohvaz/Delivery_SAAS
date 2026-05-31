@@ -1,5 +1,7 @@
-export function currency(value: number) {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+export function currency(value: number | string | null | undefined) {
+  // Coage para número: a API serializa Decimal (Prisma) como string ("16.5"),
+  // e String.toLocaleString ignora as opções de moeda, devolvendo o texto cru.
+  return (Number(value) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 export function slugify(text: string) {
