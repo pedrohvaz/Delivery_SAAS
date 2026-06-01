@@ -54,6 +54,8 @@ export default function CheckoutPage() {
   const [zipCode, setZipCode] = useState('')
   const [state, setState] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('')
+  const [needsChange, setNeedsChange] = useState(false)
+  const [changeForValue, setChangeForValue] = useState('')
   const [notes, setNotes] = useState('')
   const [couponCode, setCouponCode] = useState('')
   const [couponInput, setCouponInput] = useState('')
@@ -263,6 +265,10 @@ export default function CheckoutPage() {
     setError('')
 
     if (!paymentMethod) { setError('Selecione uma forma de pagamento'); return }
+    if (paymentMethod === 'CASH' && needsChange) {
+      const v = parseFloat(changeForValue.replace(',', '.'))
+      if (isNaN(v) || v < total) { setError(`Informe o valor do troco (maior ou igual ao total ${currency(total)})`); return }
+    }
     const minOrder = Number(store?.minOrderValue ?? 0)
     if (minOrder > 0 && cartSubtotal < minOrder) {
       setError(`Pedido mínimo de ${currency(minOrder)}`)
@@ -294,6 +300,9 @@ export default function CheckoutPage() {
         })),
         address: orderType === 'DELIVERY' ? { street, number, complement, district, city, state, zipCode } : undefined,
         paymentMethod,
+        changeFor: paymentMethod === 'CASH' && needsChange && changeForValue
+          ? parseFloat(changeForValue.replace(',', '.'))
+          : undefined,
         notes,
         couponCode: couponCode.trim() || undefined,
         scheduledTo: isScheduled && scheduledDate && scheduledTime
@@ -502,6 +511,43 @@ export default function CheckoutPage() {
                   {pm.label}
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* Troco — só para Dinheiro */}
+          {paymentMethod === 'CASH' && (
+            <div className="rounded-xl bg-muted/40 border p-3 space-y-2.5">
+              <p className="text-xs font-medium text-foreground">Precisa de troco?</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setNeedsChange(false)}
+                  className={`rounded-xl border py-2 text-sm font-medium transition-colors ${!needsChange ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
+                  Não preciso
+                </button>
+                <button type="button" onClick={() => setNeedsChange(true)}
+                  className={`rounded-xl border py-2 text-sm font-medium transition-colors ${needsChange ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
+                  Sim, troco
+                </button>
+              </div>
+              {needsChange && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-foreground">Troco para quanto?</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
+                    <input
+                      value={changeForValue}
+                      onChange={(e) => setChangeForValue(e.target.value.replace(/[^\d.,]/g, ''))}
+                      placeholder="50,00"
+                      inputMode="decimal"
+                      className="h-10 w-full rounded-xl border border-input bg-white pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+                  {changeForValue && (() => {
+                    const v = parseFloat(changeForValue.replace(',', '.'))
+                    if (isNaN(v) || v < total) return <p className="text-xs text-red-600">Informe um valor maior ou igual ao total ({currency(total)}).</p>
+                    return <p className="text-xs text-green-600 font-medium">Seu troco: {currency(v - total)}</p>
+                  })()}
+                </div>
+              )}
             </div>
           )}
         </div>

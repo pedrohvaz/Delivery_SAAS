@@ -22,6 +22,7 @@ export interface Order {
   status: string
   paymentStatus: string
   paymentMethod: string | null
+  changeFor: number | null
   subtotal: number
   deliveryFee: number
   discount: number
