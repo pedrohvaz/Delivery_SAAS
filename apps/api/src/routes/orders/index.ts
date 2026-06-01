@@ -256,6 +256,7 @@ const orderRoutes: FastifyPluginAsync = async (app) => {
           type: d.type,
           status: 'PENDING',
           paymentMethod: d.paymentMethod,
+          changeFor: d.paymentMethod === 'CASH' ? (d.changeFor ?? null) : null,
           subtotal,
           deliveryFee: effectiveDeliveryFee,
           discount,

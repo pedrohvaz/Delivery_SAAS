@@ -385,6 +385,7 @@ model Order {
   status        OrderStatus   @default(PENDING)
   paymentStatus PaymentStatus @default(PENDING)
   paymentMethod String?
+  changeFor     Decimal?      // troco para dinheiro (valor que o cliente vai pagar)
   subtotal      Decimal
   deliveryFee   Decimal       @default(0)
   discount      Decimal       @default(0)

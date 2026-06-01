@@ -219,13 +219,24 @@ export function OrderModal({ order, onClose, initialCancelling = false }: Props)
 
           {/* Pagamento */}
           {order.paymentMethod && (
-            <div className="rounded-xl border p-3 flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm capitalize">{order.paymentMethod.replace(/_/g, ' ').toLowerCase()}</span>
-              <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium
-                ${order.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                {order.paymentStatus === 'PAID' ? 'Pago' : 'Pendente'}
-              </span>
+            <div className="rounded-xl border p-3 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm capitalize">{order.paymentMethod.replace(/_/g, ' ').toLowerCase()}</span>
+                <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium
+                  ${order.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                  {order.paymentStatus === 'PAID' ? 'Pago' : 'Pendente'}
+                </span>
+              </div>
+              {order.paymentMethod === 'CASH' && (
+                <p className="text-xs text-muted-foreground pl-6">
+                  {order.changeFor && Number(order.changeFor) > 0 ? (
+                    <>💵 Troco para <strong className="text-foreground">{currency(order.changeFor)}</strong> · levar <strong className="text-amber-600">{currency(Number(order.changeFor) - order.total)}</strong> de troco</>
+                  ) : (
+                    'Não precisa de troco'
+                  )}
+                </p>
+              )}
             </div>
           )}
 
