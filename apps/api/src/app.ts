@@ -45,6 +45,9 @@ import stripeWebhookRoutes from './routes/stripe-webhook/index.js'
 
 export function buildApp() {
   const app = Fastify({
+    // Atrás do proxy da Railway: usa X-Forwarded-For como IP real do cliente.
+    // Sem isso, o rate limit agrupa todo mundo no IP do proxy (e nunca/aleatoriamente dispara).
+    trustProxy: true,
     logger: {
       transport:
         process.env.NODE_ENV === 'development'
