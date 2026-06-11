@@ -41,8 +41,10 @@ interface RegisterData {
   cancelUrl?: string
 }
 
+type AuthPersisted = Pick<AuthState, 'user' | 'store' | 'accessToken' | 'refreshToken' | 'isAuthenticated'>
+
 export const useAuthStore = create<AuthState>()(
-  persist<AuthState>(
+  persist<AuthState, [], [], AuthPersisted>(
     (set) => ({
       user: null,
       store: null,

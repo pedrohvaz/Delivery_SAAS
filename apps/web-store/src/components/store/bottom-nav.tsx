@@ -4,6 +4,7 @@ import { usePathname, useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Home, ShoppingBag, ReceiptText, Star, User } from 'lucide-react'
 import { useCartStore } from '@/store/cart'
+import { useMounted } from '@/hooks/use-mounted'
 
 // Rotas onde o menu inferior NÃO deve aparecer (fluxos de tela cheia / CTA próprio embaixo)
 const HIDE_ON = ['/checkout', '/pagar', '/mesa', '/garcom', '/entrar', '/criar-conta']
@@ -15,6 +16,7 @@ export function StoreBottomNav() {
   const router = useRouter()
   const count = useCartStore((s) => s.totalItems())
   const openCart = useCartStore((s) => s.openCart)
+  const mounted = useMounted()
 
   if (!slug) return null
   if (HIDE_ON.some((p) => pathname.includes(p))) return null
@@ -43,7 +45,7 @@ export function StoreBottomNav() {
           </Link>
 
           <button type="button" onClick={openSacola} className={`relative ${tab}`}>
-            {count > 0 && (
+            {mounted && count > 0 && (
               <span className="absolute top-1.5 left-1/2 translate-x-2 h-4 min-w-[16px] px-1 rounded-full bg-white text-primary text-[9px] font-bold flex items-center justify-center">
                 {count}
               </span>

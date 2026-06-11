@@ -11,6 +11,7 @@ import { StoreHeader } from '@/components/store/store-header'
 import { ProductModal } from '@/components/store/product-modal'
 import { CartDrawer } from '@/components/store/cart-drawer'
 import { useCartStore, itemTotal } from '@/store/cart'
+import { useMounted } from '@/hooks/use-mounted'
 import { Plus, Search, X, ShoppingBag, Minus, Trash2 } from 'lucide-react'
 
 interface AddonOption { id: string; name: string; price: number; isActive: boolean; position: number }
@@ -426,6 +427,8 @@ function DesktopCartSidebar({ slug }: { slug: string }) {
   const { items, removeItem, updateQty, subtotal, totalItems } = useCartStore()
   const total = subtotal()
   const count = totalItems()
+  const mounted = useMounted()
+  if (!mounted) return null
 
   return (
     <div className="sticky top-20 bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col overflow-hidden" style={{ maxHeight: 'calc(100vh - 120px)' }}>
@@ -527,8 +530,9 @@ function MobileCartButton({ slug }: { slug: string }) {
   const { totalItems, subtotal, openCart } = useCartStore()
   const count = totalItems()
   const total = subtotal()
+  const mounted = useMounted()
 
-  if (count === 0) return null
+  if (!mounted || count === 0) return null
 
   return (
     <div className="lg:hidden fixed bottom-20 left-4 right-4 z-40">

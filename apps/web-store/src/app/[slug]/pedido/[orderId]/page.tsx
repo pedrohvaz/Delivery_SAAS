@@ -1,7 +1,5 @@
 'use client'
 
-'use client'
-
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
@@ -121,8 +119,8 @@ function CreateAccountPrompt({ slug }: { slug: string }) {
     } catch { /* ignora */ }
   }, [])
 
-  if (isAuthenticated || dismissed || !prefill || prefill.phone.length < 10) return null
-
+  // `done` antes do guard de auth: após criar a conta, isAuthenticated vira true
+  // e o guard esconderia a confirmação.
   if (done) {
     return (
       <div className="rounded-2xl bg-green-50 border border-green-200 p-4 text-center space-y-1">
@@ -131,6 +129,8 @@ function CreateAccountPrompt({ slug }: { slug: string }) {
       </div>
     )
   }
+
+  if (isAuthenticated || dismissed || !prefill || prefill.phone.length < 10) return null
 
   async function handleCreate() {
     setError('')
