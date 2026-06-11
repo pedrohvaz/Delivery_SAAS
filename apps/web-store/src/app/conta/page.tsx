@@ -5,10 +5,12 @@ import Link from 'next/link'
 import { ArrowLeft, LogIn, UserPlus, Star } from 'lucide-react'
 import { useCustomerAuth } from '@/store/customer-auth'
 import { AccountDashboard } from '@/components/account/AccountDashboard'
+import { useMounted } from '@/hooks/use-mounted'
 
 export default function ContaPage() {
   const router = useRouter()
   const isAuthenticated = useCustomerAuth((s) => s.isAuthenticated)
+  const mounted = useMounted()
   const redirect = '/conta'
 
   return (
@@ -23,7 +25,7 @@ export default function ContaPage() {
       </header>
 
       <div className="mx-auto max-w-xl px-4 py-6 space-y-5">
-        {isAuthenticated ? (
+        {!mounted ? null : isAuthenticated ? (
           <AccountDashboard />
         ) : (
           <div className="bg-white rounded-2xl border p-6 space-y-4 text-center">

@@ -13,6 +13,7 @@ import { api } from '@/lib/api'
 import { BackgroundFoodCarousel } from '@/components/marketplace/BackgroundFoodCarousel'
 import { StoreCard, type MarketStore } from '@/components/marketplace/StoreCard'
 import { useCustomerAuth } from '@/store/customer-auth'
+import { useMounted } from '@/hooks/use-mounted'
 
 const PROMO_BANNERS = [
   { id: 1, title: 'Festival Japa & Fusion', subtitle: 'Sushis frescos de salmão maçaricado, temakis e combinados incríveis com ingredientes premium.', badge: 'COMIDA JAPONESA', image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80', color: 'from-rose-600/90 via-neutral-900/40 to-transparent', tagColor: 'bg-rose-500/20 text-rose-300 border-rose-500/30', actionQuery: 'Sushi', buttonText: 'Pedir Combinados' },
@@ -49,9 +50,10 @@ export default function HomePage() {
   const [isBannerHovered, setIsBannerHovered] = useState(false)
   const [favorites, setFavorites] = useState<string[]>([])
 
-  // Conta global do cliente
+  // Conta global do cliente (gate de mounted evita mismatch de hidratação)
   const account = useCustomerAuth((s) => s.account)
   const isAuthenticated = useCustomerAuth((s) => s.isAuthenticated)
+  const mounted = useMounted()
 
   // Tema persistido (escopado a esta página via classe `dark` no root)
   useEffect(() => {
@@ -137,7 +139,7 @@ export default function HomePage() {
           className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/15 transition shrink-0"
           title="Minha conta"
         >
-          {isAuthenticated && account ? (
+          {mounted && isAuthenticated && account ? (
             <>
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white shrink-0">{account.name?.[0]?.toUpperCase() ?? '?'}</span>
               <span className="max-w-[100px] truncate">{account.name?.split(' ')[0]}</span>

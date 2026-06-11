@@ -7,6 +7,7 @@ import { useCustomerAuth } from '@/store/customer-auth'
 import { currency } from '@/lib/utils'
 import { api } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
+import { useMounted } from '@/hooks/use-mounted'
 import Link from 'next/link'
 import { useState } from 'react'
 
@@ -37,6 +38,7 @@ export function StoreHeader({ store }: { store: StoreData }) {
   const { totalItems, subtotal, toggleCart } = useCartStore()
   const account = useCustomerAuth((s) => s.account)
   const isAuthenticated = useCustomerAuth((s) => s.isAuthenticated)
+  const mounted = useMounted()
   const [showHours, setShowHours] = useState(false)
 
   const { data: ratingSummary } = useQuery({
@@ -68,7 +70,7 @@ export function StoreHeader({ store }: { store: StoreData }) {
             className="flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-white hover:bg-white/20 transition px-3 py-1.5 text-xs font-bold"
             title="Minha conta"
           >
-            {isAuthenticated && account ? (
+            {mounted && isAuthenticated && account ? (
               <>
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shrink-0">{account.name?.[0]?.toUpperCase() ?? '?'}</span>
                 <span className="max-w-[90px] truncate">{account.name?.split(' ')[0]}</span>
@@ -110,7 +112,7 @@ export function StoreHeader({ store }: { store: StoreData }) {
           </div>
 
           {/* Botão carrinho mobile/tablet (no desktop fica o sidebar) */}
-          {itemCount > 0 && (
+          {mounted && itemCount > 0 && (
             <button
               onClick={toggleCart}
               className="lg:hidden flex items-center gap-2 rounded-full bg-primary hover:opacity-90 px-4 py-2 text-xs font-bold text-primary-foreground shadow-lg active:scale-95 transition self-start"

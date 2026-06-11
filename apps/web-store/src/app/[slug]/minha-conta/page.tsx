@@ -10,6 +10,7 @@ import { cn } from '@delivery/ui'
 import Link from 'next/link'
 import { useCustomerAuth } from '@/store/customer-auth'
 import { AccountDashboard } from '@/components/account/AccountDashboard'
+import { useMounted } from '@/hooks/use-mounted'
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   PENDING:          { label: 'Pendente',       color: 'bg-yellow-100 text-yellow-700' },
@@ -30,6 +31,7 @@ export default function MinhaContaPage() {
   const { slug } = useParams<{ slug: string }>()
   const router = useRouter()
   const isAuthenticated = useCustomerAuth((s) => s.isAuthenticated)
+  const mounted = useMounted()
 
   // Fallback legado: consulta por telefone (mantido para visitantes nesta loja)
   const [inputPhone, setInputPhone] = useState('')
@@ -95,7 +97,7 @@ export default function MinhaContaPage() {
       </header>
 
       <div className="mx-auto max-w-xl px-4 py-6 space-y-5">
-        {isAuthenticated ? (
+        {!mounted ? null : isAuthenticated ? (
           <AccountDashboard />
         ) : (
           <>

@@ -9,6 +9,7 @@ import { api } from '@/lib/api'
 import { currency } from '@/lib/utils'
 import { useCartStore, itemTotal } from '@/store/cart'
 import { useCustomerAuth } from '@/store/customer-auth'
+import { useMounted } from '@/hooks/use-mounted'
 
 interface DeliveryArea {
   id: string; type: string; fee: number; freeFrom: number | null
@@ -17,6 +18,7 @@ interface DeliveryArea {
 
 interface StoreData {
   id: string; name: string; slug: string; estimatedTime: number
+  minOrderValue: number
   paymentMethods: { id: string; type: string; label: string }[]
   deliveryAreas: DeliveryArea[]
 }
@@ -200,13 +202,16 @@ export default function CheckoutPage() {
 
   // Flag para evitar que o guardião de carrinho vazio dispare durante a submissão
   const submittingRef = useRef(false)
+  const mounted = useMounted()
 
   // Redireciona se carrinho vazio (mas não enquanto estamos enviando o pedido)
   useEffect(() => {
-    if (submittingRef.current) return
+    if (!mounted || submittingRef.current) return
     if (items.length === 0) router.replace(`/${slug}`)
-  }, [items.length, slug, router])
+  }, [mounted, items.length, slug, router])
 
+  // Evita mismatch de hidratação: o carrinho vem do localStorage (só existe no cliente)
+  if (!mounted) return null
   if (items.length === 0 && !submittingRef.current) return null
 
   // Skeleton enquanto carrega dados da loja
