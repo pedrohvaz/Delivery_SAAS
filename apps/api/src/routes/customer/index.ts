@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify'
 import { hashPassword, verifyPassword } from '../../lib/hash'
 import { authenticateCustomer } from '../../middlewares/authenticate-customer'
 import { customerRegisterSchema, customerLoginSchema, customerRefreshSchema, accountAddressSchema } from './schemas'
+import { AUTH_RATE_LIMIT } from '../auth/index.js'
 import type { CustomerJwtPayload } from '@delivery/types'
 
 // Só dígitos — telefone canônico da conta global
@@ -21,7 +22,7 @@ function accountId(request: { user: unknown }): string {
 
 const customerRoutes: FastifyPluginAsync = async (app) => {
   // ─── POST /customer/register ──────────────────────────────────────
-  app.post('/register', async (request, reply) => {
+  app.post('/register', AUTH_RATE_LIMIT, async (request, reply) => {
     const result = customerRegisterSchema.safeParse(request.body)
     if (!result.success) {
       return reply.status(400).send({ error: 'Validation Error', message: result.error.issues[0]?.message ?? 'Dados inválidos', statusCode: 400 })
@@ -100,7 +101,7 @@ const customerRoutes: FastifyPluginAsync = async (app) => {
   })
 
   // ─── POST /customer/login ─────────────────────────────────────────
-  app.post('/login', async (request, reply) => {
+  app.post('/login', AUTH_RATE_LIMIT, async (request, reply) => {
     const result = customerLoginSchema.safeParse(request.body)
     if (!result.success) {
       return reply.status(400).send({ error: 'Validation Error', message: 'Dados inválidos', statusCode: 400 })

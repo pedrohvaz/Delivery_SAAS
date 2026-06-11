@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { authenticateSuperAdmin } from '../../middlewares/authenticate-super-admin.js'
+import { AUTH_RATE_LIMIT } from '../auth/index.js'
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -10,7 +11,7 @@ const loginSchema = z.object({
 
 const superAdminAuthRoutes: FastifyPluginAsync = async (app) => {
   // POST /super-admin/auth/login
-  app.post('/login', async (request, reply) => {
+  app.post('/login', AUTH_RATE_LIMIT, async (request, reply) => {
     const body = loginSchema.safeParse(request.body)
     if (!body.success) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Dados inválidos', statusCode: 400 })
