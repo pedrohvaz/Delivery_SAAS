@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
-import { LayoutDashboard, Store, ShoppingBag, UserCircle, LogOut, CreditCard, Users, ShieldCheck, BarChart2, Activity, Settings2, Receipt } from 'lucide-react'
+import { LayoutDashboard, Store, ShoppingBag, UserCircle, LogOut, CreditCard, Users, ShieldCheck, BarChart2, Activity, Settings2, Receipt, Menu, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -13,6 +13,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const { isAuthenticated, admin, logout, fetchMe } = useAuthStore()
   const [hydrated, setHydrated] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true))
@@ -45,10 +46,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: '/dashboard/conta',          label: 'Minha Conta',      icon: UserCircle },
   ]
 
-  return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar */}
-      <aside className="w-60 flex-shrink-0 border-r bg-card flex flex-col">
+  const sidebar = (
+      <aside className="w-60 h-full flex-shrink-0 border-r bg-card flex flex-col">
         <div className="h-16 flex items-center px-6 border-b">
           <span className="font-bold text-lg">⚙️ Super Admin</span>
         </div>
@@ -82,11 +81,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </div>
       </aside>
+  )
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Sidebar fixa no desktop */}
+      <div className="hidden md:block h-full">{sidebar}</div>
+
+      {/* Sidebar como drawer no mobile */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <div className="relative z-10 h-full w-64 max-w-[80vw]" onClick={() => setSidebarOpen(false)}>{sidebar}</div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="absolute top-3 right-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow"
+            aria-label="Fechar menu"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto">
-        {children}
-      </main>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <header className="md:hidden flex items-center gap-3 border-b bg-card px-4 py-3 shrink-0">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border bg-white"
+            aria-label="Abrir menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <span className="font-bold text-sm">⚙️ Super Admin</span>
+        </header>
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </div>
     </div>
   )
 }
