@@ -40,6 +40,13 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
 const STEPS_DELIVERY = ['Confirmado', 'Em produção', 'Saiu para entrega', 'Entregue']
 const STEPS_PICKUP   = ['Confirmado', 'Em produção', 'Pronto para retirar', 'Retirado']
 
+const PAYMENT_LABELS: Record<string, string> = {
+  PIX: 'Pix',
+  CASH: 'Dinheiro',
+  CREDIT_CARD: 'Cartão de Crédito',
+  DEBIT_CARD: 'Cartão de Débito',
+}
+
 function ReviewWidget({ orderId }: { orderId: string }) {
   const [rating, setRating] = useState(0)
   const [hover, setHover] = useState(0)
@@ -321,7 +328,7 @@ export default function OrderTrackPage() {
         {order.paymentMethod && (
           <div className="rounded-2xl bg-white border p-4">
             <p className="text-sm font-semibold mb-1">Pagamento</p>
-            <p className="text-sm text-muted-foreground capitalize">{order.paymentMethod.replace('_', ' ').toLowerCase()}</p>
+            <p className="text-sm text-muted-foreground">{PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod}</p>
           </div>
         )}
 
