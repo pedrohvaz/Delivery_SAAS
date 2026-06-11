@@ -12,9 +12,12 @@ function signRefresh(app: Parameters<FastifyPluginAsync>[0], sub: string): strin
   return (app.jwt.sign as any)({ sub }, { expiresIn: '30d' })
 }
 
+// Limite agressivo nas rotas de autenticação (anti força-bruta)
+export const AUTH_RATE_LIMIT = { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }
+
 const authRoutes: FastifyPluginAsync = async (app) => {
   // ─── POST /auth/register ──────────────────────────────────────────
-  app.post('/register', async (request, reply) => {
+  app.post('/register', AUTH_RATE_LIMIT, async (request, reply) => {
     const result = registerSchema.safeParse(request.body)
     if (!result.success) {
       return reply.status(400).send({
@@ -241,7 +244,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
   })
 
   // ─── POST /auth/login ─────────────────────────────────────────────
-  app.post('/login', async (request, reply) => {
+  app.post('/login', AUTH_RATE_LIMIT, async (request, reply) => {
     const result = loginSchema.safeParse(request.body)
     if (!result.success) {
       return reply.status(400).send({
