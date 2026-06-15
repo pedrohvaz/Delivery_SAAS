@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { RefreshCw, Bell, RotateCcw, AlertTriangle, X } from 'lucide-react'
+import { RefreshCw, Bell, RotateCcw, AlertTriangle, X, LayoutGrid, Columns3 } from 'lucide-react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Socket } from 'socket.io-client'
 import { useOrders, useUpdateOrderStatus, STATUS_CONFIG, getNextStatus, type Order } from '@/hooks/use-orders'
 import { OrderCard } from '@/components/pedidos/order-card'
+import { OrderBoard } from '@/components/pedidos/order-board'
 import { OrderModal } from '@/components/pedidos/order-modal'
 import { useAuthStore } from '@/store/auth'
 import { createSocket, playNewOrderSound } from '@/lib/socket'
@@ -32,9 +33,20 @@ export default function PedidosPage() {
   const updateStatus = useUpdateOrderStatus()
 
   const [tab, setTab] = useState<Tab>('active')
+  const [view, setView] = useState<'board' | 'grid'>('board')
   const [statusFilter, setStatusFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [search, setSearch] = useState('')
+
+  // Preferência de visualização (Quadro/Grade) persistida
+  useEffect(() => {
+    const saved = localStorage.getItem('pedidos-view')
+    if (saved === 'board' || saved === 'grid') setView(saved)
+  }, [])
+  function changeView(v: 'board' | 'grid') {
+    setView(v)
+    localStorage.setItem('pedidos-view', v)
+  }
   const [showNoticeInput, setShowNoticeInput] = useState(false)
   const [noticeMsg, setNoticeMsg] = useState('')
   const createNotice = useMutation({
@@ -70,9 +82,14 @@ export default function PedidosPage() {
   }, [accessToken, qc])
 
   // ── Dados ──────────────────────────────────────────────────────────
-  const { data: allOrders = [], isLoading, refetch, isFetching } = useOrders(
-    tab === 'scheduled' ? { scheduled: true } : undefined,
-  )
+  // Busca os dois conjuntos (normais e agendados) para os contadores das abas
+  // ficarem corretos independente da aba ativa.
+  const regular = useOrders()
+  const scheduled = useOrders({ scheduled: true })
+  const allOrders = tab === 'scheduled' ? (scheduled.data ?? []) : (regular.data ?? [])
+  const isLoading = tab === 'scheduled' ? scheduled.isLoading : regular.isLoading
+  const isFetching = regular.isFetching || scheduled.isFetching
+  const refetch = () => { regular.refetch(); scheduled.refetch() }
 
   // Filtra client-side por tab + statusFilter + search
   const filteredOrders = allOrders.filter((order) => {
@@ -91,8 +108,11 @@ export default function PedidosPage() {
     return true
   })
 
-  const activeCount = allOrders.filter((o) => ACTIVE_STATUSES.has(o.status)).length
-  const pendingCount = allOrders.filter((o) => o.status === 'PENDING').length
+  const regularOrders = regular.data ?? []
+  const activeCount = regularOrders.filter((o) => ACTIVE_STATUSES.has(o.status)).length
+  const doneCount = regularOrders.filter((o) => DONE_STATUSES.has(o.status)).length
+  const scheduledCount = (scheduled.data ?? []).length
+  const pendingCount = regularOrders.filter((o) => o.status === 'PENDING').length
 
   // Avisos internos
   const { data: notices = [] } = useQuery({
@@ -188,8 +208,8 @@ export default function PedidosPage() {
       <div className="flex border-b bg-white px-6">
         {[
           { key: 'active' as Tab, label: `Ativos (${activeCount})` },
-          { key: 'scheduled' as Tab, label: 'Agendados' },
-          { key: 'done' as Tab, label: 'Finalizados' },
+          { key: 'scheduled' as Tab, label: `Agendados (${scheduledCount})` },
+          { key: 'done' as Tab, label: `Finalizados (${doneCount})` },
         ].map(({ key, label }) => (
           <button
             key={key}
@@ -233,39 +253,62 @@ export default function PedidosPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          {tab === 'active' && (
+            <div className="flex gap-0.5 rounded-xl border bg-white p-0.5">
+              <button onClick={() => changeView('board')} title="Quadro"
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${view === 'board' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                <Columns3 className="h-4 w-4" />
+              </button>
+              <button onClick={() => changeView('grid')} title="Grade"
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${view === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Grid de pedidos */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-48 rounded-2xl bg-muted animate-pulse" />
-            ))}
-          </div>
-        ) : filteredOrders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-16">
-            <div className="text-5xl">📋</div>
-            <p className="font-semibold text-foreground">Nenhum pedido encontrado</p>
-            <p className="text-sm text-muted-foreground">
-              {tab === 'active' ? 'Aguardando novos pedidos...' : 'Sem pedidos nesta categoria.'}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {filteredOrders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                onAdvance={handleAdvance}
-                onCancel={handleCancel}
-                onClick={setSelectedOrder}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Pedidos: quadro (Kanban) nos Ativos ou grade */}
+      {tab === 'active' && view === 'board' && !isLoading && filteredOrders.length > 0 ? (
+        <div className="flex-1 overflow-hidden px-6 py-4">
+          <OrderBoard
+            orders={filteredOrders}
+            onAdvance={handleAdvance}
+            onCancel={handleCancel}
+            onClick={setSelectedOrder}
+          />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-48 rounded-2xl bg-muted animate-pulse" />
+              ))}
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-16">
+              <div className="text-5xl">📋</div>
+              <p className="font-semibold text-foreground">Nenhum pedido encontrado</p>
+              <p className="text-sm text-muted-foreground">
+                {tab === 'active' ? 'Aguardando novos pedidos...' : 'Sem pedidos nesta categoria.'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {filteredOrders.map((order) => (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  onAdvance={handleAdvance}
+                  onCancel={handleCancel}
+                  onClick={setSelectedOrder}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modal de detalhes */}
       <OrderModal

@@ -1,0 +1,84 @@
+# Stack de produção da Evolution API (WhatsApp) para rodar em um VPS.
+# Inclui Postgres + Redis dedicados e VOLUMES persistentes (essencial para
+# manter as sessões do WhatsApp entre restarts/deploys).
+#
+# Subir:   docker compose --env-file .env up -d
+# Logs:    docker compose logs -f evolution-api
+# Parar:   docker compose down            (NÃO use -v, senão apaga as sessões)
+
+services:
+  evolution-api:
+    image: atendai/evolution-api:v2.3.7
+    container_name: evolution-api
+    restart: always
+    # Publica só no localhost do host: acesso externo passa pelo Caddy (HTTPS).
+    # Em dev, a API (no host) alcança via 127.0.0.1:${EVOLUTION_PORT}.
+    ports:
+      - '127.0.0.1:${EVOLUTION_PORT:-8080}:8080'
+    env_file: .env
+    depends_on:
+      evolution-postgres:
+        condition: service_healthy
+      evolution-redis:
+        condition: service_started
+    volumes:
+      - evolution_instances:/evolution/instances
+    networks: [evolution_net]
+
+  evolution-postgres:
+    image: postgres:16-alpine
+    container_name: evolution-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - evolution_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [evolution_net]
+
+  evolution-redis:
+    image: redis:7-alpine
+    container_name: evolution-redis
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - evolution_redisdata:/data
+    networks: [evolution_net]
+
+  # Proxy HTTPS automático (Let's Encrypt). Só sobe com: --profile proxy
+  # Requer EVOLUTION_DOMAIN apontando (registro A) para o IP deste servidor
+  # e as portas 80/443 livres.
+  caddy:
+    image: caddy:2-alpine
+    container_name: evolution-caddy
+    restart: always
+    profiles: ['proxy']
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      EVOLUTION_DOMAIN: ${EVOLUTION_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - evolution-api
+    networks: [evolution_net]
+
+volumes:
+  evolution_instances: # sessões do WhatsApp — NÃO apagar
+  evolution_pgdata:
+  evolution_redisdata:
+  caddy_data: # certificados HTTPS — não apagar
+  caddy_config:
+
+networks:
+  evolution_net:
+    driver: bridge

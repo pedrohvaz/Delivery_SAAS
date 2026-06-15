@@ -12,80 +12,80 @@ datasource db {
 // ─────────────────────────────────────────
 
 model Store {
-  id          String  @id @default(uuid())
-  name        String
-  slug        String  @unique // ex: minha-loja
-  logoUrl     String?
-  phone       String?
-  address     String?
-  number      String?
-  complement  String?
-  district    String?
-  city        String?
-  state       String?
-  zipCode     String?
-  lat         Float?
-  lng         Float?
-  instagram   String?
-  facebook    String?
-  whatsapp    String?
-  description String?
-  status      StoreStatus @default(ACTIVE)
-  suspendedAt DateTime?
+  id            String      @id @default(uuid())
+  name          String
+  slug          String      @unique // ex: minha-loja
+  logoUrl       String?
+  phone         String?
+  address       String?
+  number        String?
+  complement    String?
+  district      String?
+  city          String?
+  state         String?
+  zipCode       String?
+  lat           Float?
+  lng           Float?
+  instagram     String?
+  facebook      String?
+  whatsapp      String?
+  description   String?
+  status        StoreStatus @default(ACTIVE)
+  suspendedAt   DateTime?
   suspendReason String?
-  isOpen      Boolean @default(false)
-  acceptOrders Boolean @default(true)
-  timezone    String  @default("America/Sao_Paulo")
-  minOrderValue Decimal @default(0)
-  estimatedTime Int    @default(45) // minutos
+  isOpen        Boolean     @default(false)
+  acceptOrders  Boolean     @default(true)
+  timezone      String      @default("America/Sao_Paulo")
+  minOrderValue Decimal     @default(0)
+  estimatedTime Int         @default(45) // minutos
 
   // Gateway de pagamento
   asaasApiKey  String?
   asaasSandbox Boolean @default(true)
 
   // Evolution API (WhatsApp)
-  evolutionApiUrl  String?
-  evolutionApiKey  String?
+  evolutionApiUrl   String?
+  evolutionApiKey   String?
   evolutionInstance String?
 
   // Aparência da vitrine
-  primaryColor  String  @default("#f97316")
-  layoutStyle   String  @default("grid")
-  bannerUrl     String?
+  primaryColor String  @default("#f97316")
+  layoutStyle  String  @default("grid")
+  bannerUrl    String?
 
   // Integrações de marketing
-  facebookPixelId  String?
+  facebookPixelId    String?
   googleTagManagerId String?
 
   // Avisos
-  storeNotice      String?   // aviso público no cardápio
-  storeNoticeType  String?   // "info" | "warning" | "success"
+  storeNotice     String? // aviso público no cardápio
+  storeNoticeType String? // "info" | "warning" | "success"
 
   // Configurações de som (admin)
-  orderSoundUrl    String?   // URL do som customizado para novos pedidos
+  orderSoundUrl String? // URL do som customizado para novos pedidos
 
   // Domínio próprio
-  mpAccessToken    String?
-  mpPublicKey      String?
-  mpSandbox        Boolean @default(true)
+  mpAccessToken String?
+  mpPublicKey   String?
+  mpSandbox     Boolean @default(true)
 
   // Domínio próprio
-  customDomain     String?
+  customDomain String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users         User[]
-  categories    Category[]
-  products      Product[]
-  orders        Order[]
-  customers     Customer[]
-  deliveryAreas DeliveryArea[]
-  coupons       Coupon[]
-  deliverymen   Deliveryman[]
-  tables        Table[]
-  paymentMethods PaymentMethod[]
-  schedules     StoreSchedule[]
+  users             User[]
+  categories        Category[]
+  products          Product[]
+  orders            Order[]
+  customers         Customer[]
+  deliveryAreas     DeliveryArea[]
+  coupons           Coupon[]
+  deliverymen       Deliveryman[]
+  tables            Table[]
+  paymentMethods    PaymentMethod[]
+  schedules         StoreSchedule[]
   cashback          CashbackConfig?
   cashRegisters     CashRegister[]
   automationConfig  AutomationConfig?
@@ -96,10 +96,11 @@ model Store {
   customerLoyalties CustomerLoyalty[]
   raffles           Raffle[]
   internalNotices   InternalNotice[]
+  generatedMenus    GeneratedMenu[]
 
   // Assinatura
-  subscription      Subscription?
-  stripeCustomerId  String?       @unique
+  subscription     Subscription?
+  stripeCustomerId String?       @unique
 }
 
 // ─────────────────────────────────────────
@@ -107,67 +108,67 @@ model Store {
 // ─────────────────────────────────────────
 
 model Plan {
-  id              String   @id @default(uuid())
-  slug            String   @unique  // ex: "gratis", "pro", "elite"
-  name            String                  // "Grátis", "Pro", "Elite"
-  tagline         String?                 // "Pra começar sem medo"
-  monthlyPrice    Decimal  @default(0)    // valor em R$ (informativo, fonte da verdade é o Stripe)
+  id           String  @id @default(uuid())
+  slug         String  @unique // ex: "gratis", "pro", "elite"
+  name         String // "Grátis", "Pro", "Elite"
+  tagline      String? // "Pra começar sem medo"
+  monthlyPrice Decimal @default(0) // valor em R$ (informativo, fonte da verdade é o Stripe)
 
   // Stripe
-  stripeProductId String?  @unique
-  stripePriceId   String?  @unique        // price_id mensal no Stripe
+  stripeProductId String? @unique
+  stripePriceId   String? @unique // price_id mensal no Stripe
 
   // Features e limites (JSON)
-  features        Json     @default("[]") // string[] - lista de features para exibir
-  limits          Json     @default("{}") // { maxOrders, maxUsers, maxStores, etc }
+  features Json @default("[]") // string[] - lista de features para exibir
+  limits   Json @default("{}") // { maxOrders, maxUsers, maxStores, etc }
 
   // Cores e destaque (para a landing)
-  color           String   @default("from-gray-400 to-gray-500")
-  highlight       Boolean  @default(false)
-  badge           String?
+  color     String  @default("from-gray-400 to-gray-500")
+  highlight Boolean @default(false)
+  badge     String?
 
-  isActive        Boolean  @default(true)
-  position        Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  isActive  Boolean  @default(true)
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  subscriptions   Subscription[]
+  subscriptions Subscription[]
 
   @@index([isActive, position])
 }
 
 model Subscription {
-  id                    String              @id @default(uuid())
-  storeId               String              @unique
-  planId                String
-  status                SubscriptionStatus  @default(TRIALING)
+  id      String             @id @default(uuid())
+  storeId String             @unique
+  planId  String
+  status  SubscriptionStatus @default(TRIALING)
 
   // Stripe
-  stripeSubscriptionId  String?             @unique
-  stripeCustomerId      String?
+  stripeSubscriptionId String? @unique
+  stripeCustomerId     String?
 
-  trialEndsAt           DateTime?
-  currentPeriodStart    DateTime?
-  currentPeriodEnd      DateTime?
-  canceledAt            DateTime?
-  cancelAtPeriodEnd     Boolean             @default(false)
+  trialEndsAt        DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  canceledAt         DateTime?
+  cancelAtPeriodEnd  Boolean   @default(false)
 
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  store                 Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  plan                  Plan                @relation(fields: [planId], references: [id])
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  plan  Plan  @relation(fields: [planId], references: [id])
 
   @@index([status])
 }
 
 enum SubscriptionStatus {
-  TRIALING       // período de teste grátis
-  ACTIVE         // pagando normalmente
-  PAST_DUE       // pagamento falhou, ainda no período de carência
-  CANCELED       // cancelada
-  INCOMPLETE     // checkout não concluído
-  UNPAID         // suspensa por inadimplência
+  TRIALING // período de teste grátis
+  ACTIVE // pagando normalmente
+  PAST_DUE // pagamento falhou, ainda no período de carência
+  CANCELED // cancelada
+  INCOMPLETE // checkout não concluído
+  UNPAID // suspensa por inadimplência
 }
 
 // ─────────────────────────────────────────
@@ -237,26 +238,26 @@ enum AvailableFor {
 }
 
 model Product {
-  id            String   @id @default(uuid())
-  storeId       String
-  categoryId    String
-  name          String
-  description   String?
-  price         Decimal
-  imageUrl      String?
-  isActive      Boolean  @default(true)
-  position      Int      @default(0)
-  tags          String[] // vegano, destaque, novo, etc.
-  stockControl  Boolean  @default(false)
-  stockQty      Int?
-  minStock      Int?
-  avgCost       Decimal?
-  availableFor  AvailableFor @default(BOTH)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String       @id @default(uuid())
+  storeId      String
+  categoryId   String
+  name         String
+  description  String?
+  price        Decimal
+  imageUrl     String?
+  isActive     Boolean      @default(true)
+  position     Int          @default(0)
+  tags         String[] // vegano, destaque, novo, etc.
+  stockControl Boolean      @default(false)
+  stockQty     Int?
+  minStock     Int?
+  avgCost      Decimal?
+  availableFor AvailableFor @default(BOTH)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
-  store      Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  category   Category     @relation(fields: [categoryId], references: [id])
+  store       Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  category    Category     @relation(fields: [categoryId], references: [id])
   addonGroups AddonGroup[]
   orderItems  OrderItem[]
 }
@@ -292,7 +293,7 @@ model AddonOption {
 model Customer {
   id        String   @id @default(uuid())
   storeId   String
-  accountId String?  // vínculo opcional com a conta global (estilo iFood)
+  accountId String? // vínculo opcional com a conta global (estilo iFood)
   name      String
   phone     String?
   email     String?
@@ -301,13 +302,14 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  store     Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  account   CustomerAccount?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
-  addresses CustomerAddress[]
-  orders    Order[]
-  loyalty   CustomerLoyalty[]
-  raffleEntries RaffleEntry[]
+  store           Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  account         CustomerAccount?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  addresses       CustomerAddress[]
+  orders          Order[]
+  loyalty         CustomerLoyalty[]
+  raffleEntries   RaffleEntry[]
   reviewsReceived CustomerReview[]
+  conversations   Conversation[]
 
   @@unique([storeId, phone])
   @@index([accountId])
@@ -334,7 +336,7 @@ model CustomerAccount {
 model CustomerAccountAddress {
   id         String   @id @default(uuid())
   accountId  String
-  label      String?  // "Casa", "Trabalho"
+  label      String? // "Casa", "Trabalho"
   street     String
   number     String
   complement String?
@@ -355,19 +357,19 @@ model CustomerAccountAddress {
 }
 
 model CustomerAddress {
-  id          String  @id @default(uuid())
-  customerId  String
-  street      String
-  number      String
-  complement  String?
-  district    String
-  city        String
-  state       String
-  zipCode     String
-  lat         Float?
-  lng         Float?
-  isDefault   Boolean @default(false)
-  reference   String?
+  id         String  @id @default(uuid())
+  customerId String
+  street     String
+  number     String
+  complement String?
+  district   String
+  city       String
+  state      String
+  zipCode    String
+  lat        Float?
+  lng        Float?
+  isDefault  Boolean @default(false)
+  reference  String?
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 }
@@ -385,7 +387,7 @@ model Order {
   status        OrderStatus   @default(PENDING)
   paymentStatus PaymentStatus @default(PENDING)
   paymentMethod String?
-  changeFor     Decimal?      // troco para dinheiro (valor que o cliente vai pagar)
+  changeFor     Decimal? // troco para dinheiro (valor que o cliente vai pagar)
   subtotal      Decimal
   deliveryFee   Decimal       @default(0)
   discount      Decimal       @default(0)
@@ -393,19 +395,19 @@ model Order {
   notes         String?
   scheduledTo   DateTime?
   cancelReason  String?
-  address       Json?         // snapshot do endereço
+  address       Json? // snapshot do endereço
   deliverymanId String?
   couponId      String?
   tableId       String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  store       Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  customer    Customer?    @relation(fields: [customerId], references: [id])
-  deliveryman Deliveryman? @relation(fields: [deliverymanId], references: [id])
-  table       Table?       @relation(fields: [tableId], references: [id])
-  items       OrderItem[]
-  payments    Payment[]
+  store          Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customer       Customer?       @relation(fields: [customerId], references: [id])
+  deliveryman    Deliveryman?    @relation(fields: [deliverymanId], references: [id])
+  table          Table?          @relation(fields: [tableId], references: [id])
+  items          OrderItem[]
+  payments       Payment[]
   review         OrderReview?
   customerReview CustomerReview?
 
@@ -440,7 +442,7 @@ model OrderItem {
   id        String  @id @default(uuid())
   orderId   String
   productId String
-  name      String  // snapshot
+  name      String // snapshot
   price     Decimal // snapshot
   quantity  Int
   notes     String?
@@ -455,15 +457,15 @@ model OrderItem {
 // ─────────────────────────────────────────
 
 model Payment {
-  id            String        @id @default(uuid())
-  orderId       String
-  method        String        // PIX, CREDIT_CARD, CASH...
-  amount        Decimal
-  status        PaymentStatus @default(PENDING)
-  gatewayId     String?       // ID externo (Asaas, Pagar.me)
-  gatewayData   Json?         // dados do gateway (QR code, etc.)
-  paidAt        DateTime?
-  createdAt     DateTime      @default(now())
+  id          String        @id @default(uuid())
+  orderId     String
+  method      String // PIX, CREDIT_CARD, CASH...
+  amount      Decimal
+  status      PaymentStatus @default(PENDING)
+  gatewayId   String? // ID externo (Asaas, Pagar.me)
+  gatewayData Json? // dados do gateway (QR code, etc.)
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
@@ -471,10 +473,10 @@ model Payment {
 model PaymentMethod {
   id       String  @id @default(uuid())
   storeId  String
-  type     String  // PIX, CREDIT_CARD, DEBIT_CARD, CASH, PICPAY
-  label    String  // nome exibido ao cliente
+  type     String // PIX, CREDIT_CARD, DEBIT_CARD, CASH, PICPAY
+  label    String // nome exibido ao cliente
   isActive Boolean @default(true)
-  config   Json?   // chave pix, credenciais, etc.
+  config   Json? // chave pix, credenciais, etc.
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
 }
@@ -486,8 +488,8 @@ model PaymentMethod {
 model Table {
   id        String   @id @default(uuid())
   storeId   String
-  number    Int      // número da mesa (1, 2, 3...)
-  label     String?  // nome personalizado (ex: "Varanda 1")
+  number    Int // número da mesa (1, 2, 3...)
+  label     String? // nome personalizado (ex: "Varanda 1")
   capacity  Int      @default(4)
   isActive  Boolean  @default(true)
   qrToken   String   @unique @default(uuid()) // token no QR Code
@@ -522,17 +524,17 @@ model Deliveryman {
 // ─────────────────────────────────────────
 
 model DeliveryArea {
-  id        String   @id @default(uuid())
-  storeId   String
-  name      String?
-  type      AreaType
-  fee       Decimal
-  minOrder  Decimal  @default(0)
-  freeFrom  Decimal? // entrega grátis a partir de R$
-  polygon   Json?    // GeoJSON para área poligonal
-  radiusKm  Float?   // para tipo RADIUS
-  district  String?  // para tipo DISTRICT
-  isActive  Boolean  @default(true)
+  id       String   @id @default(uuid())
+  storeId  String
+  name     String?
+  type     AreaType
+  fee      Decimal
+  minOrder Decimal  @default(0)
+  freeFrom Decimal? // entrega grátis a partir de R$
+  polygon  Json? // GeoJSON para área poligonal
+  radiusKm Float? // para tipo RADIUS
+  district String? // para tipo DISTRICT
+  isActive Boolean  @default(true)
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
 }
@@ -550,9 +552,9 @@ enum AreaType {
 model StoreSchedule {
   id        String  @id @default(uuid())
   storeId   String
-  dayOfWeek Int     // 0=Dom, 1=Seg ... 6=Sab
-  openTime  String  // "08:00"
-  closeTime String  // "22:00"
+  dayOfWeek Int // 0=Dom, 1=Seg ... 6=Sab
+  openTime  String // "08:00"
+  closeTime String // "22:00"
   isActive  Boolean @default(true)
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
@@ -563,17 +565,17 @@ model StoreSchedule {
 // ─────────────────────────────────────────
 
 model Coupon {
-  id         String     @id @default(uuid())
-  storeId    String
-  code       String
-  type       CouponType
-  value      Decimal
-  minOrder   Decimal    @default(0)
-  maxUses    Int?
-  usedCount  Int        @default(0)
-  expiresAt  DateTime?
-  isActive   Boolean    @default(true)
-  createdAt  DateTime   @default(now())
+  id        String     @id @default(uuid())
+  storeId   String
+  code      String
+  type      CouponType
+  value     Decimal
+  minOrder  Decimal    @default(0)
+  maxUses   Int?
+  usedCount Int        @default(0)
+  expiresAt DateTime?
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
@@ -593,18 +595,18 @@ enum CouponType {
 // ─────────────────────────────────────────
 
 model CashRegister {
-  id              String           @id @default(uuid())
+  id              String             @id @default(uuid())
   storeId         String
   userId          String
   status          CashRegisterStatus @default(OPEN)
-  openingBalance  Decimal          @default(0)
+  openingBalance  Decimal            @default(0)
   closingBalance  Decimal?
   expectedBalance Decimal?
   notes           String?
-  openedAt        DateTime         @default(now())
+  openedAt        DateTime           @default(now())
   closedAt        DateTime?
 
-  store        Store              @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  store        Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
   transactions CashTransaction[]
 }
 
@@ -626,7 +628,7 @@ enum CashRegisterStatus {
 }
 
 enum CashTransactionType {
-  DEPOSIT    // Suprimento
+  DEPOSIT // Suprimento
   WITHDRAWAL // Sangria
 }
 
@@ -655,27 +657,36 @@ model AutomationConfig {
   isEnabled    Boolean  @default(false)
   aiProvider   String   @default("claude")
   aiApiKey     String?
-  aiModel      String   @default("claude-haiku-4-5-20251001")
-  systemPrompt String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  aiModel       String   @default("claude-haiku-4-5-20251001")
+  systemPrompt  String?
+  closedMessage String? // mensagem automática quando a loja está fechada (placeholders: {horarios} {proxima_abertura} {cardapio})
+  webhookToken  String? // segredo por loja para validar o webhook do WhatsApp
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
 }
 
 model Conversation {
-  id            String             @id @default(uuid())
-  storeId       String
-  customerPhone String
-  customerName  String?
-  status        ConversationStatus @default(ACTIVE)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  id             String             @id @default(uuid())
+  storeId        String
+  customerPhone  String
+  customerName   String?
+  status         ConversationStatus @default(ACTIVE)
+  // Estado da sessão do bot híbrido (LLM livre vs fluxo fixo)
+  state          ConversationState  @default(LLM_FREE)
+  draft          Json? // rascunho do pedido (carrinho + endereço + pagamento + totais)
+  customerId     String? // vínculo ao Customer do tenant (CRM), quando identificado
+  stateUpdatedAt DateTime           @default(now())
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   store    Store                 @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customer Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
   messages ConversationMessage[]
 
   @@unique([storeId, customerPhone])
+  @@index([customerId])
 }
 
 model ConversationMessage {
@@ -691,6 +702,14 @@ model ConversationMessage {
 enum ConversationStatus {
   ACTIVE
   CLOSED
+}
+
+enum ConversationState {
+  LLM_FREE
+  COLLECTING_ADDRESS
+  SELECTING_PAYMENT
+  AWAITING_CONFIRMATION
+  FINALIZED
 }
 
 // ─────────────────────────────────────────
@@ -732,27 +751,27 @@ model CustomerReview {
 // ─────────────────────────────────────────
 
 model LoyaltyConfig {
-  id             String  @id @default(uuid())
-  storeId        String  @unique
-  isEnabled      Boolean @default(false)
-  pointsPerReal  Decimal @default(1)   // pontos ganhos por R$1
-  pointsToReal   Decimal @default(100) // quantos pontos = R$1
-  minRedeemPoints Int    @default(100)
-  expirationDays Int     @default(365)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(uuid())
+  storeId         String   @unique
+  isEnabled       Boolean  @default(false)
+  pointsPerReal   Decimal  @default(1) // pontos ganhos por R$1
+  pointsToReal    Decimal  @default(100) // quantos pontos = R$1
+  minRedeemPoints Int      @default(100)
+  expirationDays  Int      @default(365)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
 }
 
 model CustomerLoyalty {
-  id          String   @id @default(uuid())
-  storeId     String
-  customerId  String
-  points      Int      @default(0)
-  totalEarned Int      @default(0)
-  totalRedeemed Int    @default(0)
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(uuid())
+  storeId       String
+  customerId    String
+  points        Int      @default(0)
+  totalEarned   Int      @default(0)
+  totalRedeemed Int      @default(0)
+  updatedAt     DateTime @updatedAt
 
   store    Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
@@ -789,7 +808,7 @@ model RaffleEntry {
   name       String
   createdAt  DateTime @default(now())
 
-  raffle   Raffle   @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+  raffle   Raffle    @relation(fields: [raffleId], references: [id], onDelete: Cascade)
   customer Customer? @relation(fields: [customerId], references: [id])
 }
 
@@ -804,13 +823,31 @@ enum RaffleStatus {
 // ─────────────────────────────────────────
 
 model InternalNotice {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   storeId   String
   message   String
-  type      String   @default("info") // "info" | "warning" | "urgent"
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  type      String    @default("info") // "info" | "warning" | "urgent"
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
   expiresAt DateTime?
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────
+// CARDÁPIO GERADO (IMAGEM)
+// ─────────────────────────────────────────
+
+model GeneratedMenu {
+  id          String   @id @default(uuid())
+  storeId     String
+  imageUrl    String
+  mode        String // manual | ia_fundo | ia_completo
+  templateKey String // chave do template ou "custom"
+  config      Json // payload reduzido (para "gerar novamente")
+  createdAt   DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, createdAt])
 }

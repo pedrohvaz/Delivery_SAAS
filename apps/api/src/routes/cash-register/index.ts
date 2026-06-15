@@ -29,12 +29,13 @@ const cashRegisterRoutes: FastifyPluginAsync = async (app) => {
       _count: true,
     })
 
-    // Receita em dinheiro (CASH)
+    // Receita em dinheiro (CASH) — só pedidos PAGOS entram na gaveta
     const cashRevenue = await app.prisma.order.aggregate({
       where: {
         storeId,
         status: { not: 'CANCELLED' },
         paymentMethod: 'CASH',
+        paymentStatus: 'PAID',
         createdAt: { gte: register.openedAt },
       },
       _sum: { total: true },
@@ -114,7 +115,7 @@ const cashRegisterRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const cashRevenue = await app.prisma.order.aggregate({
-      where: { storeId, status: { not: 'CANCELLED' }, paymentMethod: 'CASH', createdAt: { gte: register.openedAt } },
+      where: { storeId, status: { not: 'CANCELLED' }, paymentMethod: 'CASH', paymentStatus: 'PAID', createdAt: { gte: register.openedAt } },
       _sum: { total: true },
     })
 
@@ -241,7 +242,7 @@ const cashRegisterRoutes: FastifyPluginAsync = async (app) => {
       // Necessário para calcular expectedBalance em caixas ainda abertos
       register.status === 'OPEN'
         ? app.prisma.order.aggregate({
-            where: { storeId, status: { not: 'CANCELLED' }, paymentMethod: 'CASH', createdAt: periodFilter },
+            where: { storeId, status: { not: 'CANCELLED' }, paymentMethod: 'CASH', paymentStatus: 'PAID', createdAt: periodFilter },
             _sum: { total: true },
           })
         : Promise.resolve(null),

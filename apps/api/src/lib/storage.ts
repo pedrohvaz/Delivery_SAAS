@@ -1,5 +1,5 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
-import { mkdirSync } from 'fs'
+import { mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import type { MultipartFile } from '@fastify/multipart'
 import sharp from 'sharp'
@@ -79,4 +79,30 @@ export async function uploadImage(file: MultipartFile, folder = 'products'): Pro
   const host = process.env.HOST ?? 'localhost'
   const port = process.env.PORT ?? '3333'
   return `http://${host === '0.0.0.0' ? 'localhost' : host}:${port}${relativePath}`
+}
+
+/** Faz upload de um buffer já pronto (ex.: imagem gerada pelo cardapio-service). */
+export async function uploadBuffer(buffer: Buffer, folder: string, ext = 'png', mimeType = 'image/png'): Promise<string> {
+  const filename = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+
+  if (isR2Configured()) {
+    const client = getR2Client()
+    await client.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: filename,
+      Body: buffer,
+      ContentType: mimeType,
+      CacheControl: 'public, max-age=31536000',
+    }))
+    return `${process.env.R2_PUBLIC_URL!.replace(/\/$/, '')}/${filename}`
+  }
+
+  const uploadsDir = join(process.cwd(), 'uploads', folder)
+  mkdirSync(uploadsDir, { recursive: true })
+  const localPath = join(process.cwd(), 'uploads', filename)
+  writeFileSync(localPath, buffer)
+
+  const host = process.env.HOST ?? 'localhost'
+  const port = process.env.PORT ?? '3333'
+  return `http://${host === '0.0.0.0' ? 'localhost' : host}:${port}/uploads/${filename}`
 }

@@ -1,0 +1,210 @@
+export interface CardapioTemplate {
+  cor_fundo: string
+  cor_card: string
+  cor_destaque: string
+  cor_texto: string
+  cor_preco: string
+  cor_categoria: string
+  cor_rodape: string
+  cor_header_texto: string
+  cor_info_fundo: string
+  cor_info_texto: string
+  cor_info_borda: string
+  cor_promo_fundo: string
+  cor_promo_texto: string
+  cor_promo_badge: string
+  cor_promo_badge_texto: string
+  is_promocao: boolean
+}
+
+export const REQUIRED_TEMPLATE_KEYS = [
+  'cor_fundo',
+  'cor_card',
+  'cor_destaque',
+  'cor_texto',
+  'cor_preco',
+  'cor_categoria',
+  'cor_rodape',
+  'cor_header_texto',
+  'cor_info_fundo',
+  'cor_info_texto',
+  'cor_info_borda',
+  'cor_promo_fundo',
+  'cor_promo_texto',
+  'cor_promo_badge',
+  'cor_promo_badge_texto',
+  'is_promocao',
+] as const
+
+export const CARDAPIO_TEMPLATES: Record<string, CardapioTemplate> = {
+  dark_red: {
+    cor_fundo: '#1a1a1a',
+    cor_card: '#2d2d2d',
+    cor_destaque: '#c0392b',
+    cor_texto: '#f5f5f5',
+    cor_preco: '#e74c3c',
+    cor_categoria: '#e74c3c',
+    cor_rodape: '#c0392b',
+    cor_header_texto: '#ffffff',
+    cor_info_fundo: '#2d2d2d',
+    cor_info_texto: '#f5f5f5',
+    cor_info_borda: '#c0392b',
+    cor_promo_fundo: '#c0392b',
+    cor_promo_texto: '#ffffff',
+    cor_promo_badge: '#f1c40f',
+    cor_promo_badge_texto: '#1a1a1a',
+    is_promocao: false,
+  },
+  light_fresh: {
+    cor_fundo: '#f7f9f7',
+    cor_card: '#ffffff',
+    cor_destaque: '#27ae60',
+    cor_texto: '#2c3e50',
+    cor_preco: '#27ae60',
+    cor_categoria: '#27ae60',
+    cor_rodape: '#27ae60',
+    cor_header_texto: '#ffffff',
+    cor_info_fundo: '#eafaf1',
+    cor_info_texto: '#2c3e50',
+    cor_info_borda: '#27ae60',
+    cor_promo_fundo: '#27ae60',
+    cor_promo_texto: '#ffffff',
+    cor_promo_badge: '#f39c12',
+    cor_promo_badge_texto: '#ffffff',
+    is_promocao: false,
+  },
+  elegante: {
+    cor_fundo: '#0d0d0d',
+    cor_card: '#1f1f1f',
+    cor_destaque: '#0d0d0d',
+    cor_texto: '#f0e6d2',
+    cor_preco: '#d4af37',
+    cor_categoria: '#d4af37',
+    cor_rodape: '#0d0d0d',
+    cor_header_texto: '#d4af37',
+    cor_info_fundo: '#1f1f1f',
+    cor_info_texto: '#f0e6d2',
+    cor_info_borda: '#d4af37',
+    cor_promo_fundo: '#d4af37',
+    cor_promo_texto: '#0d0d0d',
+    cor_promo_badge: '#c9a227',
+    cor_promo_badge_texto: '#0d0d0d',
+    is_promocao: false,
+  },
+  tropical: {
+    cor_fundo: '#fff8e1',
+    cor_card: '#ffffff',
+    cor_destaque: '#ff7043',
+    cor_texto: '#4e342e',
+    cor_preco: '#ff7043',
+    cor_categoria: '#f9a825',
+    cor_rodape: '#00897b',
+    cor_header_texto: '#ffffff',
+    cor_info_fundo: '#fff3e0',
+    cor_info_texto: '#4e342e',
+    cor_info_borda: '#ff7043',
+    cor_promo_fundo: '#ff7043',
+    cor_promo_texto: '#ffffff',
+    cor_promo_badge: '#fdd835',
+    cor_promo_badge_texto: '#4e342e',
+    is_promocao: false,
+  },
+  noite_azul: {
+    cor_fundo: '#0f1626',
+    cor_card: '#1c2740',
+    cor_destaque: '#2e86de',
+    cor_texto: '#e8edf5',
+    cor_preco: '#54a0ff',
+    cor_categoria: '#54a0ff',
+    cor_rodape: '#0f1626',
+    cor_header_texto: '#ffffff',
+    cor_info_fundo: '#1c2740',
+    cor_info_texto: '#e8edf5',
+    cor_info_borda: '#2e86de',
+    cor_promo_fundo: '#2e86de',
+    cor_promo_texto: '#ffffff',
+    cor_promo_badge: '#f1c40f',
+    cor_promo_badge_texto: '#0f1626',
+    is_promocao: false,
+  },
+  promo_fogo: {
+    cor_fundo: '#1a0a05',
+    cor_card: '#2b1108',
+    cor_destaque: '#ff4500',
+    cor_texto: '#fff5e6',
+    cor_preco: '#ffeb3b',
+    cor_categoria: '#ff7043',
+    cor_rodape: '#ff4500',
+    cor_header_texto: '#ffffff',
+    cor_info_fundo: '#2b1108',
+    cor_info_texto: '#fff5e6',
+    cor_info_borda: '#ff4500',
+    cor_promo_fundo: '#ff4500',
+    cor_promo_texto: '#ffffff',
+    cor_promo_badge: '#ffeb3b',
+    cor_promo_badge_texto: '#1a0a05',
+    is_promocao: true,
+  },
+  promo_black: {
+    cor_fundo: '#000000',
+    cor_card: '#1a1a1a',
+    cor_destaque: '#000000',
+    cor_texto: '#ffffff',
+    cor_preco: '#ffd700',
+    cor_categoria: '#ffd700',
+    cor_rodape: '#000000',
+    cor_header_texto: '#ffd700',
+    cor_info_fundo: '#1a1a1a',
+    cor_info_texto: '#ffffff',
+    cor_info_borda: '#ffd700',
+    cor_promo_fundo: '#ffd700',
+    cor_promo_texto: '#000000',
+    cor_promo_badge: '#ff0000',
+    cor_promo_badge_texto: '#ffffff',
+    is_promocao: true,
+  },
+  promo_verao: {
+    cor_fundo: '#e0f7fa',
+    cor_card: '#ffffff',
+    cor_destaque: '#00acc1',
+    cor_texto: '#01579b',
+    cor_preco: '#ff9800',
+    cor_categoria: '#00acc1',
+    cor_rodape: '#00acc1',
+    cor_header_texto: '#ffffff',
+    cor_info_fundo: '#fff8e1',
+    cor_info_texto: '#01579b',
+    cor_info_borda: '#00acc1',
+    cor_promo_fundo: '#ff9800',
+    cor_promo_texto: '#ffffff',
+    cor_promo_badge: '#ffeb3b',
+    cor_promo_badge_texto: '#01579b',
+    is_promocao: true,
+  },
+  promo_natal: {
+    cor_fundo: '#0b2e13',
+    cor_card: '#14401d',
+    cor_destaque: '#c0392b',
+    cor_texto: '#fdf6e3',
+    cor_preco: '#ffd700',
+    cor_categoria: '#ffd700',
+    cor_rodape: '#c0392b',
+    cor_header_texto: '#ffd700',
+    cor_info_fundo: '#14401d',
+    cor_info_texto: '#fdf6e3',
+    cor_info_borda: '#ffd700',
+    cor_promo_fundo: '#c0392b',
+    cor_promo_texto: '#fdf6e3',
+    cor_promo_badge: '#ffd700',
+    cor_promo_badge_texto: '#0b2e13',
+    is_promocao: true,
+  },
+}
+
+export function validateCustomTemplate(json: unknown): { valido: true } | { valido: false; faltando: string[] } {
+  if (typeof json !== 'object' || json === null) {
+    return { valido: false, faltando: [...REQUIRED_TEMPLATE_KEYS] }
+  }
+  const faltando = REQUIRED_TEMPLATE_KEYS.filter((key) => !(key in (json as Record<string, unknown>)))
+  return faltando.length === 0 ? { valido: true } : { valido: false, faltando }
+}

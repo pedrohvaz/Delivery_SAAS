@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CreditCard, Zap, Plus, Trash2, Check, X, MessageCircle, Palette, LayoutGrid, AlignJustify, ExternalLink, Building2 } from 'lucide-react'
+import { CreditCard, Zap, Plus, Trash2, Check, X, MessageCircle, Palette, LayoutGrid, AlignJustify, ExternalLink, Building2, Bell, BarChart3 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import {
   useSettings, useUpdateSettings, useTogglePaymentMethod,
@@ -17,10 +17,22 @@ const PAYMENT_TYPE_OPTIONS = [
   { type: 'PICPAY',      label: 'PicPay',             emoji: '📱' },
 ]
 
+type TabKey = 'loja' | 'pagamentos' | 'aparencia' | 'notificacoes' | 'marketing'
+
+const TABS: { key: TabKey; label: string; icon: typeof Building2 }[] = [
+  { key: 'loja', label: 'Loja', icon: Building2 },
+  { key: 'pagamentos', label: 'Pagamentos', icon: CreditCard },
+  { key: 'aparencia', label: 'Aparência', icon: Palette },
+  { key: 'notificacoes', label: 'Notificações', icon: Bell },
+  { key: 'marketing', label: 'Marketing', icon: BarChart3 },
+]
+
 export default function ConfiguracoesPage() {
   const { data: settings, isLoading } = useSettings()
   const { data: storeInfo } = useStoreInfo()
   const updateStoreInfo = useUpdateStoreInfo()
+
+  const [activeTab, setActiveTab] = useState<TabKey>('loja')
 
   // Dados da loja
   const [storeName, setStoreName] = useState('')
@@ -233,13 +245,38 @@ export default function ConfiguracoesPage() {
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-    <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
-        <p className="text-sm text-muted-foreground mt-1">Configure pagamentos, integrações e aparência da sua loja</p>
+    <div className="flex-1 overflow-y-auto">
+      {/* Cabeçalho + abas (sticky no topo) */}
+      <div className="sticky top-0 z-10 border-b bg-background/90 backdrop-blur">
+        <div className="mx-auto w-full max-w-3xl px-6 pt-6 pb-3 space-y-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
+            <p className="text-sm text-muted-foreground mt-1">Configure pagamentos, integrações e aparência da sua loja</p>
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+            {TABS.map((tab) => {
+              const Icon = tab.icon
+              const active = activeTab === tab.key
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition-colors ${active ? 'bg-primary text-primary-foreground shadow-sm' : 'border text-muted-foreground hover:bg-muted'}`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {tab.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </div>
 
+      {/* Conteúdo da aba */}
+      <div className="mx-auto w-full max-w-3xl px-6 py-6 space-y-6">
+
       {/* ── Dados da Loja ── */}
+      {activeTab === 'loja' && (
       <section className="rounded-2xl border bg-card p-5 space-y-5">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
@@ -317,7 +354,10 @@ export default function ConfiguracoesPage() {
         </form>
       </section>
 
+      )}
+
       {/* ── Formas de Pagamento ─────────────────────────────────────── */}
+      {activeTab === 'pagamentos' && (
       <section className="rounded-2xl border bg-card p-5 space-y-4">
         <div className="flex items-center gap-2">
           <CreditCard className="h-5 w-5 text-primary" />
@@ -413,7 +453,10 @@ export default function ConfiguracoesPage() {
         )}
       </section>
 
+      )}
+
       {/* ── WhatsApp — Evolution API ───────────────────────────────── */}
+      {activeTab === 'notificacoes' && (
       <section className="rounded-2xl border bg-card p-5 space-y-4">
         <div className="flex items-center gap-2">
           <MessageCircle className="h-5 w-5 text-green-600" />
@@ -477,7 +520,10 @@ export default function ConfiguracoesPage() {
         </form>
       </section>
 
+      )}
+
       {/* ── Mercado Pago ──────────────────────────────────────────────── */}
+      {activeTab === 'pagamentos' && (
       <section className="rounded-2xl border bg-card p-5 space-y-4">
         <div className="flex items-center gap-2">
           <span className="text-xl">💳</span>
@@ -513,7 +559,10 @@ export default function ConfiguracoesPage() {
         </form>
       </section>
 
+      )}
+
       {/* ── Gateway Asaas (Pix Online) ──────────────────────────────── */}
+      {activeTab === 'pagamentos' && (
       <section className="rounded-2xl border bg-card p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Zap className="h-5 w-5 text-primary" />
@@ -575,7 +624,10 @@ export default function ConfiguracoesPage() {
         </form>
       </section>
 
+      )}
+
       {/* ── Aparência da Vitrine ── */}
+      {activeTab === 'aparencia' && (
       <section className="rounded-2xl border bg-card p-5 space-y-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -703,17 +755,20 @@ export default function ConfiguracoesPage() {
         </form>
       </section>
 
+      )}
+
       {/* ── Marketing & Rastreamento ── */}
-      <MarketingSection settings={settings} />
+      {activeTab === 'marketing' && <MarketingSection settings={settings} />}
 
       {/* ── Avisos no Cardápio ── */}
-      <NoticeSection settings={settings} />
+      {activeTab === 'aparencia' && <NoticeSection settings={settings} />}
 
       {/* ── Som de Pedidos ── */}
-      <SoundSection settings={settings} />
+      {activeTab === 'notificacoes' && <SoundSection settings={settings} />}
 
       {/* ── Domínio Próprio ── */}
-      <DomainSection settings={settings} />
+      {activeTab === 'loja' && <DomainSection settings={settings} />}
+      </div>
     </div>
     </div>
   )

@@ -1,0 +1,5 @@
+# HTTPS automático (Let's Encrypt) para a Evolution API.
+# O domínio vem da variável EVOLUTION_DOMAIN (definida no .env).
+{$EVOLUTION_DOMAIN} {
+	reverse_proxy evolution-api:8080
+}

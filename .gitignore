@@ -7,6 +7,15 @@ node_modules
 dist
 build
 .turbo
+*.tsbuildinfo
+
+# Uploads locais (fallback de storage quando R2 não está configurado)
+apps/api/uploads/
+
+# Python (microsserviço de cardápio)
+.venv
+__pycache__/
+*.pyc
 
 # Environment
 .env

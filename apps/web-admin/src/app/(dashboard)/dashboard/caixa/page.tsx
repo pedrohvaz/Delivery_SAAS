@@ -539,6 +539,10 @@ export default function CaixaPage() {
       if (orderType === 'TABLE') body.tableId = tableId
 
       const { data } = await api.post('/orders', body)
+      // Venda de balcão em dinheiro já é paga na hora → marca como paga (entra no Caixa).
+      if (paymentMethod === 'CASH' && data.data?.id) {
+        await api.patch(`/orders/${data.data.id}/payment-status`, { paymentStatus: 'PAID' }).catch(() => {})
+      }
       setSuccessOrder({ number: data.data.orderNumber })
       setTimeout(() => setSuccessOrder(null), 4000)
       setCart([])

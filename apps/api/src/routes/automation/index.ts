@@ -1,8 +1,9 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { authenticate } from '../../middlewares/authenticate.js'
-import { callAI, buildSystemPrompt } from '../../lib/ai-attendant.js'
-import { evolutionSendText } from '../../lib/evolution.js'
+import { callAI, buildSystemPrompt, type PromptMenuProduct } from '../../lib/ai-attendant.js'
+import { handleInbound } from '../../lib/bot/orchestrator.js'
+import { parseControl } from '../../lib/bot/llm-flow.js'
 
 const automationRoutes: FastifyPluginAsync = async (app) => {
 
@@ -30,10 +31,11 @@ const automationRoutes: FastifyPluginAsync = async (app) => {
     const { storeId } = request.user
     const schema = z.object({
       isEnabled: z.boolean().optional(),
-      aiProvider: z.enum(['claude']).optional(),
+      aiProvider: z.enum(['claude', 'openai', 'openrouter']).optional(),
       aiApiKey: z.string().optional(),
       aiModel: z.string().optional(),
       systemPrompt: z.string().optional(),
+      closedMessage: z.string().optional(),
     })
 
     const body = schema.safeParse(request.body)
@@ -46,6 +48,7 @@ const automationRoutes: FastifyPluginAsync = async (app) => {
     if (body.data.aiProvider) data.aiProvider = body.data.aiProvider
     if (body.data.aiModel) data.aiModel = body.data.aiModel
     if (body.data.systemPrompt !== undefined) data.systemPrompt = body.data.systemPrompt
+    if (body.data.closedMessage !== undefined) data.closedMessage = body.data.closedMessage || null
     // Só atualiza a chave se não for a máscara
     if (body.data.aiApiKey && body.data.aiApiKey !== '••••••••') {
       data.aiApiKey = body.data.aiApiKey
@@ -154,19 +157,36 @@ const automationRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(400).send({ error: 'Bad Request', message: 'Configure a chave da IA antes de testar', statusCode: 400 })
     }
 
-    const menu = await app.prisma.category.findMany({
+    const menuRaw = await app.prisma.category.findMany({
       where: { storeId, isActive: true },
       orderBy: { position: 'asc' },
       include: {
         products: {
           where: { isActive: true },
+          orderBy: { position: 'asc' },
           select: {
-            name: true, description: true, price: true, tags: true,
-            addonGroups: { include: { options: { where: { isActive: true } } } },
+            id: true, name: true, description: true, price: true, tags: true,
+            addonGroups: { orderBy: { position: 'asc' }, include: { options: { where: { isActive: true }, orderBy: { position: 'asc' } } } },
           },
         },
       },
     })
+
+    const menu = menuRaw.map((cat) => ({
+      name: cat.name,
+      products: cat.products.map((p): PromptMenuProduct => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        price: Number(p.price),
+        tags: p.tags,
+        addonGroups: p.addonGroups.map((g) => ({
+          name: g.name,
+          required: g.required,
+          options: g.options.map((o) => ({ id: o.id, name: o.name, price: Number(o.price) })),
+        })),
+      })),
+    }))
 
     const systemPrompt = buildSystemPrompt({
       storeName: store!.name,
@@ -175,199 +195,81 @@ const automationRoutes: FastifyPluginAsync = async (app) => {
       minOrderValue: Number(store!.minOrderValue),
       schedules: storeData!.schedules,
       paymentMethods: storeData!.paymentMethods,
-      deliveryAreas: storeData!.deliveryAreas,
+      deliveryAreas: storeData!.deliveryAreas.map((a) => ({
+        name: a.name,
+        type: a.type,
+        fee: Number(a.fee),
+        district: a.district,
+        freeFrom: a.freeFrom != null ? Number(a.freeFrom) : null,
+      })),
       menu,
       customPrompt: config.systemPrompt,
       storeSlug: store!.slug,
     })
 
     try {
-      const response = await callAI(
+      const raw = await callAI(
         { aiProvider: config.aiProvider, aiApiKey: config.aiApiKey, aiModel: config.aiModel },
         systemPrompt,
         [{ role: 'user', content: message }],
+        { json: true },
       )
-      return { data: { response } }
+      const { reply } = parseControl(raw)
+      return { data: { response: reply } }
     } catch (err: any) {
       return reply.status(500).send({ error: 'AI Error', message: err.message ?? 'Erro na IA', statusCode: 500 })
     }
   })
 
   // ─── POST /automation/webhook/:storeSlug ──────────────────────────
-  // Recebe mensagens da Evolution API
+  // Recebe mensagens da Evolution API e delega ao orquestrador do bot híbrido.
   app.post('/webhook/:storeSlug', async (request, reply) => {
     const { storeSlug } = request.params as { storeSlug: string }
+    const { token } = request.query as { token?: string }
 
-    // Responde imediatamente para não dar timeout na Evolution API
+    // Responde imediatamente para não dar timeout na Evolution API (sempre 200,
+    // mesmo quando ignoramos — não vaza se a loja existe nem se o token confere).
     reply.status(200).send({ received: true })
 
-    try {
-      const payload = request.body as any
+    const payload = request.body as any
 
-      // Extrair texto da mensagem (Evolution API v2)
-      const messageText =
-        payload?.data?.message?.conversation ||
-        payload?.data?.message?.extendedTextMessage?.text ||
-        payload?.message?.conversation ||
-        payload?.message?.extendedTextMessage?.text
+    // Valida o formato mínimo do payload da Evolution antes de qualquer coisa.
+    const hasShape = !!(payload?.data?.key || payload?.key || payload?.data?.message || payload?.message)
+    if (!hasShape) return
 
-      if (!messageText) return
-
-      // Extrair número do remetente
-      const remoteJid: string =
-        payload?.data?.key?.remoteJid ||
-        payload?.key?.remoteJid ||
-        ''
-
-      // Ignorar mensagens de grupos
-      if (remoteJid.includes('@g.us')) return
-
-      const phone = remoteJid.replace('@s.whatsapp.net', '').replace(/\D/g, '')
-      if (!phone) return
-
-      // Buscar loja
-      const store = await app.prisma.store.findUnique({
-        where: { slug: storeSlug },
-        select: {
-          id: true, slug: true, name: true, description: true,
-          estimatedTime: true, minOrderValue: true,
-          evolutionApiUrl: true, evolutionApiKey: true, evolutionInstance: true,
-          schedules: { where: { isActive: true }, select: { dayOfWeek: true, openTime: true, closeTime: true } },
-          paymentMethods: { where: { isActive: true }, select: { type: true, label: true } },
-          deliveryAreas: { where: { isActive: true }, select: { name: true, type: true, fee: true, district: true, freeFrom: true } },
-          automationConfig: true,
-        },
-      })
-
-      if (!store || !store.automationConfig?.isEnabled || !store.automationConfig?.aiApiKey) return
-
-      // Ignorar mensagens do próprio bot
-      if (remoteJid === store.evolutionInstance) return
-
-      // Buscar ou criar conversa
-      let conversation = await app.prisma.conversation.findUnique({
-        where: { storeId_customerPhone: { storeId: store.id, customerPhone: phone } },
-      })
-
-      if (!conversation) {
-        conversation = await app.prisma.conversation.create({
-          data: { storeId: store.id, customerPhone: phone, status: 'ACTIVE' },
-        })
-      } else if (conversation.status === 'CLOSED') {
-        await app.prisma.conversation.update({
-          where: { id: conversation.id },
-          data: { status: 'ACTIVE', updatedAt: new Date() },
-        })
-      }
-
-      // Salvar mensagem do usuário
-      await app.prisma.conversationMessage.create({
-        data: { conversationId: conversation.id, role: 'user', content: messageText },
-      })
-
-      // Buscar histórico (últimas 20 mensagens)
-      const history = await app.prisma.conversationMessage.findMany({
-        where: { conversationId: conversation.id },
-        orderBy: { createdAt: 'asc' },
-        take: 20,
-      })
-
-      // Buscar cardápio
-      const menu = await app.prisma.category.findMany({
-        where: { storeId: store.id, isActive: true },
-        orderBy: { position: 'asc' },
-        include: {
-          products: {
-            where: { isActive: true },
-            select: {
-              id: true, name: true, description: true, price: true, tags: true,
-              addonGroups: { include: { options: { where: { isActive: true } } } },
-            },
-          },
-        },
-      })
-
-      // Montar system prompt
-      const systemPrompt = buildSystemPrompt({
-        storeName: store.name,
-        storeDescription: store.description,
-        estimatedTime: store.estimatedTime,
-        minOrderValue: Number(store.minOrderValue),
-        schedules: store.schedules,
-        paymentMethods: store.paymentMethods,
-        deliveryAreas: store.deliveryAreas,
-        menu,
-        customPrompt: store.automationConfig.systemPrompt,
-        storeSlug: store.slug,
-      })
-
-      // Chamar IA
-      const aiResponse = await callAI(
-        {
-          aiProvider: store.automationConfig.aiProvider,
-          aiApiKey: store.automationConfig.aiApiKey,
-          aiModel: store.automationConfig.aiModel,
-        },
-        systemPrompt,
-        history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-      )
-
-      // Processar ação de pedido
-      let responseText = aiResponse
-      if (aiResponse.includes('ACTION:CREATE_ORDER:')) {
-        try {
-          const jsonStr = aiResponse.split('ACTION:CREATE_ORDER:')[1]?.trim()
-          if (jsonStr) {
-            const orderData = JSON.parse(jsonStr)
-            const res = await fetch(`http://localhost:${process.env.PORT ?? 3333}/orders`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(orderData),
-            })
-            const orderResult = await res.json()
-
-            if (res.ok && orderResult.data?.orderNumber) {
-              const num = orderResult.data.orderNumber
-              responseText = `✅ *Pedido #${num} criado com sucesso!*\n\nSeu pedido está sendo processado. Tempo estimado: *${store.estimatedTime} min*.\n\nObrigado por pedir na *${store.name}*! 🎉`
-
-              // Atualizar nome do cliente na conversa se disponível
-              if (orderData.customerName) {
-                await app.prisma.conversation.update({
-                  where: { id: conversation.id },
-                  data: { customerName: orderData.customerName },
-                })
-              }
-            } else {
-              responseText = `Desculpe, houve um problema ao registrar seu pedido. Por favor, tente novamente ou entre em contato diretamente.`
-            }
-          }
-        } catch {
-          responseText = `Desculpe, houve um problema ao registrar seu pedido. Por favor, tente novamente.`
-        }
-      }
-
-      // Salvar resposta da IA
-      await app.prisma.conversationMessage.create({
-        data: { conversationId: conversation.id, role: 'assistant', content: responseText },
-      })
-
-      // Atualizar timestamp da conversa
-      await app.prisma.conversation.update({
-        where: { id: conversation.id },
-        data: { updatedAt: new Date() },
-      })
-
-      // Enviar resposta via Evolution API
-      if (store.evolutionApiUrl && store.evolutionApiKey && store.evolutionInstance) {
-        await evolutionSendText(
-          { url: store.evolutionApiUrl, apiKey: store.evolutionApiKey, instance: store.evolutionInstance },
-          phone,
-          responseText,
-        )
-      }
-    } catch (err) {
-      app.log.error({ err }, 'Automation webhook error')
+    // Valida o token do webhook (segredo por loja).
+    const store = await app.prisma.store.findUnique({
+      where: { slug: storeSlug },
+      select: { automationConfig: { select: { webhookToken: true } } },
+    })
+    const expected = store?.automationConfig?.webhookToken
+    if (!expected || token !== expected) {
+      app.log.warn(`webhook: token inválido/ausente para loja ${storeSlug}`)
+      return
     }
+
+    // Ignora mensagens enviadas pelo próprio bot
+    const fromMe = payload?.data?.key?.fromMe ?? payload?.key?.fromMe ?? false
+    if (fromMe) return
+
+    // Extrai texto da mensagem (Evolution API v1/v2)
+    const messageText =
+      payload?.data?.message?.conversation ||
+      payload?.data?.message?.extendedTextMessage?.text ||
+      payload?.message?.conversation ||
+      payload?.message?.extendedTextMessage?.text
+    if (!messageText) return
+
+    // Extrai o número do remetente (ignora grupos)
+    const remoteJid: string = payload?.data?.key?.remoteJid || payload?.key?.remoteJid || ''
+    if (remoteJid.includes('@g.us')) return
+    const phone = remoteJid.replace('@s.whatsapp.net', '').replace(/\D/g, '')
+    if (!phone) return
+
+    // Processa em background (fire-and-forget) — a resposta 200 já foi enviada.
+    handleInbound(app, { storeSlug, phone, text: messageText }).catch((err) => {
+      app.log.error({ err }, 'Automation webhook (handleInbound) error')
+    })
   })
 }
 

@@ -42,6 +42,8 @@ import raffleRoutes from './routes/raffles/index.js'
 import noticesRoutes from './routes/notices/index.js'
 import planRoutes from './routes/plans/index.js'
 import stripeWebhookRoutes from './routes/stripe-webhook/index.js'
+import cardapioGeradorRoutes from './routes/cardapio-gerador/index.js'
+import whatsappRoutes from './routes/whatsapp/index.js'
 
 export function buildApp() {
   const app = Fastify({
@@ -126,6 +128,8 @@ export function buildApp() {
   app.register(noticesRoutes, { prefix: '/notices' })
   app.register(planRoutes, { prefix: '/plans' })
   app.register(stripeWebhookRoutes, { prefix: '/stripe' })
+  app.register(cardapioGeradorRoutes, { prefix: '/cardapio' })
+  app.register(whatsappRoutes, { prefix: '/whatsapp' })
 
   // Health check
   app.get('/health', async () => {

@@ -8,6 +8,7 @@ export interface AutomationConfig {
   aiApiKey: string | null
   aiModel: string
   systemPrompt: string | null
+  closedMessage: string | null
 }
 
 export interface ConversationMessage {
@@ -77,6 +78,45 @@ export function useCloseConversation() {
       qc.invalidateQueries({ queryKey: ['conversations'] })
       qc.invalidateQueries({ queryKey: ['conversation'] })
     },
+  })
+}
+
+// ─── WhatsApp (provisionamento por loja) ────────────────────────────────────────
+
+export interface WhatsappStatus {
+  state: string // 'open' | 'connecting' | 'close' | 'disconnected' | 'unknown'
+  instance: string | null
+}
+
+export interface WhatsappConnectResult {
+  instance: string
+  state: string
+  qrcode: string | null
+  pairingCode: string | null
+}
+
+export function useWhatsappStatus(enabled = true) {
+  return useQuery({
+    queryKey: ['whatsapp-status'],
+    queryFn: () => api.get<{ data: WhatsappStatus }>('/whatsapp/status').then((r) => r.data.data),
+    refetchInterval: 8000,
+    enabled,
+  })
+}
+
+export function useWhatsappConnect() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.post<{ data: WhatsappConnectResult }>('/whatsapp/connect').then((r) => r.data.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['whatsapp-status'] }),
+  })
+}
+
+export function useWhatsappDisconnect() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.post('/whatsapp/disconnect'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['whatsapp-status'] }),
   })
 }
 

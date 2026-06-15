@@ -7,19 +7,135 @@ import {
   useAutomationConfig, useUpdateAutomationConfig,
   useConversations, useConversation, useCloseConversation,
   useTestAutomation,
+  useWhatsappStatus, useWhatsappConnect, useWhatsappDisconnect,
 } from '@/hooks/use-automation'
 import {
   Zap, Bot, MessageSquare, Copy, Check, ChevronDown, ChevronUp,
-  X, Send, Loader2, Phone, Clock, CheckCircle, XCircle,
+  X, Send, Loader2, Phone, Clock, CheckCircle, XCircle, Smartphone, QrCode,
 } from 'lucide-react'
 import { cn } from '@delivery/ui'
 import { format, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
-const AI_MODELS = [
-  { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku — Rápido e econômico (recomendado)' },
-  { value: 'claude-sonnet-4-6', label: 'Claude Sonnet — Mais inteligente' },
+const AI_PROVIDERS = [
+  { value: 'claude', label: 'Anthropic (Claude)' },
+  { value: 'openai', label: 'OpenAI (GPT)' },
+  { value: 'openrouter', label: 'OpenRouter (vários modelos)' },
 ]
+
+const AI_MODELS: Record<string, { value: string; label: string }[]> = {
+  claude: [
+    { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku — Rápido e econômico (recomendado)' },
+    { value: 'claude-sonnet-4-6', label: 'Claude Sonnet — Mais inteligente' },
+  ],
+  openai: [
+    { value: 'gpt-4o', label: 'GPT-4o — Equilibrado (recomendado)' },
+    { value: 'gpt-4o-mini', label: 'GPT-4o mini — Rápido e econômico' },
+  ],
+  openrouter: [
+    { value: 'openai/gpt-4o-mini', label: 'GPT-4o mini — Rápido e econômico (recomendado)' },
+    { value: 'openai/gpt-4o', label: 'GPT-4o' },
+    { value: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' },
+    { value: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash' },
+    { value: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
+  ],
+}
+
+const AI_KEY_INFO: Record<string, { label: string; placeholder: string; url: string }> = {
+  claude: { label: 'Chave da API Anthropic', placeholder: 'sk-ant-...', url: 'https://console.anthropic.com' },
+  openai: { label: 'Chave da API OpenAI', placeholder: 'sk-...', url: 'https://platform.openai.com/api-keys' },
+  openrouter: { label: 'Chave da API OpenRouter', placeholder: 'sk-or-...', url: 'https://openrouter.ai/keys' },
+}
+
+// ─── Conexão do WhatsApp (provisionamento da instância da loja) ─────────────────
+
+function WhatsappConnectionCard() {
+  const { data: status } = useWhatsappStatus()
+  const connect = useWhatsappConnect()
+  const disconnect = useWhatsappDisconnect()
+  const [qr, setQr] = useState<string | null>(null)
+  const [pairing, setPairing] = useState<string | null>(null)
+  const [error, setError] = useState('')
+
+  const state = status?.state ?? 'disconnected'
+  const connected = state === 'open'
+
+  useEffect(() => {
+    if (connected) { setQr(null); setPairing(null) }
+  }, [connected])
+
+  async function handleConnect() {
+    setError('')
+    try {
+      const r = await connect.mutateAsync()
+      if (r.state === 'open') { setQr(null); setPairing(null) }
+      else { setQr(r.qrcode); setPairing(r.pairingCode) }
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? 'Falha ao conectar com o servidor de WhatsApp.')
+    }
+  }
+
+  async function handleDisconnect() {
+    setError('')
+    await disconnect.mutateAsync()
+    setQr(null); setPairing(null)
+  }
+
+  const badge = connected
+    ? { label: 'Conectado', cls: 'bg-green-100 text-green-700' }
+    : state === 'connecting'
+      ? { label: 'Conectando…', cls: 'bg-yellow-100 text-yellow-700' }
+      : { label: 'Desconectado', cls: 'bg-muted text-muted-foreground' }
+
+  return (
+    <section className="bg-card border rounded-2xl p-5 space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Smartphone className="h-5 w-5 text-primary" />
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Conexão do WhatsApp</h2>
+            <p className="text-xs text-muted-foreground">Conecte o número da loja para o atendente responder no WhatsApp</p>
+          </div>
+        </div>
+        <span className={cn('shrink-0 rounded-full px-3 py-1 text-xs font-medium', badge.cls)}>{badge.label}</span>
+      </div>
+
+      {connected ? (
+        <button
+          onClick={handleDisconnect}
+          disabled={disconnect.isPending}
+          className="rounded-xl border px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-60"
+        >
+          {disconnect.isPending ? 'Desconectando…' : 'Desconectar WhatsApp'}
+        </button>
+      ) : qr ? (
+        <div className="flex flex-col items-center gap-3 text-center">
+          <img
+            src={qr.startsWith('data:') ? qr : `data:image/png;base64,${qr}`}
+            alt="QR Code do WhatsApp"
+            className="h-56 w-56 rounded-xl border bg-white p-2"
+          />
+          <p className="text-sm text-muted-foreground">
+            Abra o WhatsApp → <b>Aparelhos conectados</b> → <b>Conectar um aparelho</b> e escaneie o código.
+          </p>
+          {pairing && <p className="text-sm">Ou use o código: <span className="font-mono font-bold">{pairing}</span></p>}
+          <button onClick={handleConnect} disabled={connect.isPending} className="text-xs text-primary hover:underline">
+            Gerar novo código
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={handleConnect}
+          disabled={connect.isPending}
+          className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60 hover:bg-primary/90"
+        >
+          {connect.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Gerando QR…</> : <><QrCode className="h-4 w-4" /> Conectar WhatsApp</>}
+        </button>
+      )}
+      {error && <p className="text-sm text-destructive">{error}</p>}
+    </section>
+  )
+}
 
 // ─── Painel de conversa ───────────────────────────────────────────────────────
 
@@ -104,9 +220,11 @@ export default function AutomacaoPage() {
   const [copied, setCopied] = useState(false)
 
   // Form config
+  const [aiProvider, setAiProvider] = useState('claude')
   const [aiApiKey, setAiApiKey] = useState('')
   const [aiModel, setAiModel] = useState('claude-haiku-4-5-20251001')
   const [systemPrompt, setSystemPrompt] = useState('')
+  const [closedMessage, setClosedMessage] = useState('')
   const [configSaved, setConfigSaved] = useState(false)
 
   // Teste
@@ -115,11 +233,19 @@ export default function AutomacaoPage() {
 
   useEffect(() => {
     if (config) {
+      setAiProvider(config.aiProvider || 'claude')
       setAiModel(config.aiModel)
       setSystemPrompt(config.systemPrompt ?? '')
+      setClosedMessage(config.closedMessage ?? '')
       setAiApiKey(config.aiApiKey ?? '')
     }
   }, [config])
+
+  function handleProviderChange(provider: string) {
+    setAiProvider(provider)
+    const models = AI_MODELS[provider] ?? []
+    if (!models.some((m) => m.value === aiModel)) setAiModel(models[0]?.value ?? '')
+  }
 
   function copyWebhook() {
     navigator.clipboard.writeText(webhookUrl)
@@ -133,7 +259,7 @@ export default function AutomacaoPage() {
 
   async function handleSaveConfig(e: React.FormEvent) {
     e.preventDefault()
-    await updateConfig.mutateAsync({ aiApiKey, aiModel, systemPrompt })
+    await updateConfig.mutateAsync({ aiProvider, aiApiKey, aiModel, systemPrompt, closedMessage })
     setConfigSaved(true)
     setTimeout(() => setConfigSaved(false), 3000)
   }
@@ -194,7 +320,10 @@ export default function AutomacaoPage() {
             </button>
           </div>
 
-          {/* ② Configuração da IA */}
+          {/* ② Conexão do WhatsApp */}
+          <WhatsappConnectionCard />
+
+          {/* ③ Configuração da IA */}
           <section className="bg-card border rounded-2xl p-5 space-y-4">
             <div className="flex items-center gap-3">
               <Zap className="h-5 w-5 text-primary" />
@@ -206,29 +335,41 @@ export default function AutomacaoPage() {
 
             <form onSubmit={handleSaveConfig} className="space-y-4">
               <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Provedor de IA</label>
+                <select
+                  value={aiProvider}
+                  onChange={(e) => handleProviderChange(e.target.value)}
+                  className="w-full h-10 rounded-xl border border-input px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {AI_PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground">Modelo de IA</label>
                 <select
                   value={aiModel}
                   onChange={(e) => setAiModel(e.target.value)}
                   className="w-full h-10 rounded-xl border border-input px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  {AI_MODELS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  {(AI_MODELS[aiProvider] ?? []).map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                 </select>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground">
-                  Chave da API Anthropic
-                  <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer"
+                  {AI_KEY_INFO[aiProvider]?.label ?? 'Chave da API'} <span className="text-muted-foreground font-normal">(opcional)</span>
+                  <a href={AI_KEY_INFO[aiProvider]?.url ?? '#'} target="_blank" rel="noopener noreferrer"
                     className="ml-2 text-xs text-primary hover:underline">Obter chave →</a>
                 </label>
                 <input
                   type="password"
                   value={aiApiKey}
                   onChange={(e) => setAiApiKey(e.target.value)}
-                  placeholder="sk-ant-..."
+                  placeholder={AI_KEY_INFO[aiProvider]?.placeholder ?? 'sk-...'}
                   className="w-full h-10 rounded-xl border border-input px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 />
+                <p className="text-xs text-muted-foreground">Deixe em branco para usar a chave da plataforma (incluída no seu plano).</p>
               </div>
 
               <div className="space-y-1.5">
@@ -242,6 +383,22 @@ export default function AutomacaoPage() {
                   placeholder="Ex: Seja bem simpático, sempre ofereça sobremesas no final, use o nome do cliente, mencione promoções especiais de fim de semana..."
                   className="w-full rounded-xl border border-input px-3 py-2 text-sm resize-none bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">
+                  Mensagem quando a loja está fechada <span className="text-muted-foreground font-normal">(opcional)</span>
+                </label>
+                <textarea
+                  value={closedMessage}
+                  onChange={(e) => setClosedMessage(e.target.value)}
+                  rows={3}
+                  placeholder="Deixe vazio para a mensagem automática (com horários e próxima abertura). Ex: Tô descansando 😴 Voltamos {proxima_abertura}! Veja o cardápio: {cardapio}"
+                  className="w-full rounded-xl border border-input px-3 py-2 text-sm resize-none bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Variáveis disponíveis: <code>{'{horarios}'}</code>, <code>{'{proxima_abertura}'}</code>, <code>{'{cardapio}'}</code>.
+                </p>
               </div>
 
               <button type="submit" disabled={updateConfig.isPending}

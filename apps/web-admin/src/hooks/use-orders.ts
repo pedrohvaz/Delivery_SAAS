@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 
@@ -65,6 +66,16 @@ export function useUpdateOrderStatus() {
   })
 }
 
+// ─── PATCH /orders/:id/payment-status ───────────────────────────────────────────
+export function useUpdatePaymentStatus() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, paymentStatus }: { id: string; paymentStatus: 'PAID' | 'PENDING' }) =>
+      api.patch(`/orders/${id}/payment-status`, { paymentStatus }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
+  })
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 // Terminais — não permitem avanço
@@ -111,4 +122,43 @@ export function relativeTime(date: string): string {
   if (diff < 60) return `${diff}s`
   if (diff < 3600) return `${Math.floor(diff / 60)}min`
   return `${Math.floor(diff / 3600)}h`
+}
+
+// Re-renderiza periodicamente para os tempos/atrasos atualizarem sem refetch.
+export function useNow(intervalMs = 15_000): number {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), intervalMs)
+    return () => clearInterval(t)
+  }, [intervalMs])
+  return now
+}
+
+const ACTIVE_FOR_AGING = new Set(['PENDING', 'CONFIRMED', 'IN_PRODUCTION', 'OUT_FOR_DELIVERY', 'READY_FOR_PICKUP'])
+const AGING_WARN_MIN = 10
+const AGING_LATE_MIN = 20
+
+export type AgingLevel = 'ok' | 'warn' | 'late'
+
+/** Nível de atraso de um pedido ativo, pelo tempo desde createdAt. */
+export function orderAging(order: Order): { level: AgingLevel; minutes: number } {
+  const minutes = Math.floor((Date.now() - new Date(order.createdAt).getTime()) / 60000)
+  if (!ACTIVE_FOR_AGING.has(order.status)) return { level: 'ok', minutes }
+  if (minutes >= AGING_LATE_MIN) return { level: 'late', minutes }
+  if (minutes >= AGING_WARN_MIN) return { level: 'warn', minutes }
+  return { level: 'ok', minutes }
+}
+
+/** Mais antigo primeiro (FIFO) — para os pedidos ativos não serem esquecidos. */
+export function sortFifo(a: Order, b: Order): number {
+  return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+}
+
+/** Link wa.me a partir do telefone do cliente (só dígitos + DDI 55). */
+export function whatsappLink(phone: string | null | undefined): string | null {
+  if (!phone) return null
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length < 8) return null
+  const withDdi = digits.startsWith('55') ? digits : `55${digits}`
+  return `https://wa.me/${withDdi}`
 }

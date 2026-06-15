@@ -1,19 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Bike, Home, MapPin, Phone, CreditCard, FileText, ChevronRight, UserCheck, Link, Check } from 'lucide-react'
+import { X, Bike, Home, MapPin, Phone, CreditCard, FileText, ChevronRight, UserCheck, Link, Check, Printer, MessageCircle } from 'lucide-react'
 import {
   type Order,
   STATUS_CONFIG,
   getNextStatus,
   getAdvanceLabel,
   useUpdateOrderStatus,
+  useUpdatePaymentStatus,
   relativeTime,
+  whatsappLink,
 } from '@/hooks/use-orders'
 import { useDeliverymen, useAssignDeliveryman } from '@/hooks/use-deliverymen'
 import { useAuthStore } from '@/store/auth'
 import { currency } from '@/lib/utils'
 import { CustomerReview } from './customer-review'
+import { printOrder } from './order-ticket'
 
 const CANCEL_REASONS = [
   'Produto indisponível',
@@ -33,6 +36,7 @@ interface Props {
 
 export function OrderModal({ order, onClose, initialCancelling = false }: Props) {
   const updateStatus = useUpdateOrderStatus()
+  const updatePayment = useUpdatePaymentStatus()
   const assignDeliveryman = useAssignDeliveryman()
   const { data: deliverymen = [] } = useDeliverymen()
   const { store } = useAuthStore()
@@ -93,9 +97,21 @@ export function OrderModal({ order, onClose, initialCancelling = false }: Props)
               {status.label}
             </span>
           </div>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted">
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            {whatsappLink(order.customer?.phone) && (
+              <a href={whatsappLink(order.customer?.phone)!} target="_blank" rel="noopener noreferrer" title="Falar no WhatsApp"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-green-50 hover:text-green-600">
+                <MessageCircle className="h-4 w-4" />
+              </a>
+            )}
+            <button onClick={() => store && printOrder(order, store.name)} title="Imprimir comanda"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted">
+              <Printer className="h-4 w-4" />
+            </button>
+            <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -236,6 +252,16 @@ export function OrderModal({ order, onClose, initialCancelling = false }: Props)
                     'Não precisa de troco'
                   )}
                 </p>
+              )}
+              {!isCancelled && (
+                <button
+                  onClick={() => updatePayment.mutate({ id: order.id, paymentStatus: order.paymentStatus === 'PAID' ? 'PENDING' : 'PAID' })}
+                  disabled={updatePayment.isPending}
+                  className={`w-full mt-1 rounded-lg border py-2 text-xs font-semibold transition disabled:opacity-50
+                    ${order.paymentStatus === 'PAID' ? 'text-muted-foreground hover:bg-muted' : 'border-green-300 text-green-700 hover:bg-green-50'}`}
+                >
+                  {updatePayment.isPending ? 'Salvando...' : order.paymentStatus === 'PAID' ? 'Marcar como pendente' : '✓ Marcar como pago'}
+                </button>
               )}
             </div>
           )}

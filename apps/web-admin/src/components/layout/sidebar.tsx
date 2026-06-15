@@ -37,6 +37,7 @@ const navItems = [
   { label: 'Caixa / PDV', href: '/dashboard/caixa', icon: Receipt },
   { label: 'Financeiro', href: '/dashboard/financeiro', icon: DollarSign },
   { label: 'Cardápio', href: '/dashboard/cardapio', icon: UtensilsCrossed },
+  // { label: 'Imagem do Cardápio', href: '/dashboard/gerar-cardapio', icon: ImageIcon }, // TODO: reativar quando o serviço Python (cardápio) estiver em produção
   { label: 'Estoque', href: '/dashboard/estoque', icon: Package },
   { label: 'Áreas de Entrega', href: '/dashboard/areas', icon: MapPin },
   { label: 'Horários', href: '/dashboard/horarios', icon: Clock },
