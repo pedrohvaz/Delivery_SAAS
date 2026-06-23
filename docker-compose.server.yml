@@ -1,0 +1,183 @@
+# Stack COMPLETA de produção numa única VM (Oracle Always Free ARM).
+# Tudo roda numa rede interna; só o Caddy publica 80/443 com HTTPS automático.
+#
+# Subir:   docker compose -f docker-compose.server.yml up -d --build
+# Logs:    docker compose -f docker-compose.server.yml logs -f api caddy
+# Banco:   ver DEPLOY.md (migração dos dados do Railway + prisma db push)
+#
+# Variáveis: copie .env.production.example para .env e preencha.
+# Caddyfile: troque SEU-DOMINIO.com pelo seu domínio (find/replace).
+
+services:
+  # ── Proxy + HTTPS (Let's Encrypt automático) ───────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: delivery_caddy
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api, web-admin, web-store, web-superadmin]
+    networks: [delivery_net]
+
+  # ── Banco do app ───────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: delivery_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: delivery
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: delivery_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U delivery -d delivery_dev']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [delivery_net]
+
+  # ── Redis do app (filas BullMQ + cache) ────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: delivery_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [delivery_net]
+
+  # ── API (Fastify, via tsx) ─────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: delivery_api
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://delivery:${POSTGRES_PASSWORD}@postgres:5432/delivery_dev
+      REDIS_URL: redis://redis:6379
+      # API fala com o Evolution pela rede interna.
+      EVOLUTION_API_URL: http://evolution-api:8080
+      # Webhook Evolution -> API também é interno (não passa pela internet).
+      API_PUBLIC_URL: http://api:3333
+    expose: ['3333']
+    networks: [delivery_net]
+
+  # ── Frontends (Next.js standalone) ─────────────────────────────────
+  web-admin:
+    build:
+      context: .
+      dockerfile: apps/web-admin/Dockerfile
+    container_name: delivery_web_admin
+    restart: unless-stopped
+    depends_on: [api]
+    expose: ['3000']
+    networks: [delivery_net]
+
+  web-store:
+    build:
+      context: .
+      dockerfile: apps/web-store/Dockerfile
+    container_name: delivery_web_store
+    restart: unless-stopped
+    depends_on: [api]
+    expose: ['3001']
+    networks: [delivery_net]
+
+  web-superadmin:
+    build:
+      context: .
+      dockerfile: apps/web-superadmin/Dockerfile
+    container_name: delivery_web_superadmin
+    restart: unless-stopped
+    depends_on: [api]
+    expose: ['3002']
+    networks: [delivery_net]
+
+  # ── WhatsApp (Evolution API) + banco/redis dedicados ───────────────
+  evolution-api:
+    image: evoapicloud/evolution-api:v2.3.7
+    container_name: evolution_api
+    restart: unless-stopped
+    depends_on:
+      evolution-postgres: { condition: service_healthy }
+      evolution-redis: { condition: service_started }
+    environment:
+      SERVER_URL: ${EVOLUTION_SERVER_URL}
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
+      AUTHENTICATION_TYPE: apikey
+      DATABASE_ENABLED: 'true'
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:${EVOLUTION_PG_PASSWORD}@evolution-postgres:5432/evolution?schema=public
+      DATABASE_CONNECTION_CLIENT_NAME: evolution
+      DATABASE_SAVE_DATA_INSTANCE: 'true'
+      DATABASE_SAVE_DATA_NEW_MESSAGE: 'false'
+      DATABASE_SAVE_MESSAGE_UPDATE: 'false'
+      DATABASE_SAVE_DATA_CONTACTS: 'true'
+      DATABASE_SAVE_DATA_CHATS: 'true'
+      CACHE_REDIS_ENABLED: 'true'
+      CACHE_REDIS_URI: redis://evolution-redis:6379/0
+      CACHE_REDIS_PREFIX_KEY: evolution
+      CACHE_REDIS_SAVE_INSTANCES: 'true'
+      CACHE_LOCAL_ENABLED: 'false'
+      QRCODE_LIMIT: '30'
+      DEL_INSTANCE: 'false'
+      LOG_LEVEL: ERROR
+    volumes:
+      - evolution_instances:/evolution/instances   # sessões do WhatsApp — NÃO apagar
+    expose: ['8080']
+    networks: [delivery_net]
+
+  evolution-postgres:
+    image: postgres:16-alpine
+    container_name: evolution_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: ${EVOLUTION_PG_PASSWORD}
+      POSTGRES_DB: evolution
+    volumes:
+      - evolution_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U evolution -d evolution']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [delivery_net]
+
+  evolution-redis:
+    image: redis:7-alpine
+    container_name: evolution_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - evolution_redisdata:/data
+    networks: [delivery_net]
+
+volumes:
+  postgres_data:
+  redis_data:
+  evolution_instances: # sessões do WhatsApp — NÃO apagar (nunca rode down -v)
+  evolution_pgdata:
+  evolution_redisdata:
+  caddy_data: # certificados HTTPS — não apagar
+  caddy_config:
+
+networks:
+  delivery_net:
+    driver: bridge

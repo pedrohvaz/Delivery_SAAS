@@ -1,21 +1,20 @@
+# API (Fastify) — roda via tsx em runtime (mesmo modelo do apps/api/railway.toml).
+# O script "build" da API é um no-op; o start é `tsx src/index.ts`.
 FROM node:20-alpine AS base
+# Prisma precisa do openssl no Alpine.
+RUN apk add --no-cache openssl
 RUN npm install -g pnpm@10
-
-FROM base AS builder
 WORKDIR /app
+
+# Só o necessário para instalar deps da API + packages compartilhados.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/ packages/
 COPY apps/api/ apps/api/
-RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @delivery/database db:generate
-RUN pnpm --filter @delivery/api build
 
-FROM node:20-alpine AS runner
-WORKDIR /app
-RUN npm install -g pnpm@10
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+RUN pnpm install --frozen-lockfile
+# Gera o Prisma Client (engine para a arquitetura desta imagem).
+RUN pnpm --filter @delivery/database db:generate
+
 EXPOSE 3333
-CMD ["node", "apps/api/dist/index.js"]
+# start = tsx src/index.ts (ver apps/api/package.json). DATABASE_URL/REDIS_URL vêm do compose.
+CMD ["pnpm", "--filter", "@delivery/api", "start"]
