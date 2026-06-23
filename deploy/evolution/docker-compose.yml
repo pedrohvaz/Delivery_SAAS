@@ -8,7 +8,7 @@
 
 services:
   evolution-api:
-    image: atendai/evolution-api:v2.3.7
+    image: evoapicloud/evolution-api:v2.3.7
     container_name: evolution-api
     restart: always
     # Publica só no localhost do host: acesso externo passa pelo Caddy (HTTPS).

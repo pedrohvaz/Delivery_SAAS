@@ -16,7 +16,7 @@ ENV NODE_ENV=production
 RUN npm install -g pnpm@10
 COPY --from=builder /app/apps/web-store/.next/standalone ./
 COPY --from=builder /app/apps/web-store/.next/static ./apps/web-store/.next/static
-COPY --from=builder /app/apps/web-store/public ./apps/web-store/public 2>/dev/null || true
+COPY --from=builder /app/apps/web-store/public ./apps/web-store/public
 EXPOSE 3001
 ENV PORT=3001
 CMD ["node", "apps/web-store/server.js"]
