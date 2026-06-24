@@ -75,6 +75,9 @@ services:
       EVOLUTION_API_URL: http://evolution-api:8080
       # Webhook Evolution -> API também é interno (não passa pela internet).
       API_PUBLIC_URL: http://api:3333
+    volumes:
+      # Fotos enviadas pelo painel (fallback local quando R2 não está configurado).
+      - uploads_data:/app/apps/api/uploads
     expose: ['3333']
     networks: [delivery_net]
 
@@ -172,6 +175,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  uploads_data: # fotos de produtos (upload local quando sem R2)
   evolution_instances: # sessões do WhatsApp — NÃO apagar (nunca rode down -v)
   evolution_pgdata:
   evolution_redisdata:

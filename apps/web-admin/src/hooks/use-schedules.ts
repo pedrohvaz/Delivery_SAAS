@@ -14,6 +14,7 @@ export interface ScheduleStatus {
   isOpen: boolean
   shouldBeOpen: boolean
   acceptOrders: boolean
+  autoSchedule: boolean
   nextOpenTime: string | null
 }
 
@@ -51,6 +52,21 @@ export function useToggleStore() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: () => api.patch<{ data: { isOpen: boolean } }>('/schedules/toggle').then((r) => r.data.data),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['schedule-status'] })
+      qc.invalidateQueries({ queryKey: ['settings'] })
+      useAuthStore.setState((state) => ({
+        store: state.store ? { ...state.store, isOpen: data.isOpen } : null,
+      }))
+    },
+  })
+}
+
+export function useToggleAutoSchedule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (enabled: boolean) =>
+      api.patch<{ data: { autoSchedule: boolean; isOpen: boolean } }>('/schedules/auto', { enabled }).then((r) => r.data.data),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['schedule-status'] })
       qc.invalidateQueries({ queryKey: ['settings'] })
