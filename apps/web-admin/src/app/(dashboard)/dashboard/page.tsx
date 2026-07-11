@@ -12,6 +12,8 @@ import { useOrders } from '@/hooks/use-orders'
 import { useStockAlerts } from '@/hooks/use-stock'
 import { useCategories } from '@/hooks/use-cardapio'
 import { useSettings } from '@/hooks/use-settings'
+import { useDeliveryAreas } from '@/hooks/use-delivery-areas'
+import { useSchedules } from '@/hooks/use-schedules'
 import { currency } from '@/lib/utils'
 import { cn } from '@delivery/ui'
 import { relativeTime } from '@/hooks/use-orders'
@@ -37,6 +39,8 @@ export default function DashboardPage() {
   const { data: stockAlerts = [] } = useStockAlerts()
   const { data: categories = [] } = useCategories()
   const { data: settings } = useSettings()
+  const { data: areas = [] } = useDeliveryAreas()
+  const { data: schedules = [] } = useSchedules()
   const { data: subscription, isLoading: subLoading } = useMySubscription()
 
   // Detecta etapas do onboarding concluídas
@@ -44,6 +48,8 @@ export default function DashboardPage() {
   if (store?.name) completedSteps.push('store-info')
   if (categories.length > 0) completedSteps.push('cardapio')
   if ((settings?.paymentMethods?.length ?? 0) > 0) completedSteps.push('pagamentos')
+  if (areas.length > 0) completedSteps.push('delivery')
+  if (schedules.length > 0) completedSteps.push('horarios')
 
   const pendingOrders = allOrders.filter((o) => o.status === 'PENDING')
   const activeOrders = allOrders.filter((o) =>

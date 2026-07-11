@@ -78,11 +78,38 @@ const scheduleRoutes: FastifyPluginAsync = async (app) => {
     return { data: { isOpen: updated.isOpen } }
   })
 
+  // ─── PATCH /schedules/auto (liga/desliga abertura automática) ─────
+  app.patch('/auto', { preHandler: [authenticate] }, async (request, reply) => {
+    const schema = z.object({ enabled: z.boolean() })
+    const body = schema.safeParse(request.body)
+    if (!body.success) {
+      return reply.status(400).send({ error: 'Validation Error', message: 'Dados inválidos', statusCode: 400 })
+    }
+
+    const storeId = request.user.storeId
+    const data: { autoSchedule: boolean; isOpen?: boolean } = { autoSchedule: body.data.enabled }
+
+    // Ao LIGAR, já ajusta o status agora mesmo (sem esperar o próximo ciclo).
+    if (body.data.enabled) {
+      const store = await app.prisma.store.findUnique({ where: { id: storeId }, select: { timezone: true } })
+      const schedules = await app.prisma.storeSchedule.findMany({ where: { storeId, isActive: true } })
+      data.isOpen = isStoreOpenNow(schedules, store?.timezone ?? 'America/Sao_Paulo')
+    }
+
+    const updated = await app.prisma.store.update({
+      where: { id: storeId },
+      data,
+      select: { autoSchedule: true, isOpen: true },
+    })
+
+    return { data: updated }
+  })
+
   // ─── GET /schedules/status (verifica se loja está aberta agora) ────
   app.get('/status', { preHandler: [authenticate] }, async (request) => {
     const store = await app.prisma.store.findUnique({
       where: { id: request.user.storeId },
-      select: { isOpen: true, timezone: true, acceptOrders: true },
+      select: { isOpen: true, timezone: true, acceptOrders: true, autoSchedule: true },
     })
 
     const schedules = await app.prisma.storeSchedule.findMany({
@@ -98,6 +125,7 @@ const scheduleRoutes: FastifyPluginAsync = async (app) => {
         isOpen: store?.isOpen ?? false,
         shouldBeOpen,
         acceptOrders: store?.acceptOrders ?? true,
+        autoSchedule: store?.autoSchedule ?? false,
         nextOpenTime,
       },
     }

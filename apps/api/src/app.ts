@@ -73,7 +73,7 @@ export function buildApp() {
   })
 
   // Segurança
-  app.register(helmet)
+  app.register(helmet, { crossOriginResourcePolicy: { policy: 'cross-origin' } })
   app.register(cors, {
     origin: process.env.CORS_ORIGIN?.split(',') ?? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
     credentials: true,

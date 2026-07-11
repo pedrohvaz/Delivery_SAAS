@@ -18,6 +18,12 @@ function isR2Configured(): boolean {
   )
 }
 
+/** Base pública para servir uploads locais (quando R2 não está configurado). */
+function publicUploadsBase(): string {
+  const base = process.env.UPLOADS_PUBLIC_URL || `http://localhost:${process.env.PORT ?? '3333'}`
+  return base.replace(/\/$/, '')
+}
+
 function getR2Client() {
   return new S3Client({
     region: 'auto',
@@ -34,8 +40,9 @@ export async function uploadImage(file: MultipartFile, folder = 'products'): Pro
     throw new Error('Tipo de arquivo não permitido. Use JPEG, PNG, WebP ou GIF.')
   }
 
-  const ext = mimeType === 'image/webp' ? 'webp' : (file.filename.split('.').pop()?.toLowerCase() ?? 'jpg')
-  const filename = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  // GIF é mantido como está; o resto é convertido para WebP.
+  const isGif = file.mimetype === 'image/gif'
+  const ext = isGif ? 'gif' : 'webp'
 
   const chunks: Buffer[] = []
   for await (const chunk of file.file) {
@@ -47,62 +54,50 @@ export async function uploadImage(file: MultipartFile, folder = 'products'): Pro
 
   // Comprime e redimensiona com Sharp (exceto GIFs)
   let buffer = rawBuffer
-  let mimeType = file.mimetype
-  if (file.mimetype !== 'image/gif') {
+  if (!isGif) {
     buffer = await sharp(rawBuffer)
       .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: 'inside', withoutEnlargement: true })
       .webp({ quality: 82 })
       .toBuffer()
-    mimeType = 'image/webp'
   }
+  const contentType = isGif ? 'image/gif' : 'image/webp'
+  const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
   if (isR2Configured()) {
     const client = getR2Client()
     await client.send(new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME!,
-      Key: filename,
+      Key: key,
       Body: buffer,
-      ContentType: file.mimetype,
+      ContentType: contentType,
       CacheControl: 'public, max-age=31536000',
     }))
-    return `${process.env.R2_PUBLIC_URL!.replace(/\/$/, '')}/${filename}`
+    return `${process.env.R2_PUBLIC_URL!.replace(/\/$/, '')}/${key}`
   }
 
-  // Fallback: armazenamento local (desenvolvimento)
-  const uploadsDir = join(process.cwd(), 'uploads', folder)
-  mkdirSync(uploadsDir, { recursive: true })
-  const localPath = join(uploadsDir, `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`)
-  const { writeFileSync } = await import('fs')
-  writeFileSync(localPath, buffer)
-
-  const relativePath = localPath.replace(join(process.cwd(), 'uploads'), '/uploads')
-  const host = process.env.HOST ?? 'localhost'
-  const port = process.env.PORT ?? '3333'
-  return `http://${host === '0.0.0.0' ? 'localhost' : host}:${port}${relativePath}`
+  // Fallback: armazenamento local (servido por @fastify/static em /uploads/)
+  mkdirSync(join(process.cwd(), 'uploads', folder), { recursive: true })
+  writeFileSync(join(process.cwd(), 'uploads', key), buffer)
+  return `${publicUploadsBase()}/uploads/${key}`
 }
 
 /** Faz upload de um buffer já pronto (ex.: imagem gerada pelo cardapio-service). */
 export async function uploadBuffer(buffer: Buffer, folder: string, ext = 'png', mimeType = 'image/png'): Promise<string> {
-  const filename = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
   if (isR2Configured()) {
     const client = getR2Client()
     await client.send(new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME!,
-      Key: filename,
+      Key: key,
       Body: buffer,
       ContentType: mimeType,
       CacheControl: 'public, max-age=31536000',
     }))
-    return `${process.env.R2_PUBLIC_URL!.replace(/\/$/, '')}/${filename}`
+    return `${process.env.R2_PUBLIC_URL!.replace(/\/$/, '')}/${key}`
   }
 
-  const uploadsDir = join(process.cwd(), 'uploads', folder)
-  mkdirSync(uploadsDir, { recursive: true })
-  const localPath = join(process.cwd(), 'uploads', filename)
-  writeFileSync(localPath, buffer)
-
-  const host = process.env.HOST ?? 'localhost'
-  const port = process.env.PORT ?? '3333'
-  return `http://${host === '0.0.0.0' ? 'localhost' : host}:${port}/uploads/${filename}`
+  mkdirSync(join(process.cwd(), 'uploads', folder), { recursive: true })
+  writeFileSync(join(process.cwd(), 'uploads', key), buffer)
+  return `${publicUploadsBase()}/uploads/${key}`
 }

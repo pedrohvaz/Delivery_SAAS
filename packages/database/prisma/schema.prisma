@@ -35,6 +35,7 @@ model Store {
   suspendReason String?
   isOpen        Boolean     @default(false)
   acceptOrders  Boolean     @default(true)
+  autoSchedule  Boolean     @default(false) // abre/fecha sozinho conforme os horários
   timezone      String      @default("America/Sao_Paulo")
   minOrderValue Decimal     @default(0)
   estimatedTime Int         @default(45) // minutos

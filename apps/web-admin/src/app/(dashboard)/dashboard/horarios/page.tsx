@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Clock, Power, Save, AlertCircle, Check } from 'lucide-react'
+import { Clock, Power, Save, AlertCircle, Check, CalendarClock } from 'lucide-react'
 import {
   useSchedules,
   useScheduleStatus,
   useSaveSchedules,
   useToggleStore,
+  useToggleAutoSchedule,
   DAY_NAMES,
   DAY_SHORT,
   type Schedule,
@@ -45,6 +46,7 @@ export default function HorariosPage() {
   const { data: status } = useScheduleStatus()
   const saveSchedules = useSaveSchedules()
   const toggleStore = useToggleStore()
+  const toggleAuto = useToggleAutoSchedule()
 
   const [days, setDays] = useState<DayState[]>(buildDefaultDays())
   const [saved, setSaved] = useState(false)
@@ -111,6 +113,7 @@ export default function HorariosPage() {
 
   const isOpen = status?.isOpen ?? false
   const shouldBeOpen = status?.shouldBeOpen ?? false
+  const autoSchedule = status?.autoSchedule ?? false
 
   // Detecta se há divergência (manual override)
   const hasOverride = isOpen !== shouldBeOpen
@@ -169,6 +172,34 @@ export default function HorariosPage() {
             </p>
           </div>
         )}
+      </section>
+
+      {/* ── Abertura automática ───────────────────────────────────── */}
+      <section className="rounded-2xl border bg-card p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <CalendarClock className="h-5 w-5 text-primary shrink-0" />
+            <div>
+              <p className="font-semibold text-base">Abertura automática</p>
+              <p className="text-xs text-muted-foreground">
+                {autoSchedule
+                  ? 'A loja abre e fecha sozinha nos horários abaixo (fuso de Brasília).'
+                  : 'Ative para a loja abrir e fechar sozinha nos horários definidos.'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => toggleAuto.mutate(!autoSchedule)}
+            disabled={toggleAuto.isPending}
+            aria-pressed={autoSchedule}
+            className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-60
+              ${autoSchedule ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform
+              ${autoSchedule ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
+        </div>
       </section>
 
       {/* ── Grade de horários ─────────────────────────────────────── */}
@@ -259,9 +290,9 @@ export default function HorariosPage() {
 
       {/* ── Dica ─────────────────────────────────────────────────── */}
       <p className="text-xs text-muted-foreground">
-        💡 Os horários são verificados automaticamente. Você também pode abrir ou fechar
-        a loja manualmente a qualquer momento usando o botão acima — isso sobrepõe o horário configurado
-        até o próximo ciclo automático.
+        💡 Com a <strong>abertura automática</strong> ligada, a loja abre e fecha sozinha nos horários acima
+        (fuso de Brasília), verificando a cada minuto. O botão “Abrir/Fechar agora” serve como ajuste manual
+        temporário — no próximo ciclo o sistema volta a seguir os horários.
       </p>
     </div>
     </div>

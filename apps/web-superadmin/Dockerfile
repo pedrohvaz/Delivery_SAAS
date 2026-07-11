@@ -4,6 +4,7 @@ RUN npm install -g pnpm@10
 FROM base AS builder
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY tsconfig.base.json ./
 COPY packages/ packages/
 COPY apps/web-superadmin/ apps/web-superadmin/
 COPY apps/web-superadmin/.env.local apps/web-superadmin/.env.local
