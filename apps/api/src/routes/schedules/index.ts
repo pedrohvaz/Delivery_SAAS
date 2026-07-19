@@ -51,13 +51,20 @@ const scheduleRoutes: FastifyPluginAsync = async (app) => {
       orderBy: { dayOfWeek: 'asc' },
     })
 
-    // Recalcula isOpen com base nos novos horários usando timezone da loja
-    const storeData = await app.prisma.store.findUnique({ where: { id: storeId }, select: { timezone: true } })
-    const open = isStoreOpenNow(schedules, storeData?.timezone ?? 'America/Sao_Paulo')
-    await app.prisma.store.update({
+    // Recalcula isOpen com base nos novos horários — mas só quando a abertura
+    // automática está ligada; com ela desligada, isOpen é controle manual do
+    // lojista e editar horários não deve abrir/fechar a loja.
+    const storeData = await app.prisma.store.findUnique({
       where: { id: storeId },
-      data: { isOpen: open },
+      select: { timezone: true, autoSchedule: true },
     })
+    if (storeData?.autoSchedule) {
+      const open = isStoreOpenNow(schedules, storeData.timezone ?? 'America/Sao_Paulo')
+      await app.prisma.store.update({
+        where: { id: storeId },
+        data: { isOpen: open },
+      })
+    }
 
     return { data: schedules }
   })
@@ -143,50 +150,69 @@ interface Schedule {
   isActive: boolean
 }
 
-export function isStoreOpenNow(schedules: Schedule[], timezone: string): boolean {
-  if (schedules.length === 0) return false
+const WEEKDAY_MAP: Record<string, number> = {
+  Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+}
 
-  const now = new Date()
-  const formatter = new Intl.DateTimeFormat('en-US', {
+/** Dia da semana (0-6) e hora atual "HH:MM" no fuso da loja. */
+function nowInTimezone(timezone: string): { currentDay: number; currentTime: string } {
+  const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
     weekday: 'short',
-  })
+  }).formatToParts(new Date())
 
-  const parts = formatter.formatToParts(now)
   const weekdayStr = parts.find((p) => p.type === 'weekday')?.value ?? ''
   const hour = parts.find((p) => p.type === 'hour')?.value ?? '00'
   const minute = parts.find((p) => p.type === 'minute')?.value ?? '00'
-  const currentTime = `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`
-
-  const weekdayMap: Record<string, number> = {
-    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  return {
+    currentDay: WEEKDAY_MAP[weekdayStr] ?? -1,
+    currentTime: `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`,
   }
-  const currentDay = weekdayMap[weekdayStr] ?? -1
+}
 
-  const todaySchedule = schedules.find((s) => s.dayOfWeek === currentDay && s.isActive)
-  if (!todaySchedule) return false
+/** closeTime <= openTime significa que a janela cruza a meia-noite (ex.: 18:00–02:00 ou 18:00–00:00). */
+function crossesMidnight(s: Pick<Schedule, 'openTime' | 'closeTime'>): boolean {
+  return s.closeTime <= s.openTime
+}
 
-  return currentTime >= todaySchedule.openTime && currentTime < todaySchedule.closeTime
+export function isStoreOpenNow(schedules: Schedule[], timezone: string): boolean {
+  if (schedules.length === 0) return false
+
+  const { currentDay, currentTime } = nowInTimezone(timezone)
+
+  // Janela de hoje: normal (abre e fecha no mesmo dia) ou o trecho de hoje de
+  // uma janela que vira a noite (da abertura até 23:59).
+  const today = schedules.find((s) => s.dayOfWeek === currentDay && s.isActive)
+  if (today) {
+    const open = crossesMidnight(today)
+      ? currentTime >= today.openTime
+      : currentTime >= today.openTime && currentTime < today.closeTime
+    if (open) return true
+  }
+
+  // Madrugada: o trecho pós-meia-noite pertence à janela de ONTEM
+  // (ex.: sexta 18:00–02:00 mantém a loja aberta no sábado até 01:59).
+  const yesterday = schedules.find((s) => s.dayOfWeek === (currentDay + 6) % 7 && s.isActive)
+  if (yesterday && crossesMidnight(yesterday) && currentTime < yesterday.closeTime) return true
+
+  return false
 }
 
 function getNextOpenTime(schedules: Schedule[], timezone: string): string | null {
   if (schedules.length === 0) return null
 
-  const now = new Date()
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    weekday: 'short',
-  })
-  const weekdayStr = formatter.format(now)
-  const weekdayMap: Record<string, number> = {
-    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
-  }
-  const currentDay = weekdayMap[weekdayStr] ?? 0
+  const { currentDay, currentTime } = nowInTimezone(timezone)
 
   const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+
+  // Ainda abre hoje?
+  const today = schedules.find((s) => s.dayOfWeek === currentDay && s.isActive)
+  if (today && currentTime < today.openTime) {
+    return `Hoje às ${today.openTime}`
+  }
 
   // Procura o próximo dia com horário ativo (até 7 dias à frente)
   for (let i = 1; i <= 7; i++) {
