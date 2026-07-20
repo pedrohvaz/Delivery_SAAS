@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { createOrder, OrderError } from '../../order-service.js'
 import { resetToFree, setState } from '../session.js'
 import { DUP_ORDER_MIN } from '../limits.js'
-import type { BotStore, OrderDraft } from '../types.js'
+import { EMPTY_DRAFT, type BotStore, type OrderDraft } from '../types.js'
 
 /**
  * Registra o pedido a partir do draft, chamando o order-service diretamente.
@@ -75,10 +75,23 @@ export async function registerOrder(
 
     return `✅ *Pedido #${result.orderNumber} confirmado!*\n\n⏱ Tempo estimado: *${result.estimatedTime} min*.\nObrigado por pedir na *${store.name}*! 🎉`
   } catch (err) {
-    await resetToFree(app, conv.id)
     if (err instanceof OrderError) {
+      // Falha recuperável (ex.: item esgotado) — o carrinho é inválido, mas o
+      // que o cliente já informou (pagamento, troco, endereço, tipo, nome)
+      // continua valendo, para não perguntar tudo de novo no próximo pedido.
+      const kept: OrderDraft = {
+        ...EMPTY_DRAFT,
+        type: draft.type,
+        customerName: draft.customerName,
+        paymentMethod: draft.paymentMethod,
+        changeFor: draft.changeFor,
+        address: draft.address,
+        addressId: draft.addressId,
+      }
+      await setState(app, conv.id, 'LLM_FREE', kept)
       return `😔 Não consegui finalizar o pedido: ${err.message}\n\nQuer tentar de novo? Me diga o que você deseja. 🙂`
     }
+    await resetToFree(app, conv.id)
     app.log.error({ err }, 'bot registerOrder error')
     return '😔 Tivemos um problema ao registrar o pedido. Pode tentar novamente em instantes?'
   }

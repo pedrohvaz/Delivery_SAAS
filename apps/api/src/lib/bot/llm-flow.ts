@@ -7,6 +7,7 @@ import { controlBlockSchema, type BotProfile, type BotStore, type ControlBlock, 
 import type { MenuLookup } from './menu.js'
 import { enterAddress } from './fixed-flow/address.js'
 import { enterPayment } from './fixed-flow/payment.js'
+import { enterConfirmation } from './fixed-flow/confirmation.js'
 
 interface ParsedResponse {
   reply: string
@@ -147,14 +148,23 @@ export async function handleLlmFree(
     }
     draft.subtotal = subtotal
 
-    if (draft.type === 'DELIVERY') {
+    // Endereço/pagamento de uma tentativa anterior nesta mesma conversa (ex.:
+    // pedido reaberto após falha) já ficam salvos no draft — não repete a
+    // pergunta se a informação ainda está lá.
+    const needsAddress = draft.type === 'DELIVERY' && !draft.address
+    if (needsAddress) {
       const prompt = enterAddress(profile, draft)
       await setState(app, conv.id, 'COLLECTING_ADDRESS', draft)
       return reply ? `${reply}\n\n${prompt}` : prompt
     }
-    await setState(app, conv.id, 'SELECTING_PAYMENT', draft)
-    const prompt = enterPayment(store)
-    return reply ? `${reply}\n\n${prompt}` : prompt
+    if (!draft.paymentMethod) {
+      await setState(app, conv.id, 'SELECTING_PAYMENT', draft)
+      const prompt = enterPayment(store)
+      return reply ? `${reply}\n\n${prompt}` : prompt
+    }
+
+    const summary = await enterConfirmation(app, store, conv.id, draft)
+    return reply ? `${reply}\n\n${summary}` : summary
   }
 
   // Continua na conversa livre
