@@ -11,10 +11,11 @@ export function storeMenuUrl(store: Pick<BotStore, 'slug' | 'customDomain'>): st
 }
 
 /** Mensagem de boas-vindas do primeiro contato (nome da loja + link do cardápio). */
-export function buildWelcome(store: Pick<BotStore, 'name' | 'slug' | 'customDomain'>): string {
+export function buildWelcome(store: Pick<BotStore, 'name' | 'slug' | 'customDomain'>, customerName?: string | null): string {
   const url = storeMenuUrl(store)
+  const firstName = customerName?.trim().split(/\s+/)[0]
   return (
-    `Olá! 👋 Seja bem-vindo(a) à *${store.name}*!\n\n` +
+    `Olá${firstName ? `, ${firstName}` : ''}! 👋 Seja bem-vindo(a) à *${store.name}*!\n\n` +
     `Para agilizar, é só acessar nosso cardápio e fazer o pedido por aqui:\n${url}\n\n` +
     `Ou, se preferir, me diga por aqui mesmo o que você gostaria. 😊`
   )

@@ -131,9 +131,11 @@ export function resolveDeliveryFee(params: {
   if (type === 'PICKUP' || type === 'TABLE') return 0
   if (areas.length === 0) return 0
 
-  const inputDistrict = district?.toLowerCase().trim()
+  // Compara sem acento/maiúsculas/espaços extras ("São José" == "sao  jose")
+  const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+  const inputDistrict = district ? norm(district) : ''
   const districtMatch = inputDistrict
-    ? areas.find((a) => a.type === 'DISTRICT' && a.district?.toLowerCase().trim() === inputDistrict)
+    ? areas.find((a) => a.type === 'DISTRICT' && a.district && norm(a.district) === inputDistrict)
     : undefined
 
   if (districtMatch) {

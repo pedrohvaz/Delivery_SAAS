@@ -57,6 +57,24 @@ export async function registerOrder(
       where: { storeId_phone: { storeId: store.id, phone } },
       select: { id: true },
     })
+    // Endereço novo vira endereço salvo do cliente: no próximo pedido é só escolher "1"
+    if (customer && draft.type === 'DELIVERY' && draft.address && !draft.addressId) {
+      const a = draft.address
+      const exists = await app.prisma.customerAddress.findFirst({
+        where: { customerId: customer.id, street: a.street, number: a.number },
+        select: { id: true },
+      })
+      if (!exists) {
+        const count = await app.prisma.customerAddress.count({ where: { customerId: customer.id } })
+        await app.prisma.customerAddress.create({
+          data: {
+            customerId: customer.id, street: a.street, number: a.number, complement: a.complement,
+            district: a.district, city: a.city, state: a.state, zipCode: a.zipCode ?? '',
+            reference: a.reference, isDefault: count === 0,
+          },
+        }).catch((err) => app.log.warn({ err: err.message }, 'bot: não salvou o endereço do cliente'))
+      }
+    }
     await resetToFree(app, conv.id)
     await app.prisma.conversation.update({
       where: { id: conv.id },

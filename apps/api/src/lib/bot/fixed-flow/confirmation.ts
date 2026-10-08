@@ -14,12 +14,13 @@ function formatAddress(a: NonNullable<OrderDraft['address']>): string {
   return base + city + (a.reference ? `\nRef.: ${a.reference}` : '')
 }
 
-function buildSummary(store: BotStore, draft: OrderDraft): string {
+export function buildSummary(store: BotStore, draft: OrderDraft): string {
   const lines = draft.items.map((item) => {
     const addonsTotal = item.addons.reduce((a, b) => a + b.price, 0)
     const unit = item.price + addonsTotal
     const addons = item.addons.length > 0 ? ` (${item.addons.map((a) => a.optionName).join(', ')})` : ''
-    return `• ${item.quantity}x ${item.name}${addons} — ${money(unit * item.quantity)}`
+    const notes = item.notes ? `\n   _obs: ${item.notes}_` : ''
+    return `• ${item.quantity}x ${item.name}${addons} — ${money(unit * item.quantity)}${notes}`
   })
 
   const paymentLabel =

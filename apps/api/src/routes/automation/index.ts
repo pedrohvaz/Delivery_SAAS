@@ -268,7 +268,10 @@ const automationRoutes: FastifyPluginAsync = async (app) => {
     if (!phone) return
 
     // Processa em background (fire-and-forget) — a resposta 200 já foi enviada.
-    handleInbound(app, { storeSlug, phone, text: messageText }).catch((err) => {
+    // Nome do perfil do WhatsApp do cliente (vira o nome do cliente na loja)
+    const pushName: string | undefined = payload?.data?.pushName || payload?.pushName || undefined
+
+    handleInbound(app, { storeSlug, phone, text: messageText, pushName }).catch((err) => {
       app.log.error({ err }, 'Automation webhook (handleInbound) error')
     })
   })

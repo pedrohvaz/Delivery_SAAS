@@ -48,7 +48,7 @@ describe('bot: o cliente sempre recebe uma resposta legível', () => {
     const reply = await run()
     expect(reply).toContain('Pode repetir')
     expect(reply).toContain(`/${S.slug}`)
-    expect(reply).not.toMatch(/[가-힯]/)
+    expect(reply).not.toMatch(/[\uac00-\ud7af]/)
   })
 
   it('IA fora do ar: mensagem padrão em vez de silêncio', async () => {

@@ -26,7 +26,7 @@ export function isSaneReply(text: string): boolean {
   const t = text.trim()
   if (!t || t.length > MAX_REPLY_CHARS) return false
   // Alfabetos que não são do português (CJK, hangul, cirílico, árabe…)
-  const foreign = (t.match(/[Ѐ-ӿ؀-ۿ぀-ヿ㐀-鿿가-힯]/g) ?? []).length
+  const foreign = (t.match(/[\u0400-\u04ff\u0600-\u06ff\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g) ?? []).length
   if (foreign > 3) return false
   // Mesma frase repetida muitas vezes = loop
   const parts = t.split(/[.!?\n]+/).map((x) => x.trim()).filter((x) => x.length >= 8)
@@ -169,7 +169,7 @@ export async function handleLlmFree(
     customPrompt: store.automationConfig?.systemPrompt ?? null,
     storeSlug: store.slug,
     customer: profile ? toPromptCustomer(profile) : null,
-    currentCart: draft.items.map((i) => ({ quantity: i.quantity, name: i.name, addons: i.addons })),
+    currentCart: draft.items.map((i) => ({ quantity: i.quantity, name: i.name, addons: i.addons, notes: i.notes })),
   })
 
   let aiRaw: string

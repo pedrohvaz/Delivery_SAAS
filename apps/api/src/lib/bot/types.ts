@@ -34,6 +34,9 @@ export interface OrderDraft {
   total?: number
   // flags de UX do fluxo fixo
   addressPrompted?: boolean
+  // endereço sendo montado aos poucos (o bot pergunta só o que falta)
+  pendingAddress?: Partial<DraftAddress>
+  addressAsk?: 'street' | 'number' | 'district'
   changeAsked?: boolean
   // cliente já confirmou que quer mesmo um pedido idêntico recente (anti-duplicado)
   dupAck?: boolean
@@ -81,6 +84,8 @@ export interface BotStore {
   evolutionApiUrl: string | null
   evolutionApiKey: string | null
   evolutionInstance: string | null
+  city?: string | null
+  state?: string | null
   schedules: { dayOfWeek: number; openTime: string; closeTime: string }[]
   paymentMethods: { id: string; type: string; label: string }[]
   deliveryAreas: { type: string; fee: number; freeFrom: number | null; district: string | null; name: string | null }[]

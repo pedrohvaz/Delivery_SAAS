@@ -116,3 +116,12 @@ describe('#12 taxa de entrega sem áreas configuradas', () => {
     expect(r.data.data.total).toBe(8)
   })
 })
+
+describe('observação do item chega ao painel/KDS', () => {
+  it('GET /orders devolve as notes de cada item ("sem bacon")', async () => {
+    const r = await call('POST', '/orders', { body: orderBody(A, [{ ...item(burger.id, 50), notes: 'sem bacon' }]) })
+    const list = await call('GET', '/orders', { token: A.token })
+    const order = list.data.data.find((o: { id: string }) => o.id === r.data.data.id)
+    expect(order.items[0].notes).toBe('sem bacon')
+  })
+})

@@ -14,7 +14,7 @@ describe('parseControl — o cliente nunca recebe JSON cru nem lixo', () => {
     expect(reply).toContain('Beef 3')
     expect(reply).not.toContain('{"reply"')
     expect(reply).not.toContain('"cart"')
-    expect(reply).not.toMatch(/[가-힯]/) // nada de coreano
+    expect(reply).not.toMatch(/[\uac00-\ud7af]/) // nada de coreano
     expect(reply).toContain('\n') // \n do JSON vira quebra de linha real
   })
 

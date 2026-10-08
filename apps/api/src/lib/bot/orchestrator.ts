@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { resolveAiKey } from '../ai-attendant.js'
 import { evolutionSendText } from '../evolution.js'
 import { loadMenu } from './menu.js'
-import { loadProfile } from './crm.js'
+import { loadProfile, syncCustomerName } from './crm.js'
 import { getDraft, loadSession, resetToFree, saveMessage, setState } from './session.js'
 import { buildWelcome, buildClosedMessage } from './welcome.js'
 import { handleLlmFree } from './llm-flow.js'
@@ -17,6 +17,8 @@ export interface InboundMessage {
   storeSlug: string
   phone: string
   text: string
+  /** Nome do perfil do WhatsApp (Evolution: data.pushName) */
+  pushName?: string
 }
 
 // Lock por conversa (storeSlug:phone) para processar mensagens em ordem.
@@ -40,6 +42,8 @@ async function loadStoreForBot(app: FastifyInstance, slug: string): Promise<BotS
       evolutionApiUrl: true,
       evolutionApiKey: true,
       evolutionInstance: true,
+      city: true,
+      state: true,
       schedules: { where: { isActive: true }, select: { dayOfWeek: true, openTime: true, closeTime: true } },
       paymentMethods: { where: { isActive: true }, select: { id: true, type: true, label: true } },
       deliveryAreas: {
@@ -111,7 +115,7 @@ export async function handleInbound(app: FastifyInstance, msg: InboundMessage): 
   await run
 }
 
-async function processMessage(app: FastifyInstance, { storeSlug, phone, text }: InboundMessage): Promise<void> {
+async function processMessage(app: FastifyInstance, { storeSlug, phone, text, pushName }: InboundMessage): Promise<void> {
   const store = await loadStoreForBot(app, storeSlug)
   if (!store || !store.automationConfig?.isEnabled) return
 
@@ -133,6 +137,8 @@ async function processMessage(app: FastifyInstance, { storeSlug, phone, text }: 
   if (text.length > MAX_MSG_CHARS) text = text.slice(0, MAX_MSG_CHARS)
 
   const conv = await loadSession(app, store.id, phone)
+  // Nome do WhatsApp → cadastro do cliente na loja (aparece na aba Clientes e no pedido)
+  const contactName = await syncCustomerName(app, store.id, phone, conv.id, pushName)
   // "Primeiro contato" = início de uma nova sessão: conta só mensagens ATIVAS
   // (user/assistant). Mensagens de pedidos concluídos/antigos viram 'archived'
   // (ver register/loadSession), então uma nova saudação dispara o welcome de novo.
@@ -161,7 +167,7 @@ async function processMessage(app: FastifyInstance, { storeSlug, phone, text }: 
   // Primeiro contato: boas-vindas determinísticas (nome da loja + link do cardápio),
   // sem chamar o LLM. Funciona mesmo sem chave de IA (modo "só link").
   if (isFirstContact) {
-    const welcome = buildWelcome(store)
+    const welcome = buildWelcome(store, contactName)
     await saveMessage(app, conv.id, 'system', welcome)
     await sendWhatsApp(store, phone, welcome)
     return

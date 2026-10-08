@@ -48,3 +48,51 @@ export async function loadProfile(app: FastifyInstance, storeId: string, phone: 
     })),
   }
 }
+
+/** Limpa o nome vindo do perfil do WhatsApp (pode ter emoji, espaços, ser só ".") */
+export function cleanWhatsAppName(raw?: string | null): string | null {
+  if (!raw) return null
+  const name = raw.replace(/[\u0000-\u001f]/g, '').replace(/\s+/g, ' ').trim().slice(0, 80)
+  // Precisa ter ao menos 2 letras para ser um nome (evita ".", "🙂", números)
+  return (name.match(/\p{L}/gu) ?? []).length >= 2 ? name : null
+}
+
+const PLACEHOLDER_NAMES = new Set(['', 'cliente'])
+
+/**
+ * Usa o nome do perfil do WhatsApp como nome do cliente na loja: cria o cadastro
+ * (aba Clientes) no primeiro contato e substitui o genérico "Cliente". Nunca
+ * sobrescreve um nome que o lojista ou o próprio cliente já informou.
+ * Retorna o nome conhecido do cliente (para cumprimentar), se houver.
+ */
+export async function syncCustomerName(
+  app: FastifyInstance,
+  storeId: string,
+  phone: string,
+  conversationId: string,
+  pushName?: string,
+): Promise<string | null> {
+  const name = cleanWhatsAppName(pushName)
+  try {
+    const existing = await app.prisma.customer.findUnique({
+      where: { storeId_phone: { storeId, phone } },
+      select: { id: true, name: true },
+    })
+    let current = existing?.name ?? null
+    if (name) {
+      if (!existing) {
+        const created = await app.prisma.customer.create({ data: { storeId, phone, name }, select: { id: true } })
+        await app.prisma.conversation.update({ where: { id: conversationId }, data: { customerId: created.id, customerName: name } })
+        current = name
+      } else if (PLACEHOLDER_NAMES.has(existing.name.trim().toLowerCase())) {
+        await app.prisma.customer.update({ where: { id: existing.id }, data: { name } })
+        current = name
+      }
+      await app.prisma.conversation.updateMany({ where: { id: conversationId, customerName: null }, data: { customerName: name } })
+    }
+    return current && !PLACEHOLDER_NAMES.has(current.trim().toLowerCase()) ? current : null
+  } catch (err) {
+    app.log.warn({ err: (err as Error).message }, 'bot: não foi possível salvar o nome do WhatsApp')
+    return name
+  }
+}

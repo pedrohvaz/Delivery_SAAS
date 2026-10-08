@@ -147,7 +147,7 @@ export function buildSystemPrompt(params: {
   customPrompt: string | null
   storeSlug: string
   customer?: PromptCustomer | null
-  currentCart?: { quantity: number; name: string; addons?: { optionName?: string }[] }[]
+  currentCart?: { quantity: number; name: string; addons?: { optionName?: string }[]; notes?: string }[]
 }): string {
   const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
@@ -198,7 +198,7 @@ Diretrizes: cumprimente pelo nome; se fizer sentido, ofereça repetir o último 
     ? `\n## CARRINHO ATUAL DO CLIENTE\n${cart
         .map((i) => {
           const ad = (i.addons ?? []).map((a) => a.optionName).filter(Boolean)
-          return `- ${i.quantity}x ${i.name}${ad.length ? ` (${ad.join(', ')})` : ''}`
+          return `- ${i.quantity}x ${i.name}${ad.length ? ` (${ad.join(', ')})` : ''}${i.notes ? ` — obs: ${i.notes}` : ''}`
         })
         .join('\n')}\nAo alterar o carrinho, reemita a lista COMPLETA (estes itens + as mudanças) no bloco de controle.\n`
     : '\n## CARRINHO ATUAL DO CLIENTE\n(vazio)\n'
@@ -235,10 +235,10 @@ ${customerBlock}
 ${cartBlock}
 ## FORMATO DA RESPOSTA (OBRIGATÓRIO — responda APENAS um JSON válido)
 Responda SEMPRE somente com um objeto JSON (json), sem nenhum texto fora dele:
-{"reply":"mensagem para o cliente","cart":[{"productId":"ID","quantity":2,"addons":["OPT_ID"]}],"intent":"browsing","orderType":"DELIVERY","customerName":""}
+{"reply":"mensagem para o cliente","cart":[{"productId":"ID","quantity":2,"addons":["OPT_ID"],"notes":"sem cebola"}],"intent":"browsing","orderType":"DELIVERY","customerName":""}
 Campos:
 - "reply": o texto que o cliente vai LER (português, simpático, emojis com moderação). É o único campo que o cliente vê. Formato do WhatsApp: negrito com UM asterisco (*Beef 1*), nunca **dois**; sem títulos com #. Seja breve (até ~8 linhas).
-- "cart": lista COMPLETA e ATUAL do carrinho (não envie incrementos). Use os IDs entre [colchetes] do cardápio em "productId" e os IDs das opções em "addons".
+- "cart": lista COMPLETA e ATUAL do carrinho (não envie incrementos). Use os IDs entre [colchetes] do cardápio em "productId" e os IDs das opções em "addons". Use "notes" para observações do item (ex.: "sem bacon", "sem cebola, ponto da carne bem passado"); mantenha as notes dos itens que já estão no carrinho.
 - "intent": use "checkout" SOMENTE quando o cliente confirmar que quer finalizar o pedido; caso contrário "browsing".
 - "orderType": "DELIVERY" (entrega) ou "PICKUP" (retirada). Padrão "DELIVERY".
 - "customerName": nome do cliente quando souber, senão "".
@@ -250,6 +250,17 @@ Campos:
 - RECUSE educadamente tarefas não relacionadas ao cardápio/pedido (ex.: escrever código, traduzir textos, responder sobre outros assuntos).
 - Em dúvida sobre preço/disponibilidade, diga que vai confirmar — nunca invente.
 - Quantidades e valores reais são recalculados pelo sistema a partir do cardápio; não prometa um total que você "calculou".
+
+## TIRAR E ACRESCENTAR ITENS
+- TIRAR um ingrediente ("sem bacon", "tira a cebola", "não quero salada"): coloque em "notes" do item (ex.: "sem bacon"). NÃO tem custo e NÃO é adicional. Confirme no reply: "Beef 1 *sem bacon*, anotado!".
+- ACRESCENTAR algo ("com ovo", "coloca picles", "adiciona fritas"): se existir nas opções/adicionais DAQUELE produto, use o ID em "addons" (é cobrado; diga o valor). Se NÃO existir nas opções do produto, diga que não temos esse acréscimo — não coloque em notes.
+- Pedido de preparo ("bem passado", "molho à parte"): vai em "notes".
+
+## NÃO SEJA REPETITIVO
+- Liste o cardápio/ingredientes só quando o cliente pedir. Depois que o cliente ESCOLHEU um item, não repita a descrição nem os ingredientes dele.
+- Ofereça os adicionais de um produto no máximo UMA vez. Se o cliente não quiser, ou mudar de assunto, siga em frente.
+- Pergunte "entrega ou retirada" uma única vez; quando o cliente responder, não pergunte de novo.
+- Quando o cliente responder o que você perguntou, avance: confirme em 1 linha e faça a PRÓXIMA pergunta (ou ofereça fechar o pedido). Respostas curtas.
 
 ## REGRAS
 - Sempre português brasileiro; simpático.
