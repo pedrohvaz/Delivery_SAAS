@@ -66,13 +66,17 @@ export function OrderModal({ order, onClose, initialCancelling = false }: Props)
 
   async function handleAdvance() {
     if (!nextStatus || !order) return
-    await updateStatus.mutateAsync({ id: order.id, status: nextStatus })
+    try {
+      await updateStatus.mutateAsync({ id: order.id, status: nextStatus })
+    } catch { return } // erro já avisado no hook
     onClose()
   }
 
   async function handleCancel() {
     if (!order || !cancelReason) return
-    await updateStatus.mutateAsync({ id: order.id, status: 'CANCELLED', cancelReason })
+    try {
+      await updateStatus.mutateAsync({ id: order.id, status: 'CANCELLED', cancelReason })
+    } catch { return } // erro já avisado no hook
     onClose()
   }
 

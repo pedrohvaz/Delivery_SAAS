@@ -1,4 +1,4 @@
-import Fastify from 'fastify'
+import Fastify, { type FastifyRequest } from 'fastify'
 import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
 import jwt from '@fastify/jwt'
@@ -45,16 +45,49 @@ import stripeWebhookRoutes from './routes/stripe-webhook/index.js'
 import cardapioGeradorRoutes from './routes/cardapio-gerador/index.js'
 import whatsappRoutes from './routes/whatsapp/index.js'
 
+// Proxies em que confiamos para ler o X-Forwarded-For: só a máquina/rede local
+// (cloudflared, Caddy, Docker). Com `trustProxy: true` qualquer cliente forjava o
+// cabeçalho e "trocava de IP" a cada tentativa, burlando o rate limit.
+const TRUSTED_PROXIES = ['127.0.0.1/8', '::1/128', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', 'fc00::/7']
+
+// IP real do cliente para o rate limit. Atrás da Cloudflare o CF-Connecting-IP é
+// definido pela própria Cloudflare (o cliente não consegue forjar); só é aceito
+// quando a conexão vem de um proxy local confiável.
+export function clientIp(request: FastifyRequest): string {
+  const cf = request.headers['cf-connecting-ip']
+  if (typeof cf === 'string' && cf && isPrivate(request.socket.remoteAddress ?? '')) return cf
+  return request.ip
+}
+function isPrivate(addr: string): boolean {
+  const a = addr.replace(/^::ffff:/, '')
+  return a === '127.0.0.1' || a === '::1' || a.startsWith('10.') || a.startsWith('192.168.')
+    || /^172\.(1[6-9]|2\d|3[01])\./.test(a) || /^f[cd]/i.test(a)
+}
+
 export function buildApp() {
+  const jwtSecret = process.env.JWT_SECRET
+  if (!jwtSecret && process.env.NODE_ENV !== 'development') {
+    throw new Error('JWT_SECRET não definido — a API não sobe sem ele fora do modo development')
+  }
+
   const app = Fastify({
-    // Atrás do proxy da Railway: usa X-Forwarded-For como IP real do cliente.
-    // Sem isso, o rate limit agrupa todo mundo no IP do proxy (e nunca/aleatoriamente dispara).
-    trustProxy: true,
-    logger: {
+    trustProxy: TRUSTED_PROXIES,
+    logger: process.env.NODE_ENV === 'test' ? false : {
       transport:
         process.env.NODE_ENV === 'development'
           ? { target: 'pino-pretty', options: { colorize: true } }
           : undefined,
+      // Não grava segredos de query string (ex.: ?token= do webhook do WhatsApp) nos logs
+      serializers: {
+        req(req) {
+          return {
+            method: req.method,
+            url: req.url.replace(/([?&](token|key|apikey|access_token)=)[^&]+/gi, '$1[oculto]'),
+            hostname: req.hostname,
+            remoteAddress: req.ip,
+          }
+        },
+      },
     },
   })
 
@@ -81,11 +114,12 @@ export function buildApp() {
   app.register(rateLimit, {
     max: 100,
     timeWindow: '1 minute',
+    keyGenerator: clientIp,
   })
 
   // JWT
   app.register(jwt, {
-    secret: process.env.JWT_SECRET ?? 'dev-secret-change-in-production',
+    secret: jwtSecret ?? 'dev-secret-only-for-local-development',
   })
 
   // Prisma + Socket.io

@@ -270,24 +270,24 @@ export default function OrderTrackPage() {
         {/* Barra de progresso */}
         {!isCancelled && (
           <div className="rounded-2xl bg-white border p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               {steps.map((step, idx) => {
                 const stepNum = idx + 2  // steps começam no step 2 (após PENDING)
                 const done = currentStep > stepNum
                 const active = currentStep === stepNum
                 return (
-                  <div key={step} className="flex flex-1 flex-col items-center gap-1">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors
+                  <div key={step} className="relative flex flex-1 flex-col items-center gap-1">
+                    {/* Linha conectora: do centro deste círculo até o centro do próximo, atrás dos círculos */}
+                    {idx < steps.length - 1 && (
+                      <div className={`absolute left-1/2 top-4 h-0.5 w-full -translate-y-1/2 ${done ? 'bg-green-500' : 'bg-muted'}`} />
+                    )}
+                    <div className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors
                       ${done ? 'bg-green-500 text-white' : active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
                       {done ? '✓' : idx + 1}
                     </div>
                     <span className={`text-[10px] text-center font-medium ${active ? 'text-primary' : 'text-muted-foreground'}`}>
                       {step}
                     </span>
-                    {/* Linha conectora */}
-                    {idx < steps.length - 1 && (
-                      <div className={`absolute mt-4 h-0.5 w-full max-w-[60px] ${done ? 'bg-green-500' : 'bg-muted'}`} style={{ left: '50%' }} />
-                    )}
                   </div>
                 )
               })}

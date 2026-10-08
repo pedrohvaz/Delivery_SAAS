@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { authenticateSuperAdmin } from '../../middlewares/authenticate-super-admin.js'
+import { cacheDel } from '../../lib/cache.js'
 
 const superAdminStoresRoutes: FastifyPluginAsync = async (app) => {
   // GET /super-admin/stores
@@ -139,7 +140,7 @@ const superAdminStoresRoutes: FastifyPluginAsync = async (app) => {
     const { id } = request.params as { id: string }
     const { reason } = request.body as { reason?: string }
 
-    const store = await app.prisma.store.findUnique({ where: { id }, select: { status: true } })
+    const store = await app.prisma.store.findUnique({ where: { id }, select: { status: true, slug: true } })
     if (!store) return reply.status(404).send({ error: 'Not Found', message: 'Loja não encontrada', statusCode: 404 })
     if (store.status === 'SUSPENDED') return reply.status(409).send({ error: 'Conflict', message: 'Loja já está suspensa', statusCode: 409 })
 
@@ -154,6 +155,8 @@ const superAdminStoresRoutes: FastifyPluginAsync = async (app) => {
       },
       select: { id: true, status: true, suspendedAt: true, suspendReason: true },
     })
+    // Vitrine pública reflete a suspensão/reativação na hora
+    await cacheDel('stores:list', `store:${store.slug}`, `menu:${store.slug}`)
     return reply.send({ data: updated })
   })
 
@@ -161,7 +164,7 @@ const superAdminStoresRoutes: FastifyPluginAsync = async (app) => {
   app.patch('/:id/activate', { preHandler: [authenticateSuperAdmin] }, async (request, reply) => {
     const { id } = request.params as { id: string }
 
-    const store = await app.prisma.store.findUnique({ where: { id }, select: { status: true } })
+    const store = await app.prisma.store.findUnique({ where: { id }, select: { status: true, slug: true } })
     if (!store) return reply.status(404).send({ error: 'Not Found', message: 'Loja não encontrada', statusCode: 404 })
 
     const updated = await app.prisma.store.update({
@@ -169,6 +172,8 @@ const superAdminStoresRoutes: FastifyPluginAsync = async (app) => {
       data: { status: 'ACTIVE', suspendedAt: null, suspendReason: null, acceptOrders: true },
       select: { id: true, status: true },
     })
+    // Vitrine pública reflete a suspensão/reativação na hora
+    await cacheDel('stores:list', `store:${store.slug}`, `menu:${store.slug}`)
     return reply.send({ data: updated })
   })
 

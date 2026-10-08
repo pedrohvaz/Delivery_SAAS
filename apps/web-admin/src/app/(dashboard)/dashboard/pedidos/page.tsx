@@ -135,7 +135,7 @@ export default function PedidosPage() {
   const handleAdvance = useCallback(async (order: Order) => {
     const next = getNextStatus(order.status, order.type)
     if (!next) return
-    await updateStatus.mutateAsync({ id: order.id, status: next })
+    await updateStatus.mutateAsync({ id: order.id, status: next }).catch(() => {}) // erro já avisado no hook
   }, [updateStatus])
 
   const handleCancel = useCallback((order: Order) => {

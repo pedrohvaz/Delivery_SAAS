@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, User, CreditCard, CheckCircle2, Tag, X } from 'lucide-react'
 import { api } from '@/lib/api'
+import { saveLocalOrder } from '@/lib/local-orders'
 import { currency } from '@/lib/utils'
 import { useCartStore, itemTotal } from '@/store/cart'
 
@@ -71,17 +72,7 @@ export default function MesaCheckoutPage() {
   function handlePhoneChange(v: string) {
     setPhone(v)
     setReturningCustomer(null)
-    const clean = v.replace(/\D/g, '')
-    if (clean.length < 10) return
-    if (phoneSearchTimeout.current) clearTimeout(phoneSearchTimeout.current)
-    phoneSearchTimeout.current = setTimeout(async () => {
-      try {
-        const r = await api.get<{ data: { name: string } }>(`/store/${slug}/customer?phone=${clean}`)
-        const foundName = r.data.data.name
-        setName(foundName)
-        setReturningCustomer(foundName)
-      } catch { /* cliente novo */ }
-    }, 500)
+    // (A busca do nome pelo telefone foi removida: expunha dados de terceiros.)
   }
 
   async function handleValidateCoupon() {
@@ -156,6 +147,10 @@ export default function MesaCheckoutPage() {
         notes,
         couponCode: couponCode.trim() || undefined,
       })
+
+      // Guarda no aparelho para aparecer em "Meus pedidos" sem login
+
+      saveLocalOrder({ id: data.data.id, slug, orderNumber: data.data.orderNumber, total: data.data.total, createdAt: new Date().toISOString() })
 
       clearCart()
       if (data.data.requiresPayment) {

@@ -70,11 +70,15 @@ const scheduleRoutes: FastifyPluginAsync = async (app) => {
   })
 
   // ─── PATCH /schedules/toggle (abrir/fechar manualmente) ───────────
-  app.patch('/toggle', { preHandler: [authenticate] }, async (request) => {
+  app.patch('/toggle', { preHandler: [authenticate] }, async (request, reply) => {
     const store = await app.prisma.store.findUnique({
       where: { id: request.user.storeId },
-      select: { isOpen: true },
+      select: { isOpen: true, status: true },
     })
+    // Loja suspensa pelo superadmin não pode ser reaberta pelo lojista
+    if (store?.status === 'SUSPENDED') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Loja suspensa. Fale com o suporte.', statusCode: 403 })
+    }
 
     const updated = await app.prisma.store.update({
       where: { id: request.user.storeId },

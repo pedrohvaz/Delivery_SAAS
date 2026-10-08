@@ -11,9 +11,9 @@ function digits(v: string): string {
 }
 
 // Assina tokens de cliente (namespace separado do admin via `type: 'customer'`)
-function signCustomerToken(app: Parameters<FastifyPluginAsync>[0], accountId: string, expiresIn: string): string {
+function signCustomerToken(app: Parameters<FastifyPluginAsync>[0], accountId: string, expiresIn: string, kind: 'access' | 'refresh' = 'access'): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (app.jwt.sign as any)({ sub: accountId, type: 'customer' }, { expiresIn })
+  return (app.jwt.sign as any)({ sub: accountId, type: 'customer', kind }, { expiresIn })
 }
 
 function accountId(request: { user: unknown }): string {
@@ -90,7 +90,7 @@ const customerRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const accessToken = signCustomerToken(app, account.id, '7d')
-    const refreshToken = signCustomerToken(app, account.id, '30d')
+    const refreshToken = signCustomerToken(app, account.id, '30d', 'refresh')
     return reply.status(201).send({
       data: {
         accessToken,
@@ -118,7 +118,7 @@ const customerRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const accessToken = signCustomerToken(app, account.id, '7d')
-    const refreshToken = signCustomerToken(app, account.id, '30d')
+    const refreshToken = signCustomerToken(app, account.id, '30d', 'refresh')
     return reply.send({
       data: {
         accessToken,
@@ -135,8 +135,10 @@ const customerRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(400).send({ error: 'Validation Error', message: 'Token inválido', statusCode: 400 })
     }
     try {
-      const decoded = app.jwt.verify(result.data.refreshToken) as { sub: string; type?: string }
-      if (decoded.type !== 'customer') {
+      const decoded = app.jwt.verify(result.data.refreshToken) as { sub: string; type?: string; kind?: string; iat?: number; exp?: number }
+      // Novos refresh tokens têm kind 'refresh'; os antigos (sem kind) valiam 30 dias, os de acesso 7.
+      const legacyRefresh = !decoded.kind && (decoded.exp ?? 0) - (decoded.iat ?? 0) > 8 * 24 * 3600
+      if (decoded.type !== 'customer' || !(decoded.kind === 'refresh' || legacyRefresh)) {
         return reply.status(401).send({ error: 'Unauthorized', message: 'Token inválido', statusCode: 401 })
       }
       const account = await app.prisma.customerAccount.findUnique({ where: { id: decoded.sub }, select: { id: true } })

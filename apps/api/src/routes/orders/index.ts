@@ -3,6 +3,7 @@ import { authenticate } from '../../middlewares/authenticate.js'
 import { getOptionalCustomerAccountId } from '../../middlewares/optional-customer.js'
 import { notifyOrderStatus } from '../../lib/notifications.js'
 import { createOrder, OrderError, createOrderSchema } from '../../lib/order-service.js'
+import { changeOrderStatus, OrderStatusError, ORDER_STATUSES } from '../../lib/order-status.js'
 
 const orderRoutes: FastifyPluginAsync = async (app) => {
   // ─── POST /orders (público — cliente faz pedido) ──────────────────
@@ -101,88 +102,25 @@ const orderRoutes: FastifyPluginAsync = async (app) => {
   // ─── PATCH /orders/:id/status (admin — avançar status) ────────────
   app.patch('/:id/status', { preHandler: [authenticate] }, async (request, reply) => {
     const { id } = request.params as { id: string }
-    const { status, cancelReason } = request.body as { status: string; cancelReason?: string }
+    const { status, cancelReason } = (request.body ?? {}) as { status?: string; cancelReason?: string }
 
-    const validStatuses = ['CONFIRMED', 'IN_PRODUCTION', 'OUT_FOR_DELIVERY', 'READY_FOR_PICKUP', 'DELIVERED', 'CANCELLED']
-    if (!validStatuses.includes(status)) {
+    if (!status || !(ORDER_STATUSES as readonly string[]).includes(status)) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Status inválido', statusCode: 400 })
     }
 
-    const order = await app.prisma.order.findFirst({
-      where: { id, storeId: request.user.storeId },
-      select: {
-        id: true,
-        status: true,
-        couponId: true,
-        paymentMethod: true,
-        paymentStatus: true,
-        items: { select: { productId: true, quantity: true } },
-      },
-    })
-    if (!order) return reply.status(404).send({ error: 'Not Found', message: 'Pedido não encontrado', statusCode: 404 })
-
-    // Ao entregar um pedido em DINHEIRO, marca como PAGO (o dinheiro entrou na gaveta).
-    const autoPayCash = status === 'DELIVERED' && order.paymentMethod === 'CASH' && order.paymentStatus !== 'PAID'
-
-    const updated = await app.prisma.order.update({
-      where: { id },
-      data: {
-        status: status as never,
-        ...(status === 'CANCELLED' && cancelReason ? { cancelReason } : {}),
-        ...(autoPayCash ? { paymentStatus: 'PAID' as never } : {}),
-      },
-    })
-
-    // Decrementa estoque ao confirmar (CONFIRMED) — apenas produtos com controle ativo
-    if (status === 'CONFIRMED' && order.status === 'PENDING') {
-      for (const item of order.items) {
-        await app.prisma.product.updateMany({
-          where: {
-            id: item.productId,
-            storeId: request.user.storeId,
-            stockControl: true,
-            stockQty: { gt: 0 },
-          },
-          data: { stockQty: { decrement: item.quantity } },
-        })
-        // Desativa produto se estoque chegou a zero
-        await app.prisma.product.updateMany({
-          where: {
-            id: item.productId,
-            storeId: request.user.storeId,
-            stockControl: true,
-            stockQty: { lte: 0 },
-          },
-          data: { isActive: false },
-        })
+    let updated: { id: string; status: string }
+    try {
+      updated = await changeOrderStatus(app.prisma, {
+        orderId: id,
+        storeId: request.user.storeId,
+        to: status,
+        cancelReason: cancelReason?.slice(0, 300),
+      })
+    } catch (err) {
+      if (err instanceof OrderStatusError) {
+        return reply.status(err.httpStatus).send({ error: err.code, message: err.message, statusCode: err.httpStatus })
       }
-    }
-
-    // Restaura estoque e cupom se pedido for cancelado
-    if (status === 'CANCELLED') {
-      const postConfirmedStatuses = new Set(['CONFIRMED', 'IN_PRODUCTION', 'OUT_FOR_DELIVERY', 'READY_FOR_PICKUP'])
-      if (postConfirmedStatuses.has(order.status)) {
-        for (const item of order.items) {
-          await app.prisma.product.updateMany({
-            where: {
-              id: item.productId,
-              storeId: request.user.storeId,
-              stockControl: true,
-            },
-            data: {
-              stockQty: { increment: item.quantity },
-              isActive: true,
-            },
-          })
-        }
-      }
-      // Devolve uso do cupom independente do status anterior
-      if (order.couponId) {
-        await app.prisma.coupon.update({
-          where: { id: order.couponId },
-          data: { usedCount: { decrement: 1 } },
-        })
-      }
+      throw err
     }
 
     // Notifica o painel em tempo real
@@ -273,11 +211,15 @@ const orderRoutes: FastifyPluginAsync = async (app) => {
 
   // ─── GET /orders (admin — listar pedidos da loja) ─────────────────
   app.get('/', { preHandler: [authenticate] }, async (request) => {
-    const { status, type, scheduled } = request.query as {
+    const { status, type, scheduled, limit, before } = request.query as {
       status?: string
       type?: string
       scheduled?: string
+      limit?: string
+      before?: string // ISO date: pedidos criados antes desta data (página seguinte)
     }
+    const take = Math.min(Math.max(Number(limit) || 100, 1), 200)
+    const beforeDate = before ? new Date(before) : null
 
     const orders = await app.prisma.order.findMany({
       where: {
@@ -285,9 +227,10 @@ const orderRoutes: FastifyPluginAsync = async (app) => {
         ...(status ? { status: status as never } : {}),
         ...(type ? { type: type as never } : {}),
         ...(scheduled === 'true' ? { scheduledTo: { not: null } } : { scheduledTo: null }),
+        ...(beforeDate && !isNaN(beforeDate.getTime()) ? { createdAt: { lt: beforeDate } } : {}),
       },
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take,
       include: {
         customer: { select: { name: true, phone: true } },
         items: { select: { name: true, quantity: true, price: true, addons: true } },

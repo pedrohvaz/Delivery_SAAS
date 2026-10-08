@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { ArrowLeft, MapPin, User, CreditCard, CheckCircle2, Tag, X, Plus } from 'lucide-react'
 import { api } from '@/lib/api'
+import { saveLocalOrder } from '@/lib/local-orders'
 import { currency } from '@/lib/utils'
 import { useCartStore, itemTotal } from '@/store/cart'
 import { useCustomerAuth } from '@/store/customer-auth'
@@ -158,17 +159,7 @@ export default function CheckoutPage() {
     const masked = maskPhone(v)
     setPhone(masked)
     setReturningCustomer(null)
-    const clean = masked.replace(/\D/g, '')
-    if (clean.length < 10) return
-    if (phoneSearchTimeout.current) clearTimeout(phoneSearchTimeout.current)
-    phoneSearchTimeout.current = setTimeout(async () => {
-      try {
-        const r = await api.get<{ data: { name: string } }>(`/store/${slug}/customer?phone=${clean}`)
-        const foundName = r.data.data.name
-        setName(foundName)
-        setReturningCustomer(foundName)
-      } catch { /* cliente novo — silencioso */ }
-    }, 500)
+    // (A busca do nome pelo telefone foi removida: expunha dados de terceiros.)
   }
 
   // Valida cupom contra a API
@@ -239,7 +230,8 @@ export default function CheckoutPage() {
   function calcDeliveryFee(): { fee: number; matched: boolean; areaError: string } {
     if (orderType === 'PICKUP') return { fee: 0, matched: true, areaError: '' }
     const areas = store?.deliveryAreas ?? []
-    if (areas.length === 0) return { fee: 5.00, matched: true, areaError: '' }
+    // Sem áreas configuradas a loja não cobra taxa (mesma regra da API)
+    if (areas.length === 0) return { fee: 0, matched: true, areaError: '' }
 
     if (hasDistrictConfig && district.trim()) {
       const match = districtAreas.find(
@@ -258,7 +250,7 @@ export default function CheckoutPage() {
       const isFree = radiusArea.freeFrom != null && cartSubtotal >= radiusArea.freeFrom
       return { fee: isFree ? 0 : Number(radiusArea.fee), matched: true, areaError: '' }
     }
-    return { fee: 5.00, matched: true, areaError: '' }
+    return { fee: 0, matched: true, areaError: '' }
   }
 
   const { fee: deliveryFee, matched: districtMatched, areaError } = calcDeliveryFee()
@@ -323,6 +315,8 @@ export default function CheckoutPage() {
       } catch { /* sessionStorage indisponível — ignora */ }
 
       submittingRef.current = true
+      // Guarda no aparelho para aparecer em "Meus pedidos" sem login
+      saveLocalOrder({ id: data.data.id, slug, orderNumber: data.data.orderNumber, total: data.data.total, createdAt: new Date().toISOString() })
       clearCart()
       if (data.data.requiresPayment) {
         router.push(`/${slug}/pedido/${data.data.id}/pagar`)

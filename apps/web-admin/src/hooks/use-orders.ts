@@ -63,6 +63,13 @@ export function useUpdateOrderStatus() {
     mutationFn: ({ id, status, cancelReason }: { id: string; status: string; cancelReason?: string }) =>
       api.patch(`/orders/${id}/status`, { status, cancelReason }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
+    // A API recusa transições inválidas (ex.: duplo clique, pedido já cancelado,
+    // estoque insuficiente): avisa o lojista e recarrega a lista com o estado real.
+    onError: (err: any) => {
+      qc.invalidateQueries({ queryKey: ['orders'] })
+      const msg = err?.response?.data?.message ?? 'Não foi possível atualizar o pedido.'
+      if (typeof window !== 'undefined') window.alert(msg)
+    },
   })
 }
 

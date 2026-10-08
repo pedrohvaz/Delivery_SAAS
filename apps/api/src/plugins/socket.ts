@@ -24,7 +24,9 @@ export const socketPlugin = fp(async (app: FastifyInstance) => {
     try {
       const token = socket.handshake.auth.token as string
       if (!token) return next(new Error('Token não informado'))
-      const payload = app.jwt.verify(token) as JwtPayload
+      const payload = app.jwt.verify(token) as JwtPayload & { type?: string }
+      // Só o painel do lojista entra na sala da loja (token de cliente/refresh não tem storeId)
+      if (!payload.storeId || payload.type === 'refresh' || payload.type === 'customer') return next(new Error('Token inválido'))
       socket.data.storeId = payload.storeId
       socket.data.userId = payload.sub
       next()

@@ -8,6 +8,7 @@ const storePublicRoutes: FastifyPluginAsync = async (app) => {
     if (cached) return reply.send({ data: cached })
 
     const stores = await app.prisma.store.findMany({
+      where: { status: 'ACTIVE' },
       orderBy: { name: 'asc' },
       select: {
         id: true, name: true, slug: true, logoUrl: true, bannerUrl: true, description: true,
@@ -41,8 +42,8 @@ const storePublicRoutes: FastifyPluginAsync = async (app) => {
     const cached = await cacheGet<any>(cacheKey)
     if (cached) return reply.send({ data: cached })
 
-    const store = await app.prisma.store.findUnique({
-      where: { slug },
+    const store = await app.prisma.store.findFirst({
+      where: { slug, status: 'ACTIVE' },
       select: {
         id: true,
         name: true,
@@ -91,55 +92,10 @@ const storePublicRoutes: FastifyPluginAsync = async (app) => {
     return { data: store }
   })
 
-  // ─── GET /store/:slug/customer?phone=XX (público — identifica cliente recorrente) ──
-  app.get('/:slug/customer', async (request, reply) => {
-    const { slug } = request.params as { slug: string }
-    const { phone } = request.query as { phone?: string }
-
-    if (!phone || phone.length < 8) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'Telefone inválido', statusCode: 400 })
-    }
-
-    const store = await app.prisma.store.findUnique({ where: { slug }, select: { id: true } })
-    if (!store) return reply.status(404).send({ error: 'Not Found', message: 'Loja não encontrada', statusCode: 404 })
-
-    const customer = await app.prisma.customer.findUnique({
-      where: { storeId_phone: { storeId: store.id, phone } },
-      select: { id: true, name: true, phone: true },
-    })
-
-    if (!customer) return reply.status(404).send({ error: 'Not Found', message: 'Cliente não encontrado', statusCode: 404 })
-
-    return { data: customer }
-  })
-
-  // ─── GET /store/:slug/customer-orders?phone=XX ────────────────────
-  app.get('/:slug/customer-orders', async (request, reply) => {
-    const { slug } = request.params as { slug: string }
-    const { phone } = request.query as { phone?: string }
-    if (!phone || phone.length < 8) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'Telefone inválido', statusCode: 400 })
-    }
-    const store = await app.prisma.store.findUnique({ where: { slug }, select: { id: true } })
-    if (!store) return reply.status(404).send({ error: 'Not Found', message: 'Loja não encontrada', statusCode: 404 })
-
-    const customer = await app.prisma.customer.findUnique({
-      where: { storeId_phone: { storeId: store.id, phone } },
-      select: { id: true },
-    })
-    if (!customer) return reply.status(404).send({ error: 'Not Found', message: 'Cliente não encontrado', statusCode: 404 })
-
-    const orders = await app.prisma.order.findMany({
-      where: { storeId: store.id, customerId: customer.id },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-      select: {
-        id: true, orderNumber: true, status: true, total: true, createdAt: true,
-        items: { select: { name: true, quantity: true }, take: 3 },
-      },
-    })
-    return { data: orders }
-  })
+  // As antigas rotas GET /store/:slug/customer e /customer-orders (consulta por
+  // telefone sem login) foram removidas: expunham nome e histórico de qualquer
+  // cliente. O histórico agora é da conta global (/customer/orders) ou dos
+  // pedidos feitos no próprio aparelho.
 
   // ─── GET /store/:slug/menu ─────────────────────────────────────────
   // Cardápio público com categorias + produtos ativos
@@ -150,8 +106,8 @@ const storePublicRoutes: FastifyPluginAsync = async (app) => {
     const cachedMenu = await cacheGet<any[]>(menuCacheKey)
     if (cachedMenu) return reply.send({ data: cachedMenu })
 
-    const store = await app.prisma.store.findUnique({
-      where: { slug },
+    const store = await app.prisma.store.findFirst({
+      where: { slug, status: 'ACTIVE' },
       select: { id: true },
     })
 

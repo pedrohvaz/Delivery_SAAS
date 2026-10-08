@@ -86,3 +86,10 @@ export async function asaasGetPixQrCode(
   }
   return r.json() as Promise<AsaasPixQrCode>
 }
+
+/** Consulta uma cobrança direto no Asaas (fonte confiável do status e do valor). */
+export async function asaasGetPayment(apiKey: string, sandbox: boolean, paymentId: string): Promise<AsaasCharge> {
+  const res = await fetch(`${baseUrl(sandbox)}/payments/${encodeURIComponent(paymentId)}`, { headers: headers(apiKey) })
+  if (!res.ok) throw new Error(`Asaas getPayment: ${res.status}`)
+  return res.json() as Promise<AsaasCharge>
+}

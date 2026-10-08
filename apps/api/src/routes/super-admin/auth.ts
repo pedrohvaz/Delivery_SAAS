@@ -34,7 +34,7 @@ const superAdminAuthRoutes: FastifyPluginAsync = async (app) => {
       { expiresIn: '7d' },
     )
     const refreshToken = app.jwt.sign(
-      { sub: admin.id, role: 'SUPER_ADMIN' },
+      { sub: admin.id, role: 'SUPER_ADMIN', type: 'refresh' },
       { expiresIn: '30d' },
     )
 
@@ -54,8 +54,10 @@ const superAdminAuthRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(400).send({ error: 'Bad Request', message: 'refreshToken obrigatório', statusCode: 400 })
     }
     try {
-      const payload = app.jwt.verify<{ sub: string; role: string }>(refreshToken)
-      if (payload.role !== 'SUPER_ADMIN') throw new Error()
+      const payload = app.jwt.verify<{ sub: string; role: string; type?: string }>(refreshToken)
+      if (payload.role !== 'SUPER_ADMIN' || payload.type !== 'refresh') throw new Error()
+      const admin = await app.prisma.superAdmin.findUnique({ where: { id: payload.sub }, select: { isActive: true } })
+      if (!admin?.isActive) throw new Error()
       const accessToken = app.jwt.sign({ sub: payload.sub, role: 'SUPER_ADMIN' }, { expiresIn: '7d' })
       return reply.send({ data: { accessToken } })
     } catch {

@@ -261,6 +261,8 @@ model Product {
   category    Category     @relation(fields: [categoryId], references: [id])
   addonGroups AddonGroup[]
   orderItems  OrderItem[]
+
+  @@index([storeId])
 }
 
 model AddonGroup {
@@ -469,6 +471,8 @@ model Payment {
   createdAt   DateTime      @default(now())
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([gatewayId])
 }
 
 model PaymentMethod {
@@ -653,11 +657,11 @@ model CashbackConfig {
 // ─────────────────────────────────────────
 
 model AutomationConfig {
-  id           String   @id @default(uuid())
-  storeId      String   @unique
-  isEnabled    Boolean  @default(false)
-  aiProvider   String   @default("claude")
-  aiApiKey     String?
+  id            String   @id @default(uuid())
+  storeId       String   @unique
+  isEnabled     Boolean  @default(false)
+  aiProvider    String   @default("claude")
+  aiApiKey      String?
   aiModel       String   @default("claude-haiku-4-5-20251001")
   systemPrompt  String?
   closedMessage String? // mensagem automática quando a loja está fechada (placeholders: {horarios} {proxima_abertura} {cardapio})

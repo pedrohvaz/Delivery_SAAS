@@ -168,7 +168,7 @@ export default function KdsPage() {
   }, [accessToken, refresh])
 
   async function handleAdvance(id: string, next: string) {
-    await updateStatus.mutateAsync({ id, status: next })
+    await updateStatus.mutateAsync({ id, status: next }).catch(() => {}) // erro já avisado no hook
   }
 
   // Contadores por status

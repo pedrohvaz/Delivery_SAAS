@@ -2,6 +2,18 @@ import type { FastifyPluginAsync } from 'fastify'
 import { getStripe } from '../../lib/stripe.js'
 
 const stripeWebhookRoutes: FastifyPluginAsync = async (app) => {
+  // A assinatura do Stripe é calculada sobre o corpo EXATO recebido. Este parser
+  // (escopo só deste plugin) guarda o texto bruto antes de converter para JSON —
+  // reserializar o objeto mudaria espaços/ordem e a assinatura nunca bateria.
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (request, body, done) => {
+    ;(request as unknown as { rawBody: string }).rawBody = body as string
+    try {
+      done(null, body ? JSON.parse(body as string) : {})
+    } catch (err) {
+      done(err as Error, undefined)
+    }
+  })
+
   // POST /stripe/webhook
   // Recebe eventos do Stripe (assinatura criada, cancelada, pagamento falhou, etc)
   app.post('/webhook', { config: { rawBody: true } as any }, async (request, reply) => {
@@ -16,7 +28,7 @@ const stripeWebhookRoutes: FastifyPluginAsync = async (app) => {
 
     let event
     try {
-      const rawBody = (request as any).rawBody ?? JSON.stringify(request.body)
+      const rawBody = (request as unknown as { rawBody?: string }).rawBody ?? ''
       event = stripe.webhooks.constructEvent(rawBody, signature as string, secret)
     } catch (err: any) {
       app.log.error({ err }, 'Webhook signature inválida')

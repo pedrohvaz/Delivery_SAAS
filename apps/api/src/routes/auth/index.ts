@@ -9,7 +9,7 @@ import { createCheckoutSession, createPreSignupCheckoutSession, retrieveCheckout
 // Helper para assinar refresh token (payload mínimo)
 function signRefresh(app: Parameters<FastifyPluginAsync>[0], sub: string): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (app.jwt.sign as any)({ sub }, { expiresIn: '30d' })
+  return (app.jwt.sign as any)({ sub, type: 'refresh' }, { expiresIn: '30d' })
 }
 
 // Limite agressivo nas rotas de autenticação (anti força-bruta)
@@ -299,7 +299,13 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
-      const decoded = app.jwt.verify(result.data.refreshToken) as { sub: string }
+      const decoded = app.jwt.verify(result.data.refreshToken) as { sub: string; type?: string; storeId?: string; role?: string }
+      // Só refresh token: os novos têm type 'refresh'; os antigos (legado) não têm storeId/role.
+      // Token de acesso (tem storeId) ou de cliente/superadmin não renova sessão de lojista.
+      const isRefresh = decoded.type === 'refresh' || (!decoded.type && !decoded.storeId && !decoded.role)
+      if (!isRefresh) {
+        return reply.status(401).send({ error: 'Unauthorized', message: 'Token inválido', statusCode: 401 })
+      }
       const user = await app.prisma.user.findUnique({
         where: { id: decoded.sub },
         include: { store: true },

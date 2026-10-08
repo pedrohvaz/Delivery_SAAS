@@ -7,50 +7,53 @@ import { notifyOrderStatus } from './notifications.js'
 import { enqueueOrderNotification } from './queue.js'
 
 // ─── Schema de criação de pedido (fonte única para a rota e o bot) ──────────
+// Preços e nomes enviados pelo cliente são IGNORADOS: o servidor recalcula tudo
+// a partir do cardápio (produto + adicionais). Os campos continuam no schema
+// só para compatibilidade com os frontends/bot que já os enviam.
 
 const addonSelectedSchema = z.object({
-  groupId: z.string(),
-  groupName: z.string(),
-  optionId: z.string(),
-  optionName: z.string(),
+  groupId: z.string().max(64),
+  groupName: z.string().max(200),
+  optionId: z.string().max(64),
+  optionName: z.string().max(200),
   price: z.number().min(0),
 })
 
 const orderItemSchema = z.object({
   productId: z.string().uuid(),
-  name: z.string(),
+  name: z.string().max(200),
   price: z.number().min(0),
-  quantity: z.number().int().min(1),
-  notes: z.string().optional(),
-  addons: z.array(addonSelectedSchema).default([]),
+  quantity: z.number().int().min(1).max(99, 'Quantidade máxima por item é 99'),
+  notes: z.string().max(300).optional(),
+  addons: z.array(addonSelectedSchema).max(30).default([]),
 })
 
 export const createOrderSchema = z.object({
-  storeSlug: z.string(),
+  storeSlug: z.string().max(80),
   type: z.enum(['DELIVERY', 'PICKUP', 'TABLE', 'COUNTER']),
   tableId: z.string().uuid().optional(), // obrigatório quando type === 'TABLE'
-  items: z.array(orderItemSchema).min(1),
+  items: z.array(orderItemSchema).min(1).max(50, 'Máximo de 50 itens por pedido'),
   // Cliente
-  customerName: z.string().min(2).optional(),
-  customerPhone: z.string().min(8).optional(),
+  customerName: z.string().trim().min(2).max(100).optional(),
+  customerPhone: z.string().trim().min(8).max(20).optional(),
   // Endereço (apenas para DELIVERY)
   address: z
     .object({
-      street: z.string(),
-      number: z.string(),
-      complement: z.string().optional(),
-      district: z.string(),
-      city: z.string(),
-      state: z.string(),
-      zipCode: z.string(),
-      reference: z.string().optional(),
+      street: z.string().max(200),
+      number: z.string().max(20),
+      complement: z.string().max(200).optional(),
+      district: z.string().max(120),
+      city: z.string().max(120),
+      state: z.string().max(40),
+      zipCode: z.string().max(12),
+      reference: z.string().max(200).optional(),
     })
     .optional(),
   // Pagamento
-  paymentMethod: z.string(),
-  changeFor: z.number().optional(), // troco para dinheiro
-  couponCode: z.string().optional(),
-  notes: z.string().optional(),
+  paymentMethod: z.string().max(40),
+  changeFor: z.number().positive().max(100000).optional(), // troco para dinheiro
+  couponCode: z.string().max(40).optional(),
+  notes: z.string().max(500).optional(),
   scheduledTo: z.string().datetime().optional(),
   saveAddress: z.boolean().optional(), // salva o endereço na conta global (se logado)
 })
@@ -94,11 +97,14 @@ export interface CreateOrderResult {
 
 /** Soma do carrinho (item + adicionais) × quantidade. */
 export function computeSubtotal(items: OrderItemInput[]): number {
-  return items.reduce((sum, item) => {
+  return roundMoney(items.reduce((sum, item) => {
     const addonsTotal = item.addons.reduce((a, b) => a + b.price, 0)
     return sum + (item.price + addonsTotal) * item.quantity
-  }, 0)
+  }, 0))
 }
+
+const roundMoney = (v: number) => Math.round(v * 100) / 100
+const digits = (v?: string | null) => (v ?? '').replace(/\D/g, '')
 
 interface DeliveryAreaLike {
   type: string
@@ -111,7 +117,8 @@ interface DeliveryAreaLike {
  * Resolve a taxa de entrega a partir das áreas configuradas. Mesma regra usada
  * tanto na criação do pedido quanto na pré-visualização do bot.
  * Lança OrderError('DELIVERY_UNAVAILABLE') quando há bairros configurados e o
- * bairro informado não está na lista.
+ * bairro informado não está na lista. Sem áreas configuradas a taxa é 0 — o
+ * sistema não inventa cobrança que o lojista não definiu.
  */
 export function resolveDeliveryFee(params: {
   areas: DeliveryAreaLike[]
@@ -121,7 +128,7 @@ export function resolveDeliveryFee(params: {
 }): number {
   const { areas, type, district, subtotal } = params
   if (type === 'PICKUP' || type === 'TABLE') return 0
-  if (areas.length === 0) return 5.0 // fallback quando nenhuma área está configurada
+  if (areas.length === 0) return 0
 
   const inputDistrict = district?.toLowerCase().trim()
   const districtMatch = inputDistrict
@@ -144,6 +151,84 @@ export function resolveDeliveryFee(params: {
 }
 
 /**
+ * Monta os itens do pedido a partir do cardápio: valida que cada produto é da
+ * loja e está ativo, que cada adicional pertence ao produto (respeitando o
+ * mínimo/máximo do grupo) e usa SEMPRE nome e preço do banco.
+ */
+async function buildPricedItems(app: FastifyInstance, storeId: string, input: OrderItemInput[]) {
+  const productIds = [...new Set(input.map((i) => i.productId))]
+  const products = await app.prisma.product.findMany({
+    where: { id: { in: productIds }, storeId, isActive: true },
+    select: {
+      id: true, name: true, price: true, stockControl: true, stockQty: true,
+      addonGroups: {
+        select: {
+          id: true, name: true, min: true, max: true, required: true,
+          options: { where: { isActive: true }, select: { id: true, name: true, price: true } },
+        },
+      },
+    },
+  })
+  const byId = new Map(products.map((p) => [p.id, p]))
+
+  const qtyByProduct = new Map<string, number>()
+  const items = input.map((item) => {
+    const product = byId.get(item.productId)
+    if (!product) {
+      throw new OrderError('PRODUCT_UNAVAILABLE', `Produto "${item.name}" não está disponível`, 422)
+    }
+
+    const countByGroup = new Map<string, number>()
+    const addons = item.addons.map((sel) => {
+      const group = product.addonGroups.find((g) => g.options.some((o) => o.id === sel.optionId))
+      const option = group?.options.find((o) => o.id === sel.optionId)
+      if (!group || !option) {
+        throw new OrderError('ADDON_UNAVAILABLE', `Adicional "${sel.optionName}" não está disponível para "${product.name}"`, 422)
+      }
+      countByGroup.set(group.id, (countByGroup.get(group.id) ?? 0) + 1)
+      return { groupId: group.id, groupName: group.name, optionId: option.id, optionName: option.name, price: Number(option.price) }
+    })
+
+    for (const group of product.addonGroups) {
+      const count = countByGroup.get(group.id) ?? 0
+      const min = Math.max(group.min, group.required ? 1 : 0)
+      if (count > group.max) {
+        throw new OrderError('ADDON_LIMIT', `Escolha no máximo ${group.max} opção(ões) em "${group.name}"`, 422)
+      }
+      if (count < min) {
+        throw new OrderError('ADDON_REQUIRED', `Escolha ao menos ${min} opção(ões) em "${group.name}"`, 422)
+      }
+    }
+
+    qtyByProduct.set(product.id, (qtyByProduct.get(product.id) ?? 0) + item.quantity)
+    return {
+      productId: product.id,
+      name: product.name,
+      price: Number(product.price),
+      quantity: item.quantity,
+      notes: item.notes,
+      addons,
+    }
+  })
+
+  // Estoque: soma as linhas do mesmo produto antes de comparar
+  for (const [productId, qty] of qtyByProduct) {
+    const product = byId.get(productId)!
+    if (product.stockControl && (product.stockQty ?? 0) < qty) {
+      throw new OrderError(
+        'OUT_OF_STOCK',
+        (product.stockQty ?? 0) <= 0
+          ? `"${product.name}" está esgotado`
+          : `Apenas ${product.stockQty} unidade(s) disponível(is) de "${product.name}"`,
+        422,
+      )
+    }
+  }
+
+  return items
+}
+
+/**
  * Cria um pedido aplicando todas as validações de negócio, cálculo de totais,
  * cupom, taxa de entrega, cobrança PIX (Asaas) e efeitos colaterais
  * (socket + notificação WhatsApp). Reutilizado pela rota `POST /orders` e pelo
@@ -156,10 +241,13 @@ export async function createOrder(app: FastifyInstance, input: CreateOrderInput)
   // Busca a loja
   const store = await app.prisma.store.findUnique({
     where: { slug: d.storeSlug },
-    include: { deliveryAreas: { where: { isActive: true } } },
+    include: {
+      deliveryAreas: { where: { isActive: true } },
+      paymentMethods: { where: { isActive: true }, select: { type: true } },
+    },
   })
   if (!store) throw new OrderError('STORE_NOT_FOUND', 'Loja não encontrada', 404)
-  if (!store.acceptOrders) {
+  if (store.status !== 'ACTIVE' || !store.acceptOrders) {
     throw new OrderError('NOT_ACCEPTING', 'Loja não está aceitando pedidos no momento', 422)
   }
 
@@ -176,11 +264,20 @@ export async function createOrder(app: FastifyInstance, input: CreateOrderInput)
     app.prisma.store.update({ where: { id: store.id }, data: { isOpen: true } }).catch(() => {})
   }
 
-  // Valida pedido mínimo
-  const minOrder = Number(store.minOrderValue)
-  const subtotal = computeSubtotal(d.items)
-  if (minOrder > 0 && subtotal < minOrder) {
-    throw new OrderError('MIN_ORDER', `Pedido mínimo de R$ ${minOrder.toFixed(2).replace('.', ',')}`, 422)
+  // Forma de pagamento precisa estar ativa na loja.
+  // Pedido de mesa feito pelo garçom usa CASH como padrão (acerto no fim).
+  const activeMethods = new Set(store.paymentMethods.map((m) => m.type))
+  if (!activeMethods.has(d.paymentMethod) && !(d.type === 'TABLE' && d.paymentMethod === 'CASH')) {
+    throw new OrderError('PAYMENT_METHOD_UNAVAILABLE', 'Forma de pagamento indisponível nesta loja', 422)
+  }
+
+  // Agendamento: precisa ser no futuro e em até 30 dias
+  if (d.scheduledTo) {
+    const when = new Date(d.scheduledTo).getTime()
+    const now = Date.now()
+    if (when < now - 60_000 || when > now + 30 * 24 * 60 * 60 * 1000) {
+      throw new OrderError('INVALID_SCHEDULE', 'Escolha um horário de agendamento válido', 422)
+    }
   }
 
   // Valida endereço para delivery
@@ -200,75 +297,50 @@ export async function createOrder(app: FastifyInstance, input: CreateOrderInput)
     }
   }
 
+  // Itens com nome/preço do cardápio (o que veio do cliente é descartado)
+  const items = await buildPricedItems(app, store.id, d.items)
+  const subtotal = computeSubtotal(items)
+
+  // Valida pedido mínimo
+  const minOrder = Number(store.minOrderValue)
+  if (minOrder > 0 && subtotal < minOrder) {
+    throw new OrderError('MIN_ORDER', `Pedido mínimo de R$ ${minOrder.toFixed(2).replace('.', ',')}`, 422)
+  }
+
   // Busca ou cria cliente pelo telefone (opcional para TABLE).
   // Se autenticado e sem nome/telefone no input, usa os dados da conta global.
-  let customer: { id: string } | null = null
+  let customer: { id: string; accountId?: string | null } | null = null
   let resolvedName = d.customerName
   let resolvedPhone = d.customerPhone
-  if (accountId && (!resolvedName || !resolvedPhone)) {
+  let accountPhone: string | null = null
+  if (accountId) {
     const acc = await app.prisma.customerAccount.findUnique({
       where: { id: accountId },
       select: { name: true, phone: true },
     })
+    accountPhone = acc?.phone ?? null
     resolvedName = resolvedName ?? acc?.name
-    resolvedPhone = resolvedPhone ?? acc?.phone
+    resolvedPhone = resolvedPhone ?? acc?.phone ?? undefined
   }
+  // Só vincula o perfil da loja à conta global quando o telefone do pedido é o
+  // da própria conta — senão alguém logado "puxaria" o histórico de outra pessoa.
+  const linkAccount = !!accountId && !!accountPhone && digits(accountPhone) === digits(resolvedPhone)
   if (resolvedPhone && resolvedPhone.length >= 8) {
     customer = await app.prisma.customer.findUnique({
       where: { storeId_phone: { storeId: store.id, phone: resolvedPhone } },
+      select: { id: true, accountId: true },
     })
     if (!customer) {
       customer = await app.prisma.customer.create({
-        data: { storeId: store.id, name: resolvedName ?? 'Cliente', phone: resolvedPhone, accountId: accountId ?? undefined },
+        data: { storeId: store.id, name: resolvedName ?? 'Cliente', phone: resolvedPhone, accountId: linkAccount ? accountId! : undefined },
+        select: { id: true, accountId: true },
       })
-    } else if (accountId) {
-      // Vincula o perfil store-scoped à conta global (idempotente)
+    } else if (linkAccount && !customer.accountId) {
       await app.prisma.customer.update({ where: { id: customer.id }, data: { accountId } })
     }
   }
 
-  // Valida disponibilidade de estoque
-  for (const item of d.items) {
-    const product = await app.prisma.product.findUnique({
-      where: { id: item.productId },
-      select: { stockControl: true, stockQty: true, isActive: true, name: true },
-    })
-    if (!product || !product.isActive) {
-      throw new OrderError('PRODUCT_UNAVAILABLE', `Produto "${item.name}" não está disponível`, 422)
-    }
-    if (product.stockControl && (product.stockQty ?? 0) < item.quantity) {
-      throw new OrderError(
-        'OUT_OF_STOCK',
-        product.stockQty === 0
-          ? `"${item.name}" está esgotado`
-          : `Apenas ${product.stockQty} unidade(s) disponível(is) de "${item.name}"`,
-        422,
-      )
-    }
-  }
-
-  // Aplica cupom (se houver)
-  let discount = 0
-  let couponId: string | null = null
-  let appliedCouponType: string | null = null
-  if (d.couponCode) {
-    const coupon = await app.prisma.coupon.findUnique({
-      where: { storeId_code: { storeId: store.id, code: d.couponCode.toUpperCase() } },
-    })
-    if (coupon && coupon.isActive && (!coupon.expiresAt || coupon.expiresAt > new Date())) {
-      if (!coupon.maxUses || coupon.usedCount < coupon.maxUses) {
-        if (subtotal >= Number(coupon.minOrder)) {
-          couponId = coupon.id
-          appliedCouponType = coupon.type
-          if (coupon.type === 'PERCENT_DISCOUNT') discount = subtotal * (Number(coupon.value) / 100)
-          else if (coupon.type === 'FIXED_DISCOUNT') discount = Math.min(Number(coupon.value), subtotal)
-          else if (coupon.type === 'FREE_DELIVERY') discount = 0 // deliveryFee será zerado abaixo
-        }
-      }
-    }
-  }
-
-  // Calcula taxa de entrega com base nas áreas configuradas (TABLE e PICKUP = grátis)
+  // Taxa de entrega com base nas áreas configuradas (TABLE e PICKUP = grátis)
   const deliveryFee = resolveDeliveryFee({
     areas: store.deliveryAreas,
     type: d.type,
@@ -276,14 +348,39 @@ export async function createOrder(app: FastifyInstance, input: CreateOrderInput)
     subtotal,
   })
 
-  // FREE_DELIVERY zera a taxa de entrega em vez de aplicar desconto no subtotal
-  const effectiveDeliveryFee = appliedCouponType === 'FREE_DELIVERY' ? 0 : deliveryFee
-
-  const total = Math.max(0, subtotal - discount + effectiveDeliveryFee)
-
-  // Cria o pedido e incrementa cupom em transação atômica
+  // Cria o pedido em transação com a linha da loja travada: serializa os pedidos
+  // da mesma loja, o que garante orderNumber único e uso de cupom sem corrida.
   const createdOrder = await app.prisma.$transaction(async (tx) => {
-    // orderNumber calculado dentro da transaction para evitar race condition
+    await tx.$queryRaw`SELECT id FROM "Store" WHERE id = ${store.id} FOR UPDATE`
+
+    // Cupom (relido dentro da transação para respeitar maxUses mesmo em paralelo)
+    let discount = 0
+    let couponId: string | null = null
+    let freeDelivery = false
+    if (d.couponCode) {
+      const coupon = await tx.coupon.findUnique({
+        where: { storeId_code: { storeId: store.id, code: d.couponCode.toUpperCase() } },
+      })
+      const valid = coupon && coupon.isActive
+        && (!coupon.expiresAt || coupon.expiresAt > new Date())
+        && (!coupon.maxUses || coupon.usedCount < coupon.maxUses)
+        && subtotal >= Number(coupon.minOrder)
+      if (coupon && valid) {
+        couponId = coupon.id
+        if (coupon.type === 'PERCENT_DISCOUNT') discount = roundMoney(subtotal * (Number(coupon.value) / 100))
+        else if (coupon.type === 'FIXED_DISCOUNT') discount = Math.min(Number(coupon.value), subtotal)
+        else if (coupon.type === 'FREE_DELIVERY') freeDelivery = true
+      }
+    }
+
+    // FREE_DELIVERY zera a taxa de entrega em vez de aplicar desconto no subtotal
+    const effectiveDeliveryFee = freeDelivery ? 0 : deliveryFee
+    const total = roundMoney(Math.max(0, subtotal - discount + effectiveDeliveryFee))
+
+    if (d.paymentMethod === 'CASH' && d.changeFor != null && d.changeFor < total) {
+      throw new OrderError('INVALID_CHANGE', 'O valor para troco deve ser maior que o total do pedido', 422)
+    }
+
     const lastOrder = await tx.order.findFirst({
       where: { storeId: store.id },
       orderBy: { orderNumber: 'desc' },
@@ -310,7 +407,7 @@ export async function createOrder(app: FastifyInstance, input: CreateOrderInput)
         couponId,
         scheduledTo: d.scheduledTo ? new Date(d.scheduledTo) : null,
         items: {
-          create: d.items.map((item) => ({
+          create: items.map((item) => ({
             productId: item.productId,
             name: item.name,
             price: item.price,
@@ -328,7 +425,9 @@ export async function createOrder(app: FastifyInstance, input: CreateOrderInput)
     }
 
     return order
-  })
+  }, { maxWait: 10000, timeout: 15000 })
+
+  const total = Number(createdOrder.total)
 
   // Salva o endereço na agenda da conta global (se o cliente logado pediu).
   // Não derruba o pedido em caso de erro (mesmo padrão do Asaas abaixo).
@@ -421,7 +520,7 @@ export async function createOrder(app: FastifyInstance, input: CreateOrderInput)
     id: createdOrder.id,
     orderNumber: createdOrder.orderNumber,
     status: createdOrder.status,
-    total: Number(createdOrder.total),
+    total,
     estimatedTime: store.estimatedTime,
     requiresPayment,
   }

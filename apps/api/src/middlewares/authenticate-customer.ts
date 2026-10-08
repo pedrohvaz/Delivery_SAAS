@@ -5,8 +5,8 @@ import type { FastifyRequest, FastifyReply } from 'fastify'
 export async function authenticateCustomer(request: FastifyRequest, reply: FastifyReply) {
   try {
     await request.jwtVerify()
-    const u = request.user as unknown as { type?: string }
-    if (u.type !== 'customer') {
+    const u = request.user as unknown as { type?: string; kind?: string }
+    if (u.type !== 'customer' || u.kind === 'refresh') {
       return reply.status(403).send({ error: 'Forbidden', message: 'Token inválido para cliente', statusCode: 403 })
     }
   } catch {

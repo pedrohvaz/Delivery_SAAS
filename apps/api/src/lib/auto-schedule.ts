@@ -18,7 +18,7 @@ export function startAutoScheduleWorker(prisma: PrismaClient): NodeJS.Timeout {
   async function tick() {
     try {
       const stores = await prisma.store.findMany({
-        where: { autoSchedule: true },
+        where: { autoSchedule: true, status: 'ACTIVE' }, // suspensa não reabre sozinha
         select: {
           id: true,
           isOpen: true,
