@@ -1,6 +1,15 @@
 'use client'
 
-import { Menu } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Menu, X } from "lucide-react";
+
+const MOBILE_LINKS: { section: string; label: string }[] = [
+  { section: "funcionalidades", label: "Funcionalidades" },
+  { section: "automacao-session", label: "Automação" },
+  { section: "simulador", label: "Simulador" },
+  { section: "planos", label: "Planos" },
+  { section: "comparativo", label: "ByLink vs Marketplaces" },
+];
 
 interface NavbarProps {
   currentPage?: "home" | "planos" | "simulador";
@@ -8,6 +17,19 @@ interface NavbarProps {
 }
 
 export default function Navbar({ currentPage = "home", onNavigate }: NavbarProps) {
+  // Menu do celular (antes o botão não tinha ação e o login ficava inacessível no mobile)
+  const [menuOpen, setMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
+    const onClick = (e: MouseEvent) => { if (!headerRef.current?.contains(e.target as Node)) setMenuOpen(false); };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onClick);
+    return () => { document.removeEventListener("keydown", onKey); document.removeEventListener("mousedown", onClick); };
+  }, [menuOpen]);
+
   const handleNav = (section?: string) => {
     if (onNavigate) {
       if (section === "planos") {
@@ -30,7 +52,7 @@ export default function Navbar({ currentPage = "home", onNavigate }: NavbarProps
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-[#E0E0E0] h-16 flex items-center justify-between px-6 md:px-12 shadow-sm">
+    <header ref={headerRef} className="sticky top-0 z-50 bg-white border-b border-[#E0E0E0] h-16 flex items-center justify-between px-6 md:px-12 shadow-sm">
       {/* Logo */}
       <div 
         onClick={() => {
@@ -98,10 +120,45 @@ export default function Navbar({ currentPage = "home", onNavigate }: NavbarProps
         >
           Login do Parceiro
         </a>
-        <button className="md:hidden p-1 text-[#111111] hover:text-[#FF6B00] transition-colors">
-          <Menu className="w-5 h-5" />
+        <button
+          type="button"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-expanded={menuOpen}
+          aria-controls="landing-mobile-menu"
+          aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
+          className="md:hidden flex h-10 w-10 items-center justify-center rounded-lg text-[#111111] hover:text-[#FF6B00] transition-colors"
+        >
+          {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
+
+      {menuOpen && (
+        <div
+          id="landing-mobile-menu"
+          className="md:hidden absolute inset-x-0 top-16 border-b border-[#E0E0E0] bg-white shadow-lg"
+        >
+          <nav className="flex flex-col px-6 py-3">
+            {MOBILE_LINKS.map(({ section, label }) => (
+              <button
+                key={section}
+                type="button"
+                onClick={() => { setMenuOpen(false); handleNav(section); }}
+                className="py-3 text-left text-sm font-bold uppercase tracking-wider text-[#333333] hover:text-[#FF6B00] border-b border-[#F0F0F0] last:border-0"
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
+          <div className="grid grid-cols-2 gap-3 px-6 pb-5 pt-2">
+            <a href="/login" className="flex h-11 items-center justify-center rounded-lg border border-[#111111] text-sm font-bold text-[#111111]">
+              Entrar
+            </a>
+            <a href="/register" className="flex h-11 items-center justify-center rounded-lg bg-[#FF6B00] text-sm font-bold text-white">
+              Criar conta grátis
+            </a>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
