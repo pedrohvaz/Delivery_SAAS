@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { authenticate } from '../../middlewares/authenticate.js'
 import { z } from 'zod'
+import { invalidateStorePublicCache } from '../../lib/cache.js'
 
 const upsertScheduleSchema = z.object({
   // Recebe array de horários (um por dia da semana ativo)
@@ -15,6 +16,16 @@ const upsertScheduleSchema = z.object({
 })
 
 const scheduleRoutes: FastifyPluginAsync = async (app) => {
+  // Abrir/fechar a loja ou mudar horários altera o que o cliente vê: limpa o cache
+  // da vitrine na hora (antes ficava até 2 min mostrando o estado antigo).
+  // onSend roda ANTES de a resposta sair: quando o painel recebe o "ok", o cache já foi limpo.
+  app.addHook('onSend', async (request, reply, payload) => {
+    if (request.method !== 'GET' && reply.statusCode < 400 && request.user?.storeId) {
+      await invalidateStorePublicCache(app.prisma, request.user.storeId)
+    }
+    return payload
+  })
+
   // ─── GET /schedules ────────────────────────────────────────────────
   app.get('/', { preHandler: [authenticate] }, async (request) => {
     const schedules = await app.prisma.storeSchedule.findMany({

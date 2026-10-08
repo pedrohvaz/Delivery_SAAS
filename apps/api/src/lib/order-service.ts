@@ -5,6 +5,7 @@ import { asaasCreateCustomer, asaasCreatePixCharge, asaasGetPixQrCode } from './
 import { isStoreOpenNow } from '../routes/schedules/index.js'
 import { notifyOrderStatus } from './notifications.js'
 import { enqueueOrderNotification } from './queue.js'
+import { invalidateStorePublicCache } from './cache.js'
 
 // ─── Schema de criação de pedido (fonte única para a rota e o bot) ──────────
 // Preços e nomes enviados pelo cliente são IGNORADOS: o servidor recalcula tudo
@@ -261,7 +262,9 @@ export async function createOrder(app: FastifyInstance, input: CreateOrderInput)
       throw new OrderError('STORE_CLOSED', 'A loja está fechada no momento', 422)
     }
     // Horário bate mas isOpen ainda false — atualiza em background
-    app.prisma.store.update({ where: { id: store.id }, data: { isOpen: true } }).catch(() => {})
+    app.prisma.store.update({ where: { id: store.id }, data: { isOpen: true } })
+      .then(() => invalidateStorePublicCache(app.prisma, store.id))
+      .catch(() => {})
   }
 
   // Forma de pagamento precisa estar ativa na loja.

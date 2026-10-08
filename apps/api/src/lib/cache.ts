@@ -46,3 +46,20 @@ export async function cacheDelPattern(pattern: string): Promise<void> {
     if (keys.length > 0) await cache.del(...keys)
   } catch { /* silencia */ }
 }
+
+/**
+ * Limpa o cache público de uma loja (página, cardápio e lista da vitrine).
+ * Chamar sempre que algo visível ao cliente mudar — ex.: loja abriu/fechou —
+ * senão o site mostra o estado antigo por até 2 minutos.
+ */
+export async function invalidateStorePublicCache(
+  prisma: { store: { findUnique: (args: { where: { id: string }; select: { slug: true } }) => Promise<{ slug: string } | null> } },
+  storeId: string,
+): Promise<void> {
+  try {
+    const store = await prisma.store.findUnique({ where: { id: storeId }, select: { slug: true } })
+    await cacheDel('stores:list', ...(store ? [`store:${store.slug}`, `menu:${store.slug}`] : []))
+  } catch {
+    /* cache é best-effort */
+  }
+}

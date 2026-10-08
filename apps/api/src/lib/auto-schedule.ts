@@ -1,3 +1,4 @@
+import { invalidateStorePublicCache } from './cache.js'
 import type { PrismaClient } from '@prisma/client'
 import { isStoreOpenNow } from '../routes/schedules/index.js'
 
@@ -43,6 +44,7 @@ export function startAutoScheduleWorker(prisma: PrismaClient): NodeJS.Timeout {
         const apply = firstTick || (prev !== undefined && prev !== desired)
         if (apply && desired !== s.isOpen) {
           await prisma.store.update({ where: { id: s.id }, data: { isOpen: desired } })
+          await invalidateStorePublicCache(prisma, s.id)
         }
       }
 
