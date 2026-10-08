@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { authenticate } from '../../middlewares/authenticate.js'
 import { callAI, buildSystemPrompt, type PromptMenuProduct } from '../../lib/ai-attendant.js'
 import { handleInbound } from '../../lib/bot/orchestrator.js'
-import { parseControl } from '../../lib/bot/llm-flow.js'
+import { aiFallbackReply, parseControl } from '../../lib/bot/llm-flow.js'
 
 const automationRoutes: FastifyPluginAsync = async (app) => {
 
@@ -214,8 +214,9 @@ const automationRoutes: FastifyPluginAsync = async (app) => {
         [{ role: 'user', content: message }],
         { json: true },
       )
-      const { reply } = parseControl(raw)
-      return { data: { response: reply } }
+      const parsed = parseControl(raw)
+      // No teste do painel o lojista vê o mesmo que o cliente veria
+      return { data: { response: parsed.ok ? parsed.reply : aiFallbackReply(store!.slug) } }
     } catch (err: any) {
       return reply.status(500).send({ error: 'AI Error', message: err.message ?? 'Erro na IA', statusCode: 500 })
     }

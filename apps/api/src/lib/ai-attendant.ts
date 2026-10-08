@@ -35,6 +35,9 @@ export function resolveAiKey(cfg: { aiProvider: string; aiApiKey: string | null 
  * Chama a IA com o histórico de conversa e retorna a resposta.
  * Suporta Claude (Anthropic) e OpenAI, selecionável por loja.
  */
+// Respostas de atendimento: baixa criatividade = mais estáveis e fiéis ao cardápio.
+const AI_TEMPERATURE = 0.3
+
 export async function callAI(
   config: AIConfig,
   systemPrompt: string,
@@ -49,6 +52,7 @@ export async function callAI(
     const response = await client.messages.create({
       model: config.aiModel || 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
+      temperature: AI_TEMPERATURE,
       system: [
         {
           type: 'text',
@@ -85,6 +89,9 @@ export async function callAI(
     const response = await client.chat.completions.create({
       model: config.aiModel || (isOpenRouter ? 'openai/gpt-4o' : 'gpt-4o'),
       max_tokens: 1024,
+      temperature: AI_TEMPERATURE,
+      // Desestimula o modelo a repetir trechos (loops que viram lixo no WhatsApp)
+      frequency_penalty: 0.4,
       ...(opts.json ? { response_format: { type: 'json_object' as const } } : {}),
       messages: [
         { role: 'system', content: systemPrompt },
@@ -92,7 +99,11 @@ export async function callAI(
       ],
     })
 
-    return response.choices[0]?.message?.content ?? 'Desculpe, não consegui processar sua mensagem.'
+    const choice = response.choices[0]
+    // Cortada no limite de tokens = quase sempre o modelo entrou em loop; quem chama
+    // valida a resposta (parseControl) e manda a mensagem padrão se não der para usar.
+    if (choice?.finish_reason === 'length') console.warn('[ai] resposta cortada no limite de tokens (provável loop do modelo)')
+    return choice?.message?.content ?? ''
   }
 
   throw new Error(`Provedor de IA não suportado: ${config.aiProvider}`)
@@ -226,7 +237,7 @@ ${cartBlock}
 Responda SEMPRE somente com um objeto JSON (json), sem nenhum texto fora dele:
 {"reply":"mensagem para o cliente","cart":[{"productId":"ID","quantity":2,"addons":["OPT_ID"]}],"intent":"browsing","orderType":"DELIVERY","customerName":""}
 Campos:
-- "reply": o texto que o cliente vai LER (português, simpático, emojis com moderação). É o único campo que o cliente vê.
+- "reply": o texto que o cliente vai LER (português, simpático, emojis com moderação). É o único campo que o cliente vê. Formato do WhatsApp: negrito com UM asterisco (*Beef 1*), nunca **dois**; sem títulos com #. Seja breve (até ~8 linhas).
 - "cart": lista COMPLETA e ATUAL do carrinho (não envie incrementos). Use os IDs entre [colchetes] do cardápio em "productId" e os IDs das opções em "addons".
 - "intent": use "checkout" SOMENTE quando o cliente confirmar que quer finalizar o pedido; caso contrário "browsing".
 - "orderType": "DELIVERY" (entrega) ou "PICKUP" (retirada). Padrão "DELIVERY".

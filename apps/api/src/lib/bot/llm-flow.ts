@@ -12,25 +12,87 @@ import { enterConfirmation } from './fixed-flow/confirmation.js'
 interface ParsedResponse {
   reply: string
   control: ControlBlock | null
+  /** false = a resposta da IA não é utilizável; quem chama deve mandar a mensagem padrão. */
+  ok: boolean
 }
 
-/** Faz parse da resposta JSON do LLM em { reply, control }. Tolerante a lixo ao redor. */
-export function parseControl(raw: string): ParsedResponse {
-  const start = raw.indexOf('{')
-  const end = raw.lastIndexOf('}')
-  if (start === -1 || end === -1) return { reply: raw.trim(), control: null }
+const MAX_REPLY_CHARS = 1500
+
+/**
+ * A IA às vezes "degenera": entra em loop repetindo trechos ou troca de alfabeto
+ * (ex.: coreano no meio de uma conversa em português). Esse texto nunca vai ao cliente.
+ */
+export function isSaneReply(text: string): boolean {
+  const t = text.trim()
+  if (!t || t.length > MAX_REPLY_CHARS) return false
+  // Alfabetos que não são do português (CJK, hangul, cirílico, árabe…)
+  const foreign = (t.match(/[Ѐ-ӿ؀-ۿ぀-ヿ㐀-鿿가-힯]/g) ?? []).length
+  if (foreign > 3) return false
+  // Mesma frase repetida muitas vezes = loop
+  const parts = t.split(/[.!?\n]+/).map((x) => x.trim()).filter((x) => x.length >= 8)
+  const counts = new Map<string, number>()
+  for (const part of parts) counts.set(part, (counts.get(part) ?? 0) + 1)
+  if ([...counts.values()].some((n) => n >= 4)) return false
+  return true
+}
+
+/** Recupera o valor de "reply" de um JSON cortado/corrompido (o resto é descartado). */
+function salvageReply(raw: string): string | null {
+  const m = raw.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+  if (!m) return null
   try {
-    const obj = JSON.parse(raw.slice(start, end + 1))
-    const reply = typeof obj.reply === 'string' ? obj.reply.trim() : ''
-    const parsed = controlBlockSchema.safeParse(obj) // ignora "reply", valida cart/intent/orderType/customerName
-    return {
-      reply: reply || 'Como posso ajudar? 🙂',
-      control: parsed.success ? parsed.data : null,
-    }
+    return (JSON.parse(`"${m[1]}"`) as string).trim()
   } catch {
-    // Não veio JSON válido: manda o texto cru como reply (fallback)
-    return { reply: raw.trim(), control: null }
+    return null
   }
+}
+
+/** Markdown → formatação do WhatsApp (**negrito** vira *negrito*; títulos # viram texto). */
+export function toWhatsAppFormat(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '*$1*')
+    .replace(/__(.+?)__/g, '_$1_')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/[ \t]+\n/g, '\n')
+    .trim()
+}
+
+/**
+ * Faz parse da resposta da IA em { reply, control }. Nunca devolve JSON cru nem
+ * texto degenerado como reply: nesses casos retorna ok=false e reply vazio.
+ */
+export function parseControl(raw: string): ParsedResponse {
+  const fail: ParsedResponse = { reply: '', control: null, ok: false }
+  const text = (raw ?? '').trim()
+  const start = text.indexOf('{')
+
+  // Sem JSON: texto livre (ex.: provedor que ignora o modo JSON)
+  if (start === -1) return isSaneReply(text) ? { reply: toWhatsAppFormat(text), control: null, ok: true } : fail
+
+  const end = text.lastIndexOf('}')
+  if (end > start) {
+    try {
+      const obj = JSON.parse(text.slice(start, end + 1))
+      const reply = typeof obj.reply === 'string' ? obj.reply.trim() : ''
+      const parsed = controlBlockSchema.safeParse(obj) // ignora "reply", valida cart/intent/orderType/customerName
+      if (!isSaneReply(reply)) return { ...fail, control: parsed.success ? parsed.data : null }
+      return { reply: toWhatsAppFormat(reply), control: parsed.success ? parsed.data : null, ok: true }
+    } catch {
+      /* JSON inválido — tenta recuperar só o reply abaixo */
+    }
+  }
+
+  // JSON cortado/corrompido: aproveita apenas o texto do "reply", se estiver inteiro e são.
+  // O bloco de controle (carrinho) é descartado — não dá para confiar nele.
+  const salvaged = salvageReply(text)
+  if (salvaged && isSaneReply(salvaged)) return { reply: toWhatsAppFormat(salvaged), control: null, ok: true }
+  return fail
+}
+
+/** Mensagem enviada quando a IA falha (resposta inutilizável ou erro de API). */
+export function aiFallbackReply(storeSlug: string): string {
+  const base = (process.env.STORE_URL ?? 'https://bylink.shop').replace(/\/$/, '')
+  return `Desculpe, tive um probleminha para responder agora 😅. Pode repetir, por favor?\n\nSe preferir, faça seu pedido direto pelo cardápio: ${base}/${storeSlug}`
 }
 
 /**
@@ -110,18 +172,32 @@ export async function handleLlmFree(
     currentCart: draft.items.map((i) => ({ quantity: i.quantity, name: i.name, addons: i.addons })),
   })
 
-  const aiRaw = await callAI(
-    {
-      aiProvider: store.automationConfig!.aiProvider,
-      aiApiKey: store.automationConfig!.aiApiKey,
-      aiModel: store.automationConfig!.aiModel,
-    },
-    systemPrompt,
-    history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-    { json: true },
-  )
+  let aiRaw: string
+  try {
+    aiRaw = await callAI(
+      {
+        aiProvider: store.automationConfig!.aiProvider,
+        aiApiKey: store.automationConfig!.aiApiKey,
+        aiModel: store.automationConfig!.aiModel,
+      },
+      systemPrompt,
+      history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      { json: true },
+    )
+  } catch (err) {
+    // IA fora do ar / chave inválida / sem crédito: o cliente não pode ficar sem resposta
+    app.log.error({ err: (err as Error).message, storeId: store.id }, 'bot: falha ao chamar a IA')
+    await setState(app, conv.id, 'LLM_FREE', draft)
+    return aiFallbackReply(store.slug)
+  }
 
-  const { reply, control } = parseControl(aiRaw)
+  const parsed = parseControl(aiRaw)
+  if (!parsed.ok) {
+    app.log.warn({ storeId: store.id, rawLength: aiRaw?.length ?? 0 }, 'bot: resposta da IA inutilizável — enviando mensagem padrão')
+    await setState(app, conv.id, 'LLM_FREE', draft)
+    return aiFallbackReply(store.slug)
+  }
+  const { reply, control } = parsed
 
   if (control) {
     draft.type = control.orderType
