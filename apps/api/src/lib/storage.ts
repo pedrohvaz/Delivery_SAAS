@@ -53,7 +53,7 @@ export async function uploadImage(file: MultipartFile, folder = 'products'): Pro
   const rawBuffer = Buffer.concat(chunks)
 
   // Comprime e redimensiona com Sharp (exceto GIFs)
-  let buffer = rawBuffer
+  let buffer: Buffer = rawBuffer
   if (!isGif) {
     buffer = await sharp(rawBuffer)
       .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: 'inside', withoutEnlargement: true })

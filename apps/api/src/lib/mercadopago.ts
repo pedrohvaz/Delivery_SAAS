@@ -18,6 +18,14 @@ interface MPPreference {
   notificationUrl?: string
 }
 
+// Campos da resposta de /v1/payments que usamos
+interface MPPaymentResponse {
+  id: number | string
+  status: string
+  date_of_expiration: string // enviada na criação; o MP devolve a mesma
+  point_of_interaction?: { transaction_data?: { qr_code?: string; qr_code_base64?: string } }
+}
+
 export async function mpCreatePixCharge(config: MPConfig, params: {
   orderId: string
   amount: number
@@ -52,7 +60,7 @@ export async function mpCreatePixCharge(config: MPConfig, params: {
     throw new Error(`Mercado Pago erro ${res.status}: ${err}`)
   }
 
-  const data = await res.json()
+  const data = (await res.json()) as MPPaymentResponse
   return {
     id: String(data.id),
     qrCode: data.point_of_interaction?.transaction_data?.qr_code ?? '',
@@ -66,6 +74,6 @@ export async function mpGetPaymentStatus(config: MPConfig, paymentId: string): P
     headers: { Authorization: `Bearer ${config.accessToken}` },
   })
   if (!res.ok) throw new Error('Erro ao consultar pagamento MP')
-  const data = await res.json()
+  const data = (await res.json()) as Pick<MPPaymentResponse, 'status'>
   return data.status // 'approved' | 'pending' | 'cancelled' | 'rejected'
 }

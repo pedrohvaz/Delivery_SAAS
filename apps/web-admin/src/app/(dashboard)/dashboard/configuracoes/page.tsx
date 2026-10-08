@@ -44,6 +44,8 @@ export default function ConfiguracoesPage() {
   const [storeCity, setStoreCity] = useState('')
   const [storeState, setStoreState] = useState('')
   const [storeZipCode, setStoreZipCode] = useState('')
+  const [zipCodeLoading, setZipCodeLoading] = useState(false)
+  const [zipCodeError, setZipCodeError] = useState('')
   const [storeDescription, setStoreDescription] = useState('')
   const [storeInstagram, setStoreInstagram] = useState('')
   const [storeFacebook, setStoreFacebook] = useState('')
@@ -198,9 +200,35 @@ export default function ConfiguracoesPage() {
     if (found) setNewPmLabel(found.label)
   }
 
+  // CEP -> endereço (ViaCEP). Preenche rua, bairro, cidade e UF; o lojista só completa o número.
+  async function handleZipCodeChange(value: string) {
+    const digits = value.replace(/\D/g, '').slice(0, 8)
+    setStoreZipCode(digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits)
+    setZipCodeError('')
+    if (digits.length !== 8) return
+    setZipCodeLoading(true)
+    try {
+      const r = await fetch(`https://viacep.com.br/ws/${digits}/json/`)
+      const data = await r.json()
+      if (data.erro) { setZipCodeError('CEP não encontrado. Preencha o endereço manualmente.'); return }
+      if (data.logradouro) setStoreAddress(data.logradouro)
+      if (data.bairro) setStoreDistrict(data.bairro)
+      if (data.localidade) setStoreCity(data.localidade)
+      if (data.uf) setStoreState(data.uf)
+    } catch {
+      setZipCodeError('Não foi possível consultar o CEP. Preencha o endereço manualmente.')
+    } finally {
+      setZipCodeLoading(false)
+    }
+  }
+
   async function handleSaveStoreInfo(e: React.FormEvent) {
     e.preventDefault()
     setStoreInfoError('')
+    if (!storeCity.trim() || !storeState.trim()) {
+      setStoreInfoError('Informe a cidade e a UF da loja.')
+      return
+    }
     try {
       await updateStoreInfo.mutateAsync({
         name: storeName || undefined,
@@ -288,6 +316,11 @@ export default function ConfiguracoesPage() {
           </div>
         </div>
         <form onSubmit={handleSaveStoreInfo} className="space-y-4">
+          {storeInfo && !storeInfo.city && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+              <strong>Informe o endereço da loja.</strong> Sem a cidade, sua loja não aparece quando o cliente filtra por cidade ou usa a localização no bylink.shop.
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1.5">
               <label className="text-sm font-medium">Nome da Loja</label>
@@ -311,9 +344,16 @@ export default function ConfiguracoesPage() {
                 className="w-full rounded-xl border border-input px-3 py-2 text-sm resize-none bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">CEP</label>
-              <input value={storeZipCode} onChange={(e) => setStoreZipCode(e.target.value)} placeholder="00000-000"
-                className="w-full h-10 rounded-xl border border-input px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <label htmlFor="store-zip" className="text-sm font-medium">CEP <span className="text-destructive">*</span></label>
+              <div className="relative">
+                <input id="store-zip" value={storeZipCode} onChange={(e) => handleZipCodeChange(e.target.value)} placeholder="00000-000"
+                  inputMode="numeric" autoComplete="postal-code" required
+                  className="w-full h-10 rounded-xl border border-input px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                {zipCodeLoading && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">Buscando…</span>}
+              </div>
+              {zipCodeError
+                ? <p className="text-xs text-destructive">{zipCodeError}</p>
+                : <p className="text-xs text-muted-foreground">Preenche rua, bairro e cidade automaticamente.</p>}
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Número</label>
@@ -325,15 +365,24 @@ export default function ConfiguracoesPage() {
               <input value={storeAddress} onChange={(e) => setStoreAddress(e.target.value)} placeholder="Rua das Flores"
                 className="w-full h-10 rounded-xl border border-input px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
-            <div className="space-y-1.5">
+            <div className="col-span-2 space-y-1.5">
               <label className="text-sm font-medium">Bairro</label>
               <input value={storeDistrict} onChange={(e) => setStoreDistrict(e.target.value)}
                 className="w-full h-10 rounded-xl border border-input px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Cidade</label>
-              <input value={storeCity} onChange={(e) => setStoreCity(e.target.value)}
-                className="w-full h-10 rounded-xl border border-input px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+            <div className="col-span-2 grid grid-cols-[1fr_5rem] gap-3">
+              <div className="space-y-1.5">
+                <label htmlFor="store-city" className="text-sm font-medium">Cidade <span className="text-destructive">*</span></label>
+                <input id="store-city" value={storeCity} onChange={(e) => setStoreCity(e.target.value)} required
+                  autoComplete="address-level2"
+                  className="w-full h-10 rounded-xl border border-input px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="store-state" className="text-sm font-medium">UF <span className="text-destructive">*</span></label>
+                <input id="store-state" value={storeState} onChange={(e) => setStoreState(e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase())}
+                  required minLength={2} maxLength={2} placeholder="SP" autoComplete="address-level1"
+                  className="w-full h-10 rounded-xl border border-input px-3 text-sm uppercase bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Instagram</label>

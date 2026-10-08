@@ -11,8 +11,8 @@ const updateStoreInfoSchema = z.object({
   number: z.string().optional(),
   complement: z.string().optional(),
   district: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
+  city: z.string().trim().min(2, 'Informe a cidade da loja').optional(),
+  state: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, 'UF inválida (use 2 letras, ex.: SP)').optional(),
   zipCode: z.string().optional(),
   description: z.string().optional(),
   instagram: z.string().optional(),
@@ -82,7 +82,8 @@ const settingsRoutes: FastifyPluginAsync = async (app) => {
         description: true, instagram: true, facebook: true,
       },
     })
-    await cacheDel(`store:${updated.slug}`, `menu:${updated.slug}`)
+    // stores:list = vitrine do bylink.shop (cidade/descrição aparecem nos cartões e no filtro)
+    await cacheDel(`store:${updated.slug}`, `menu:${updated.slug}`, 'stores:list')
     return { data: updated }
   })
 
@@ -199,7 +200,7 @@ const settingsRoutes: FastifyPluginAsync = async (app) => {
     })
 
     // Invalida o cache público da vitrine para a alteração refletir na hora
-    await cacheDel(`store:${updated.slug}`, `menu:${updated.slug}`)
+    await cacheDel(`store:${updated.slug}`, `menu:${updated.slug}`, 'stores:list')
 
     return { data: updated }
   })

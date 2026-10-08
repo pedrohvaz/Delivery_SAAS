@@ -16,7 +16,11 @@ let notificationQueue: Queue | null = null
 export function getNotificationQueue(): Queue | null {
   if (!process.env.REDIS_URL) return null
   if (!notificationQueue) {
-    notificationQueue = new Queue('notifications', { connection })
+    // Retentativas valem para qualquer job da fila (no Worker essas opções seriam ignoradas)
+    notificationQueue = new Queue('notifications', {
+      connection,
+      defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 2000 } },
+    })
   }
   return notificationQueue
 }
@@ -40,11 +44,7 @@ export function startNotificationWorker(prisma: PrismaClient) {
         )
       }
     },
-    {
-      connection,
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 2000 },
-    },
+    { connection },
   )
 
   worker.on('failed', (job, err) => {

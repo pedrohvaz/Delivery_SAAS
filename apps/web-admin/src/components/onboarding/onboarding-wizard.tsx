@@ -19,7 +19,7 @@ const STEPS: Step[] = [
   {
     id: 'store-info',
     title: 'Dados da loja',
-    description: 'Preencha nome, endereço e contato',
+    description: 'Preencha nome, contato e endereço (CEP e cidade)',
     icon: <Store className="h-5 w-5" />,
     href: '/dashboard/configuracoes',
     checkFn: (s) => !!(s?.name && s?.phone),

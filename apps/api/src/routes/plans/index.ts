@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
+import type { Prisma } from '@prisma/client'
 import { authenticate } from '../../middlewares/authenticate.js'
 import { authenticateSuperAdmin } from '../../middlewares/authenticate-super-admin.js'
 import {
@@ -194,7 +195,7 @@ const planRoutes: FastifyPluginAsync = async (app) => {
         tagline: d.tagline,
         monthlyPrice: d.monthlyPrice,
         features: d.features,
-        limits: d.limits,
+        limits: d.limits as Prisma.InputJsonValue,
         color: d.color,
         highlight: d.highlight ?? false,
         badge: d.badge,
@@ -242,7 +243,7 @@ const planRoutes: FastifyPluginAsync = async (app) => {
 
     const updated = await app.prisma.plan.update({
       where: { id },
-      data: { ...result.data, stripePriceId },
+      data: { ...result.data, limits: result.data.limits as Prisma.InputJsonValue | undefined, stripePriceId },
     })
 
     return { data: updated }

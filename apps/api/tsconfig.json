@@ -8,7 +8,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noImplicitReturns": false,
-    "strictNullChecks": false,
+    "strictNullChecks": true,
     "strict": false,
     "skipLibCheck": true,
     "noEmitOnError": false

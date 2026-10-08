@@ -190,7 +190,8 @@ const customerRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const address = await app.prisma.customerAddress.create({
-      data: { customerId: id, ...result.data },
+      // zipCode é obrigatório no banco; endereço cadastrado sem CEP fica com string vazia
+      data: { customerId: id, ...result.data, zipCode: result.data.zipCode ?? '' },
     })
 
     return reply.status(201).send({ data: address })
