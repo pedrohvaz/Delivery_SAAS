@@ -1,13 +1,11 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { motion, AnimatePresence } from 'motion/react'
 import Link from 'next/link'
 import {
-  Search, MapPin, SlidersHorizontal, Sparkles, TrendingUp, Compass,
-  X, ChevronDown, Navigation, Bike, Info, Heart,
-  ChevronLeft, ChevronRight, Sun, Moon, User,
+  Search, MapPin, X, ChevronDown, Sun, Moon, User, Check, ArrowRight, LocateFixed, Loader2,
+  Smartphone, MessageCircle, ChefHat, QrCode, Bike, BarChart3,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { BackgroundFoodCarousel } from '@/components/marketplace/BackgroundFoodCarousel'
@@ -15,40 +13,64 @@ import { StoreCard, type MarketStore } from '@/components/marketplace/StoreCard'
 import { useCustomerAuth } from '@/store/customer-auth'
 import { useMounted } from '@/hooks/use-mounted'
 
-const PROMO_BANNERS = [
-  { id: 1, title: 'Festival Japa & Fusion', subtitle: 'Sushis frescos de salmão maçaricado, temakis e combinados incríveis com ingredientes premium.', badge: 'COMIDA JAPONESA', image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80', color: 'from-rose-600/90 via-neutral-900/40 to-transparent', tagColor: 'bg-rose-500/20 text-rose-300 border-rose-500/30', actionQuery: 'Sushi', buttonText: 'Pedir Combinados' },
-  { id: 2, title: 'Smash Burgers Suculentos', subtitle: 'Hambúrgueres artesanais grelhados no fogo, muito cheddar derretido, bacon crocante e maionese secreta.', badge: 'LANCHONETES & BURGERS', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80', color: 'from-amber-600/90 via-neutral-900/40 to-transparent', tagColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30', actionQuery: 'Burguer', buttonText: 'Explorar Burgers' },
-  { id: 3, title: 'Drinks & Bebidas Geladas', subtitle: 'Sucos naturais refrescantes, refrigerantes trincando de gelados e cervejas especiais super rápido.', badge: 'BEBIDAS & REFRESH', image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=1200&q=80', color: 'from-blue-600/90 via-neutral-900/40 to-transparent', tagColor: 'bg-blue-500/20 text-blue-300 border-blue-500/30', actionQuery: 'Bebida', buttonText: 'Gelar Meu Dia' },
-  { id: 4, title: 'Restaurantes & Massas Finas', subtitle: 'Pratos executivos nobres, massas ao molho de tomates San Marzano e azeites aromáticos.', badge: 'RESTAURANTES GOURMET', image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=1200&q=80', color: 'from-emerald-700/90 via-neutral-900/40 to-transparent', tagColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30', actionQuery: 'Pizza', buttonText: 'Escolher Prato' },
-  { id: 5, title: 'Açaí Cremoso Original', subtitle: 'Monte sua tigela com frutas tropicais frescas, granola crocante e calda extra de leite condensado.', badge: 'AÇAI TIME & DOCES', image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&w=1200&q=80', color: 'from-purple-700/90 via-neutral-900/40 to-transparent', tagColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30', actionQuery: 'Açaí', buttonText: 'Montar Tigela' },
+const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL ?? 'http://localhost:3010'
+
+// Filtros rápidos — todos baseados em dados reais da loja
+type QuickFilter = 'all' | 'open' | 'fast' | 'noMin' | 'favorites'
+const QUICK_FILTERS: { id: QuickFilter; label: string }[] = [
+  { id: 'all', label: 'Todas' },
+  { id: 'open', label: 'Abertas agora' },
+  { id: 'fast', label: 'Até 30 min' },
+  { id: 'noMin', label: 'Sem pedido mínimo' },
+  { id: 'favorites', label: 'Favoritas' },
 ]
 
-const CATEGORIES = [
-  { id: 'todos', name: 'Todos', emoji: '🍽️', q: '' },
-  { id: 'lanches', name: 'Lanches', emoji: '🍔', q: 'Burguer' },
-  { id: 'pizza', name: 'Pizza', emoji: '🍕', q: 'Pizza' },
-  { id: 'japonesa', name: 'Japonesa', emoji: '🍣', q: 'Sushi' },
-  { id: 'brasileira', name: 'Brasileira', emoji: '🍛', q: 'Brasileira' },
-  { id: 'acai', name: 'Açaí', emoji: '🥣', q: 'Açaí' },
-  { id: 'doces', name: 'Doces', emoji: '🍰', q: 'Doce' },
-  { id: 'bebidas', name: 'Bebidas', emoji: '🥤', q: 'Bebida' },
-  { id: 'saudavel', name: 'Saudável', emoji: '🥗', q: 'Saudável' },
+type SortBy = 'recommended' | 'name' | 'time'
+const SORT_OPTIONS: { id: SortBy; label: string }[] = [
+  { id: 'recommended', label: 'Recomendadas' },
+  { id: 'time', label: 'Mais rápidas' },
+  { id: 'name', label: 'Nome (A–Z)' },
 ]
 
-const SUGGESTIONS = ['Pizza', 'Burguer', 'Sushi', 'Açaí']
+// Compara nomes de cidade ignorando acentos e maiúsculas ("São Paulo" == "sao paulo")
+const normalizeCity = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase()
+
+// Coordenadas do navegador -> nome da cidade (OpenStreetMap/Nominatim, sem chave)
+async function reverseGeocodeCity(lat: number, lng: number): Promise<string | null> {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=pt-BR&lat=${lat}&lon=${lng}`
+  const res = await fetch(url, { headers: { Accept: 'application/json' } })
+  if (!res.ok) return null
+  const data = await res.json()
+  const a = data?.address ?? {}
+  return a.city ?? a.town ?? a.municipality ?? a.village ?? null
+}
+
+function getPosition(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) =>
+    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }),
+  )
+}
+
+const MERCHANT_FEATURES = [
+  { icon: Smartphone, title: 'Cardápio digital com seu link', text: 'Seus clientes pedem direto pelo celular, sem baixar app.' },
+  { icon: MessageCircle, title: 'Pedidos pelo WhatsApp', text: 'Atendente automático que tira dúvidas e fecha o pedido.' },
+  { icon: ChefHat, title: 'Painel de pedidos e cozinha', text: 'Acompanhe cada pedido em tempo real, da cozinha à entrega.' },
+  { icon: QrCode, title: 'Mesas com QR Code', text: 'Pedido na mesa e chamada do garçom pelo celular.' },
+  { icon: Bike, title: 'Entregadores e áreas', text: 'Taxas por bairro e controle dos seus entregadores.' },
+  { icon: BarChart3, title: 'Cupons, fidelidade e relatórios', text: 'Traga o cliente de volta e acompanhe suas vendas.' },
+]
 
 export default function HomePage() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('todos')
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('all')
+  const [sortBy, setSortBy] = useState<SortBy>('recommended')
   const [selectedCity, setSelectedCity] = useState('all')
   const [isCitySelectOpen, setIsCitySelectOpen] = useState(false)
-  const [sortBy, setSortBy] = useState<'recommended' | 'name' | 'time'>('recommended')
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
-  const [filterOnlyOpen, setFilterOnlyOpen] = useState(false)
-  const [currentBanner, setCurrentBanner] = useState(0)
-  const [isBannerHovered, setIsBannerHovered] = useState(false)
   const [favorites, setFavorites] = useState<string[]>([])
+  const [isLocating, setIsLocating] = useState(false)
+  const [locationMsg, setLocationMsg] = useState<string | null>(null)
+  const cityRef = useRef<HTMLDivElement>(null)
 
   // Conta global do cliente (gate de mounted evita mismatch de hidratação)
   const account = useCustomerAuth((s) => s.account)
@@ -60,10 +82,14 @@ export default function HomePage() {
     try {
       const saved = localStorage.getItem('mkt_theme')
       if (saved === 'light' || saved === 'dark') setTheme(saved)
-      else if (window.matchMedia('(prefers-color-scheme: light)').matches) setTheme('light')
+      else if (window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme('dark')
     } catch { /* ignora */ }
   }, [])
-  useEffect(() => { try { localStorage.setItem('mkt_theme', theme) } catch { /* ignora */ } }, [theme])
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light'
+    setTheme(next)
+    try { localStorage.setItem('mkt_theme', next) } catch { /* ignora */ }
+  }
 
   // Favoritos persistidos
   useEffect(() => {
@@ -77,24 +103,65 @@ export default function HomePage() {
     })
   }
 
+  // Fecha o seletor de cidade ao clicar fora
+  useEffect(() => {
+    if (!isCitySelectOpen) return
+    const onClick = (e: MouseEvent) => { if (!cityRef.current?.contains(e.target as Node)) setIsCitySelectOpen(false) }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [isCitySelectOpen])
+
   const { data: stores = [], isLoading } = useQuery({
     queryKey: ['public-stores'],
     queryFn: () => api.get<{ data: MarketStore[] }>('/store').then((r) => r.data.data),
   })
 
-  // Banner rotativo
-  useEffect(() => {
-    if (isBannerHovered) return
-    const t = setInterval(() => setCurrentBanner((p) => (p + 1) % PROMO_BANNERS.length), 4500)
-    return () => clearInterval(t)
-  }, [isBannerHovered])
-
-  // Cidades reais
-  const cities = useMemo(() => {
-    const set = new Set<string>()
-    stores.forEach((s) => { if (s.city) set.add(s.city) })
-    return ['all', ...Array.from(set).sort()]
+  // Cidades reais das lojas, com a quantidade de lojas em cada uma
+  const cityCounts = useMemo(() => {
+    const map = new Map<string, number>()
+    stores.forEach((s) => { if (s.city) map.set(s.city, (map.get(s.city) ?? 0) + 1) })
+    return map
   }, [stores])
+  const cities = useMemo(() => Array.from(cityCounts.keys()).sort((a, b) => a.localeCompare(b)), [cityCounts])
+
+  // Cidade escolhida persistida (só vale se ainda existir loja nela)
+  const chooseCity = (city: string) => {
+    setSelectedCity(city)
+    try { localStorage.setItem('mkt_city', city) } catch { /* ignora */ }
+  }
+  useEffect(() => {
+    if (!stores.length) return
+    try {
+      const saved = localStorage.getItem('mkt_city')
+      if (saved && cityCounts.has(saved)) setSelectedCity(saved)
+    } catch { /* ignora */ }
+  }, [stores.length, cityCounts])
+
+  const locateMe = async () => {
+    setLocationMsg(null)
+    if (!('geolocation' in navigator)) { setLocationMsg('Seu navegador não permite localização. Escolha a cidade na lista.'); return }
+    setIsLocating(true)
+    try {
+      const pos = await getPosition()
+      const city = await reverseGeocodeCity(pos.coords.latitude, pos.coords.longitude)
+      if (!city) { setLocationMsg('Não conseguimos identificar sua cidade. Escolha na lista.'); return }
+      const match = cities.find((c) => normalizeCity(c) === normalizeCity(city))
+      if (match) {
+        chooseCity(match)
+        setIsCitySelectOpen(false)
+      } else {
+        setLocationMsg(`Ainda não temos lojas em ${city}. Veja as lojas de outras cidades.`)
+        chooseCity('all')
+      }
+    } catch (err) {
+      const denied = (err as GeolocationPositionError)?.code === 1
+      setLocationMsg(denied
+        ? 'Permissão de localização negada. Escolha a cidade na lista.'
+        : 'Não foi possível obter sua localização. Escolha a cidade na lista.')
+    } finally {
+      setIsLocating(false)
+    }
+  }
 
   const filtered = useMemo(() => {
     let result = [...stores]
@@ -107,300 +174,307 @@ export default function HomePage() {
       )
     }
     if (selectedCity !== 'all') result = result.filter((s) => s.city === selectedCity)
-    if (filterOnlyOpen) result = result.filter((s) => s.isOpen)
+    if (quickFilter === 'open') result = result.filter((s) => s.isOpen)
+    if (quickFilter === 'fast') result = result.filter((s) => s.estimatedTime <= 30)
+    if (quickFilter === 'noMin') result = result.filter((s) => Number(s.minOrderValue) <= 0)
+    if (quickFilter === 'favorites') result = result.filter((s) => favorites.includes(s.id))
 
     if (sortBy === 'name') result.sort((a, b) => a.name.localeCompare(b.name))
     else if (sortBy === 'time') result.sort((a, b) => a.estimatedTime - b.estimatedTime)
-    else result.sort((a, b) => Number(b.isOpen) - Number(a.isOpen)) // recomendados: abertos primeiro
+    else result.sort((a, b) => Number(b.isOpen) - Number(a.isOpen) || b.ratingAvg - a.ratingAvg)
 
     return result
-  }, [stores, searchTerm, selectedCity, filterOnlyOpen, sortBy])
+  }, [stores, searchTerm, selectedCity, quickFilter, sortBy, favorites])
 
-  const activeFiltersCount = (filterOnlyOpen ? 1 : 0) + (sortBy !== 'recommended' ? 1 : 0) + (selectedCity !== 'all' ? 1 : 0)
-
-  const pickCategory = (cat: typeof CATEGORIES[number]) => {
-    setSelectedCategory(cat.id)
-    setSearchTerm(cat.q)
-  }
+  const openCount = stores.filter((s) => s.isOpen).length
+  const hasFilters = !!searchTerm || selectedCity !== 'all' || quickFilter !== 'all'
+  const clearFilters = () => { setSearchTerm(''); chooseCity('all'); setQuickFilter('all') }
 
   return (
     <div className={`mkt-scope ${theme === 'dark' ? 'dark' : ''}`}>
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans pb-16 text-slate-800 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
 
-      {/* Barra superior */}
-      <div className="bg-slate-950 text-white/90 text-[11.5px] sm:text-xs py-2.5 px-6 border-b border-slate-900 flex items-center justify-between z-40 relative">
-        <div className="flex items-center gap-2 max-w-lg truncate">
-          <span className="bg-orange-600 rounded-md text-[9px] px-2 py-0.5 font-bold uppercase tracking-wide text-white">PRO</span>
-          <span className="truncate opacity-90 font-mono">Sua loja favorita, a um clique. Peça em qualquer estabelecimento da plataforma.</span>
+      {/* Cabeçalho */}
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
+          <Link href="/" className="flex items-center gap-2" aria-label="Bylink — início">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500 text-lg font-black text-white shadow-sm shadow-orange-500/30">b</span>
+            <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">bylink</span>
+          </Link>
+
+          <nav className="flex items-center gap-1.5 sm:gap-2">
+            <a href="#lojistas" className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white sm:block">
+              Para lojistas
+            </a>
+            <button
+              onClick={toggleTheme}
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900"
+              aria-label={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
+            >
+              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            </button>
+            <Link
+              href="/conta"
+              className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
+            >
+              {mounted && isAuthenticated && account ? (
+                <>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">{account.name?.[0]?.toUpperCase() ?? '?'}</span>
+                  <span className="max-w-[90px] truncate">{account.name?.split(' ')[0]}</span>
+                </>
+              ) : (
+                <>
+                  <User className="h-4 w-4" />
+                  <span>Entrar</span>
+                </>
+              )}
+            </Link>
+          </nav>
         </div>
-        {/* Minha conta — canto superior direito */}
-        <Link
-          href="/conta"
-          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/15 transition shrink-0"
-          title="Minha conta"
-        >
-          {mounted && isAuthenticated && account ? (
-            <>
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white shrink-0">{account.name?.[0]?.toUpperCase() ?? '?'}</span>
-              <span className="max-w-[100px] truncate">{account.name?.split(' ')[0]}</span>
-            </>
-          ) : (
-            <>
-              <User className="h-3.5 w-3.5 text-orange-400" />
-              <span>Minha conta</span>
-            </>
-          )}
-        </Link>
-      </div>
+      </header>
 
       {/* Hero */}
-      <section className="relative text-white overflow-hidden pb-16 pt-12 px-4 shadow-xl sm:px-8 border-b border-slate-900 min-h-[440px] flex items-center bg-slate-950">
+      <section className="relative z-30 bg-slate-950 px-4 py-14 text-white sm:py-20">
         <BackgroundFoodCarousel />
-        <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-950/80 to-transparent z-2 pointer-events-none" />
-        <div className="absolute inset-0 bg-black/40 z-1 pointer-events-none" />
-        <div className="absolute top-0 right-0 h-96 w-96 rounded-full bg-orange-500/10 blur-3xl -translate-y-12 translate-x-12 pointer-events-none z-3" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/40" />
 
-        <div className="max-w-6xl w-full mx-auto relative z-10 space-y-8 my-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-2xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20 -rotate-3 hover:rotate-0 transition-transform duration-300 shrink-0">
-                <Bike className="h-6 w-6 text-white animate-float" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2">
-                  Delivery Online <span className="text-[10px] uppercase font-mono px-2 py-0.5 bg-white/10 rounded-md font-bold text-orange-400">ÁGIL</span>
-                </h1>
-                <p className="text-[11px] text-slate-400 font-medium sm:block hidden">Sabor e agilidade em um único clique</p>
-              </div>
-            </div>
-
-            {/* Tema + Cidade */}
-            <div className="flex items-center gap-2 self-start sm:self-auto font-mono text-xs flex-wrap">
-              <button
-                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                className="flex items-center justify-center h-11 w-11 rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 text-white border border-slate-800 transition-all shadow-sm active:scale-95"
-                title={theme === 'light' ? 'Modo escuro' : 'Modo claro'}
-              >
-                {theme === 'light' ? <Moon className="h-4.5 w-4.5 text-sky-400" /> : <Sun className="h-4.5 w-4.5 text-amber-400" />}
-              </button>
-
-              <div className="relative">
-                <button
-                  onClick={() => setIsCitySelectOpen(!isCitySelectOpen)}
-                  className="flex items-center gap-2 rounded-2xl bg-slate-900/90 hover:bg-slate-800/90 px-4 py-3 text-white border border-slate-800 transition-all shadow-sm text-left"
-                >
-                  <MapPin className="h-4 w-4 text-orange-500 shrink-0" />
-                  <div className="leading-tight shrink pr-2">
-                    <div className="text-[9px] uppercase tracking-wide text-slate-400 font-bold">Cidade:</div>
-                    <div className="font-bold line-clamp-1 max-w-[120px] text-slate-200">{selectedCity === 'all' ? 'Todas' : selectedCity}</div>
-                  </div>
-                  <ChevronDown className="h-3.5 w-3.5 opacity-60 shrink-0" />
-                </button>
-                <AnimatePresence>
-                  {isCitySelectOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                      className="absolute right-0 mt-2.5 z-50 w-56 max-h-72 overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 p-2 text-slate-800 dark:text-slate-100 shadow-2xl border border-slate-100 dark:border-slate-800 font-sans"
-                    >
-                      <div className="flex items-center justify-between pb-2 px-2.5 mb-1.5 mt-1 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-[10px] font-bold uppercase text-slate-450 tracking-wider font-mono">Cidades</span>
-                        <button onClick={() => setIsCitySelectOpen(false)} className="text-slate-400 hover:text-slate-600 text-[11px]">✕</button>
-                      </div>
-                      <div className="space-y-0.5">
-                        {cities.map((city) => (
-                          <button
-                            key={city}
-                            onClick={() => { setSelectedCity(city); setIsCitySelectOpen(false) }}
-                            className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-left transition-colors ${selectedCity === city ? 'bg-orange-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-                          >
-                            <span className="text-sm">{city === 'all' ? '📍' : '🏙️'}</span>
-                            <span className="truncate">{city === 'all' ? 'Todas as Cidades' : city}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          </div>
-
-          {/* Título */}
-          <div className="text-center sm:text-left max-w-xl pb-1 space-y-2">
-            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-none text-white">
-              Encontre o melhor cardápio e faça seu pedido
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-lg">
-              Pesquise por loja, cidade ou especialidade. Tudo o que a sua região tem de melhor em um só lugar.
+        <div className="relative mx-auto max-w-6xl">
+          <div className="max-w-2xl space-y-4">
+            <h1 className="text-3xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+              Peça das melhores lojas <span className="text-orange-400">da sua cidade</span>
+            </h1>
+            <p className="max-w-lg text-base text-slate-300 sm:text-lg">
+              Cardápio online, pedido direto com a loja e acompanhamento em tempo real.
             </p>
           </div>
 
-          {/* Busca */}
-          <div className="relative max-w-2xl mx-auto sm:mx-0">
-            <div className="relative flex items-center">
-              <Search className="absolute left-4 h-5 w-5 text-slate-400" />
+          {/* Busca + cidade */}
+          <div className="mt-8 flex max-w-2xl flex-col gap-2 rounded-2xl bg-white p-2 shadow-2xl shadow-black/30 sm:flex-row dark:bg-slate-900">
+            <label className="relative flex flex-1 items-center">
+              <span className="sr-only">Buscar loja</span>
+              <Search className="pointer-events-none absolute left-3.5 h-5 w-5 text-slate-400" />
               <input
-                id="mkt-search"
-                type="text"
+                type="search"
                 value={searchTerm}
-                onChange={(e) => { setSearchTerm(e.target.value); setSelectedCategory('todos') }}
-                placeholder="Buscar loja por nome, cidade ou especialidade..."
-                className="w-full text-sm sm:text-base rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 py-4 pl-12 pr-12 text-slate-900 dark:text-slate-100 placeholder-slate-400 shadow-xl shadow-slate-950/20 outline-none focus:ring-4 focus:ring-orange-500/30 transition-all"
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar loja ou especialidade"
+                className="w-full rounded-xl bg-transparent py-3 pl-11 pr-10 text-base text-slate-900 placeholder-slate-400 outline-none dark:text-slate-100"
               />
               {searchTerm && (
-                <button onClick={() => setSearchTerm('')} className="absolute right-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full p-1 transition-colors" title="Limpar">
+                <button onClick={() => setSearchTerm('')} className="absolute right-2 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800" aria-label="Limpar busca">
                   <X className="h-4 w-4" />
                 </button>
               )}
-            </div>
-            <div className="flex items-center gap-1.5 flex-wrap mt-3 text-[10px] sm:text-[11px] font-mono font-medium text-slate-400">
-              <span className="opacity-75 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Sugeridos:</span>
-              {SUGGESTIONS.map((s) => (
-                <button key={s} onClick={() => { setSearchTerm(s); setSelectedCategory('todos') }} className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white border border-slate-800 transition-all">{s}</button>
-              ))}
+            </label>
+
+            <div ref={cityRef} className="relative sm:border-l sm:border-slate-200 sm:pl-2 dark:sm:border-slate-800">
+              <button
+                onClick={() => setIsCitySelectOpen((v) => !v)}
+                aria-expanded={isCitySelectOpen}
+                aria-haspopup="listbox"
+                className="flex h-full w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-100 sm:w-52 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                <MapPin className="h-4 w-4 shrink-0 text-orange-500" />
+                <span className="flex-1 truncate">{selectedCity === 'all' ? 'Todas as cidades' : selectedCity}</span>
+                <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${isCitySelectOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {isCitySelectOpen && (
+                <div className="absolute right-0 z-50 mt-2 w-full min-w-[15rem] rounded-xl border border-slate-200 bg-white p-1 text-sm text-slate-700 shadow-xl dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+                  <button
+                    onClick={locateMe}
+                    disabled={isLocating}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left font-semibold text-orange-600 hover:bg-orange-50 disabled:opacity-70 dark:text-orange-400 dark:hover:bg-orange-500/10"
+                  >
+                    {isLocating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+                    {isLocating ? 'Localizando…' : 'Usar minha localização'}
+                  </button>
+                  <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                  <ul role="listbox" aria-label="Cidades" className="max-h-64 overflow-y-auto">
+                    {['all', ...cities].map((city) => (
+                      <li key={city} role="option" aria-selected={selectedCity === city}>
+                        <button
+                          onClick={() => { chooseCity(city); setLocationMsg(null); setIsCitySelectOpen(false) }}
+                          className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800"
+                        >
+                          <span className="truncate">{city === 'all' ? 'Todas as cidades' : city}</span>
+                          <span className="flex shrink-0 items-center gap-2 text-xs text-slate-400">
+                            {city === 'all' ? stores.length : cityCounts.get(city)}
+                            {selectedCity === city && <Check className="h-4 w-4 text-orange-500" />}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {cities.length === 0 && !isLoading && (
+                    <p className="px-3 pb-2 pt-1 text-xs text-slate-400">As lojas ainda não informaram a cidade.</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
+
+          {locationMsg && (
+            <p role="status" className="mt-3 inline-flex max-w-2xl items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm text-slate-200">
+              <MapPin className="h-4 w-4 shrink-0 text-orange-400" /> {locationMsg}
+            </p>
+          )}
+
+          {stores.length > 0 && (
+            <p className="mt-4 text-sm text-slate-400">
+              {stores.length} {stores.length === 1 ? 'loja' : 'lojas'} na Bylink
+              {openCount > 0 && <> · <span className="font-semibold text-emerald-400">{openCount} {openCount === 1 ? 'aberta' : 'abertas'} agora</span></>}
+            </p>
+          )}
         </div>
       </section>
 
-      {/* Banners promocionais */}
-      <div className="max-w-6xl mx-auto px-4 mt-8">
-        <div
-          className="relative h-48 sm:h-60 md:h-64 w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-md border border-slate-200/60 dark:border-slate-900 group"
-          onMouseEnter={() => setIsBannerHovered(true)}
-          onMouseLeave={() => setIsBannerHovered(false)}
-        >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentBanner}
-              initial={{ opacity: 0, scale: 1.01 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.99 }}
-              transition={{ duration: 0.35, ease: 'easeInOut' }}
-              className="absolute inset-0 w-full h-full cursor-pointer select-none"
-              onClick={() => { setSearchTerm(PROMO_BANNERS[currentBanner].actionQuery); setSelectedCategory('todos'); document.getElementById('mkt-search')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }}
+      {/* Lojas */}
+      <main className="mx-auto max-w-6xl px-4 py-10">
+        {/* Cabeçalho da lista e filtros só aparecem quando há lojas */}
+        {(isLoading || stores.length > 0) && (<>
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Lojas e restaurantes</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              {isLoading ? 'Carregando…' : `${filtered.length} de ${stores.length} ${stores.length === 1 ? 'loja' : 'lojas'}`}
+              {selectedCity !== 'all' && <> em <strong className="text-slate-700 dark:text-slate-200">{selectedCity}</strong></>}
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+            Ordenar por
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortBy)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500/40 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
             >
-              <img src={PROMO_BANNERS[currentBanner].image} alt={PROMO_BANNERS[currentBanner].title} referrerPolicy="no-referrer" className="w-full h-full object-cover transition-transform duration-10000 ease-linear group-hover:scale-105" />
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/60 to-transparent z-5" />
-              <div className={`absolute inset-0 bg-gradient-to-tr ${PROMO_BANNERS[currentBanner].color} mix-blend-multiply opacity-80 z-6`} />
-              <div className="absolute inset-0 flex flex-col justify-center p-6 sm:p-10 z-10 max-w-2xl text-white">
-                <div className="space-y-1.5 sm:space-y-3">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className={`rounded-md px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase font-mono tracking-widest border ${PROMO_BANNERS[currentBanner].tagColor}`}>{PROMO_BANNERS[currentBanner].badge}</span>
-                    <span className="flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-orange-400 font-mono tracking-wide bg-orange-500/15 border border-orange-500/20 px-2 py-0.5 rounded-md"><Sparkles className="h-2.5 w-2.5" /> DESTAQUE</span>
-                  </div>
-                  <h3 className="text-base sm:text-2xl md:text-3xl font-black tracking-tight leading-tight uppercase">{PROMO_BANNERS[currentBanner].title}</h3>
-                  <p className="text-slate-300 text-[10px] sm:text-xs md:text-sm font-medium leading-relaxed max-w-lg line-clamp-2">{PROMO_BANNERS[currentBanner].subtitle}</p>
-                  <div className="pt-1.5">
-                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-[9px] sm:text-xs px-3.5 py-1.5 sm:px-4 sm:py-2.5 tracking-wider uppercase font-mono shadow-md transition-all">{PROMO_BANNERS[currentBanner].buttonText} <span>➜</span></span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-
-          <button onClick={(e) => { e.stopPropagation(); setCurrentBanner((p) => (p - 1 + PROMO_BANNERS.length) % PROMO_BANNERS.length) }} className="absolute left-3.5 top-1/2 -translate-y-1/2 h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-slate-950/85 hover:bg-orange-600 text-white border border-slate-800 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 z-20 hidden sm:flex"><ChevronLeft className="h-4.5 w-4.5" /></button>
-          <button onClick={(e) => { e.stopPropagation(); setCurrentBanner((p) => (p + 1) % PROMO_BANNERS.length) }} className="absolute right-3.5 top-1/2 -translate-y-1/2 h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-slate-950/85 hover:bg-orange-600 text-white border border-slate-800 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 z-20 hidden sm:flex"><ChevronRight className="h-4.5 w-4.5" /></button>
-
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20 bg-slate-950/40 px-2.5 py-1 rounded-full backdrop-blur-xs">
-            {PROMO_BANNERS.map((_, idx) => (
-              <button key={idx} onClick={(e) => { e.stopPropagation(); setCurrentBanner(idx) }} className={`h-1.5 sm:h-2 rounded-full transition-all ${currentBanner === idx ? 'w-5 sm:w-6 bg-orange-500' : 'w-1.5 sm:w-2 bg-white/45 hover:bg-white/85'}`} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Categorias */}
-      <div className="max-w-6xl mx-auto px-4 mt-6 pb-2">
-        <h3 className="text-xs uppercase font-mono tracking-wider text-slate-400 font-bold mb-3.5 flex items-center gap-2"><SlidersHorizontal className="h-3.5 w-3.5 text-orange-500" /> Categorias</h3>
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none select-none">
-          {CATEGORIES.map((cat) => (
-            <button key={cat.id} onClick={() => pickCategory(cat)} className={`rounded-2xl px-5 py-3 flex items-center gap-2 text-xs sm:text-sm font-bold whitespace-nowrap transition-all border ${selectedCategory === cat.id ? 'bg-slate-900 dark:bg-orange-600 border-slate-900 dark:border-orange-600 text-white shadow-md scale-[1.02]' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-850 shadow-3xs'}`}>
-              <span>{cat.emoji}</span><span>{cat.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Lista */}
-      <div className="max-w-6xl mx-auto px-4 mt-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 border-b border-slate-200 dark:border-slate-850 gap-4 mb-6">
-          <div className="space-y-1">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2"><Compass className="h-5 w-5 text-orange-500 animate-spin-slow" /> Lojas e Restaurantes</h3>
-            <p className="text-xs text-slate-400 font-mono">Mostrando <strong className="text-slate-800 dark:text-slate-200">{filtered.length}</strong> de {stores.length} lojas{selectedCity !== 'all' ? <> em <span className="text-orange-600 font-bold">{selectedCity}</span></> : null}</p>
-          </div>
-          <div className="flex items-center gap-3.5 self-end sm:self-auto">
-            {activeFiltersCount > 0 && (
-              <button onClick={() => { setFilterOnlyOpen(false); setSortBy('recommended'); setSelectedCity('all'); setSelectedCategory('todos'); setSearchTerm('') }} className="text-xs font-mono font-bold text-orange-600 hover:underline">Limpar filtros</button>
-            )}
-            <button onClick={() => setIsFiltersOpen(!isFiltersOpen)} className={`inline-flex items-center gap-2.5 rounded-2xl border px-4 py-2.5 text-xs font-bold transition-all shadow-3xs ${isFiltersOpen ? 'bg-slate-900 border-slate-900 dark:bg-orange-600 dark:border-orange-600 text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850'}`}>
-              <SlidersHorizontal className="h-4 w-4" /><span>Filtrar e Ordenar</span>
-              {activeFiltersCount > 0 && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">{activeFiltersCount}</span>}
-            </button>
-          </div>
+              {SORT_OPTIONS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </select>
+          </label>
         </div>
 
-        <AnimatePresence>
-          {isFiltersOpen && (
-            <motion.div initial={{ opacity: 0, height: 0, y: -12 }} animate={{ opacity: 1, height: 'auto', y: 0 }} exit={{ opacity: 0, height: 0, y: -12 }} transition={{ duration: 0.25, ease: 'easeOut' }} className="overflow-hidden mb-6">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                <div className="space-y-3 font-mono text-xs">
-                  <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Conveniências</span>
-                  <label className="flex items-center gap-2.5 cursor-pointer group p-1 select-none">
-                    <input type="checkbox" checked={filterOnlyOpen} onChange={() => setFilterOnlyOpen(!filterOnlyOpen)} className="h-4 w-4 rounded-sm accent-orange-600 cursor-pointer" />
-                    <span className="text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors">Abertos Agora</span>
-                  </label>
-                </div>
-                <div className="space-y-3 font-mono text-xs">
-                  <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Ordenar</span>
-                  <div className="grid grid-cols-1 gap-1.5 pt-1">
-                    {[{ id: 'recommended', label: 'Recomendados (abertos primeiro)' }, { id: 'name', label: 'Nome (A–Z)' }, { id: 'time', label: 'Menor tempo de preparo' }].map((o) => (
-                      <button key={o.id} onClick={() => setSortBy(o.id as typeof sortBy)} className={`text-left rounded-lg px-2.5 py-1.5 transition-all ${sortBy === o.id ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold border-l-3 border-orange-500' : 'hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-500 dark:text-slate-400'}`}>{o.label}</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-850 p-4.5 text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed space-y-1.5 self-stretch flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200 uppercase text-[10px] font-mono mb-1"><Info className="h-3.5 w-3.5 text-orange-500" /> Dica</div>
-                    <p>Use a cidade no topo e a busca para achar rapidinho a loja que você quer.</p>
-                  </div>
-                  <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between mt-2">
-                    <span className="text-[10px] font-mono font-medium text-emerald-600 flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> Ativo</span>
-                    <button onClick={() => setIsFiltersOpen(false)} className="text-[10.5px] font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 px-3.5 py-1.5 rounded-xl shadow-3xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Ver Resultados</button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <div className="-mx-4 mb-6 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-none">
+          {QUICK_FILTERS.map((f) => {
+            const active = quickFilter === f.id
+            const count = f.id === 'favorites' ? favorites.length : null
+            return (
+              <button
+                key={f.id}
+                onClick={() => setQuickFilter(f.id)}
+                aria-pressed={active}
+                className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                  active
+                    ? 'border-slate-900 bg-slate-900 text-white dark:border-orange-500 dark:bg-orange-500'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-white'
+                }`}
+              >
+                {f.label}{count ? ` (${count})` : ''}
+              </button>
+            )
+          })}
+        </div>
+        </>)}
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => <div key={i} className="h-72 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-pulse" />)}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((i) => <div key={i} className="h-72 animate-pulse rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900" />)}
+          </div>
+        ) : stores.length === 0 ? (
+          <div className="mx-auto max-w-lg rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-50 text-orange-500 dark:bg-orange-500/10"><ChefHat className="h-6 w-6" /></div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Novas lojas chegando em breve</h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Estamos preparando os cardápios das primeiras lojas da Bylink. Volte em breve para fazer seu pedido.
+            </p>
+            <a
+              href="#lojistas"
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 dark:bg-slate-800"
+            >
+              Tenho uma loja e quero participar <ArrowRight className="h-4 w-4" />
+            </a>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center shadow-3xs max-w-lg mx-auto">
-            <div className="h-14 w-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4 text-slate-400"><Search className="h-7 w-7" /></div>
-            <h4 className="text-base font-bold text-slate-800 dark:text-slate-100">Nenhuma loja encontrada</h4>
-            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Tente limpar os filtros ou buscar por outro termo, cidade ou loja.</p>
-            <button onClick={() => { setSearchTerm(''); setSelectedCategory('todos'); setFilterOnlyOpen(false); setSelectedCity('all') }} className="mt-5 rounded-xl bg-slate-900 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2 transition-all">Resetar Filtros</button>
+          <div className="mx-auto max-w-md rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800"><Search className="h-6 w-6" /></div>
+            <h3 className="font-bold text-slate-900 dark:text-white">
+              {quickFilter === 'favorites' && favorites.length === 0 ? 'Você ainda não tem favoritas' : 'Nenhuma loja encontrada'}
+            </h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              {quickFilter === 'favorites' && favorites.length === 0
+                ? 'Toque no coração de uma loja para guardá-la aqui.'
+                : 'Tente outro termo ou limpe os filtros.'}
+            </p>
+            {hasFilters && (
+              <button onClick={clearFilters} className="mt-5 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 dark:bg-slate-800">
+                Limpar filtros
+              </button>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((store) => (
               <StoreCard key={store.id} store={store} isFavorite={favorites.includes(store.id)} onToggleFavorite={toggleFavorite} />
             ))}
           </div>
         )}
-      </div>
+      </main>
 
-      {/* Footer */}
-      <footer className="max-w-6xl mx-auto px-4 mt-20 text-center text-xs text-slate-400 font-mono space-y-1">
-        <div className="flex items-center justify-center gap-2.5">
-          <span className="font-bold text-slate-500 uppercase tracking-wider">Delivery Online</span>
-          <span>•</span>
-          <span className="flex items-center gap-0.5">Feito com <Heart className="h-3 w-3 text-rose-500 fill-rose-500" /> para o seu negócio</span>
+      {/* Para lojistas */}
+      <section id="lojistas" className="scroll-mt-20 px-4 pb-16">
+        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-slate-900 px-6 py-12 text-white sm:px-12 sm:py-16 dark:bg-slate-900 dark:ring-1 dark:ring-slate-800">
+          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-orange-500/20 blur-3xl" />
+
+          <div className="relative grid gap-10 lg:grid-cols-[1fr_1.3fr] lg:items-center">
+            <div className="space-y-5">
+              <span className="inline-block rounded-full bg-orange-500/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-orange-300">Para lojistas</span>
+              <h2 className="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
+                Tem um restaurante, lanchonete ou açaiteria?
+              </h2>
+              <p className="text-base text-slate-300">
+                Venda pelo seu próprio link com a Bylink: cardápio digital, pedidos pelo WhatsApp e gestão completa da sua loja em um só lugar.
+              </p>
+              <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+                <a
+                  href={`${ADMIN_URL}/register`}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-5 py-3 font-semibold text-white shadow-lg shadow-orange-500/25 transition hover:bg-orange-600"
+                >
+                  Cadastrar minha loja <ArrowRight className="h-4 w-4" />
+                </a>
+                <a
+                  href={`${ADMIN_URL}/login`}
+                  className="inline-flex items-center justify-center rounded-xl border border-white/15 px-5 py-3 font-semibold text-white transition hover:bg-white/10"
+                >
+                  Já sou lojista
+                </a>
+              </div>
+            </div>
+
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {MERCHANT_FEATURES.map(({ icon: Icon, title, text }) => (
+                <li key={title} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <Icon className="h-5 w-5 text-orange-400" />
+                  <h3 className="mt-3 font-semibold">{title}</h3>
+                  <p className="mt-1 text-sm text-slate-400">{text}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-        <p className="text-[10px] opacity-75">Vitrine de Lojas & Restaurantes • © 2026</p>
+      </section>
+
+      {/* Rodapé */}
+      <footer className="border-t border-slate-200 dark:border-slate-800">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-slate-500 sm:flex-row dark:text-slate-400">
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-orange-500 text-xs font-black text-white">b</span>
+            <span className="font-semibold text-slate-700 dark:text-slate-200">bylink</span>
+            <span>© {new Date().getFullYear()}</span>
+          </div>
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            <Link href="/conta" className="hover:text-slate-900 dark:hover:text-white">Minha conta</Link>
+            <a href="#lojistas" className="hover:text-slate-900 dark:hover:text-white">Para lojistas</a>
+            <a href={`${ADMIN_URL}/login`} className="hover:text-slate-900 dark:hover:text-white">Painel do lojista</a>
+          </nav>
+        </div>
       </footer>
     </div>
     </div>

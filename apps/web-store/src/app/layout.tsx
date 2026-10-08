@@ -9,14 +9,14 @@ const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' })
 const jetbrains = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains' })
 
 export const metadata: Metadata = {
-  title: 'Delivery Online',
-  description: 'Faça seu pedido online',
+  title: 'Bylink — Peça das melhores lojas da sua cidade',
+  description: 'Cardápio online, pedido direto com a loja e acompanhamento em tempo real.',
   manifest: '/manifest.json',
   themeColor: '#f97316',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Delivery',
+    title: 'Bylink',
   },
   viewport: {
     width: 'device-width',

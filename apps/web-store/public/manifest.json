@@ -1,7 +1,7 @@
 {
-  "name": "Delivery Online",
-  "short_name": "Delivery",
-  "description": "Faça seu pedido online",
+  "name": "Bylink",
+  "short_name": "Bylink",
+  "description": "Peça das melhores lojas da sua cidade",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

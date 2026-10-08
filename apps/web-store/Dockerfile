@@ -13,6 +13,7 @@ RUN pnpm install --frozen-lockfile
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_WS_URL
 ARG NEXT_PUBLIC_STORE_URL
+ARG NEXT_PUBLIC_ADMIN_URL
 RUN pnpm --filter @delivery/web-store build
 
 FROM node:20-alpine AS runner
