@@ -142,7 +142,7 @@ export default function GarcomPage() {
               return (
                 <div key={product.id} className="bg-white rounded-2xl border flex items-center gap-3 p-3">
                   {product.imageUrl && (
-                    <img src={product.imageUrl} alt={product.name} className="h-14 w-14 rounded-xl object-cover shrink-0" />
+                    <img loading="lazy" decoding="async" src={product.imageUrl} alt={product.name} className="h-14 w-14 rounded-xl object-cover shrink-0" />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm text-foreground">{product.name}</p>

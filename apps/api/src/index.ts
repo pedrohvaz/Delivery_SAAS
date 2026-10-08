@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import './lib/monitoring.js' // inicializa o Sentry antes do resto (se SENTRY_DSN existir)
 import { buildApp } from './app'
 import { startNotificationWorker } from './lib/queue.js'
 import { startAutoScheduleWorker } from './lib/auto-schedule.js'

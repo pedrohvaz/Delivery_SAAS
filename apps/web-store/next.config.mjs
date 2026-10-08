@@ -8,7 +8,7 @@ const nextConfig = {
   // Build "standalone" para imagem Docker enxuta (server.js + deps rastreadas).
   output: 'standalone',
   // Em monorepo pnpm, a raiz de rastreamento de arquivos é a raiz do repo.
-  experimental: { outputFileTracingRoot: join(__dirname, '../../') },
+  outputFileTracingRoot: join(__dirname, '../../'),
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
 };

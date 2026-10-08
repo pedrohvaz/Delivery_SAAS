@@ -55,7 +55,7 @@ export function CartDrawer({ slug, checkoutHref }: Props) {
                 {/* Foto */}
                 {item.imageUrl && (
                   <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-muted">
-                    <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
+                    <img loading="lazy" decoding="async" src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
                   </div>
                 )}
 

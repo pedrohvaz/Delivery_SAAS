@@ -173,7 +173,7 @@ export default function MesaPage() {
                     </div>
                     {product.imageUrl && (
                       <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted">
-                        <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                        <img loading="lazy" decoding="async" src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
                       </div>
                     )}
                   </button>

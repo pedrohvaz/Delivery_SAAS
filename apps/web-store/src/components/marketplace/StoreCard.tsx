@@ -52,6 +52,8 @@ export function StoreCard({ store, isFavorite, onToggleFavorite }: StoreCardProp
       <div className={`relative h-32 w-full shrink-0 overflow-hidden bg-gradient-to-br ${gradientFor(store.slug)}`}>
         {store.bannerUrl && (
           <img
+            loading="lazy"
+            decoding="async"
             src={store.bannerUrl}
             alt=""
             referrerPolicy="no-referrer"
@@ -85,7 +87,7 @@ export function StoreCard({ store, isFavorite, onToggleFavorite }: StoreCardProp
       <div className="relative flex flex-1 flex-col px-4 pb-4 pt-9">
         <div className="absolute -top-8 left-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-slate-100 text-xl font-bold text-slate-500 shadow-md dark:border-slate-900 dark:bg-slate-800 dark:text-slate-300">
           {store.logoUrl
-            ? <img src={store.logoUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+            ? <img loading="lazy" decoding="async" src={store.logoUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
             : (store.name?.[0]?.toUpperCase() ?? '?')}
         </div>
 

@@ -1,4 +1,5 @@
-import Fastify, { type FastifyRequest } from 'fastify'
+import Fastify, { type FastifyError, type FastifyRequest } from 'fastify'
+import { captureError } from './lib/monitoring.js'
 import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
 import jwt from '@fastify/jwt'
@@ -110,6 +111,8 @@ export function buildApp() {
   app.register(cors, {
     origin: process.env.CORS_ORIGIN?.split(',') ?? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
     credentials: true,
+    // @fastify/cors >= 10 libera só GET/HEAD/POST por padrão; o painel usa PATCH/PUT/DELETE
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   })
   app.register(rateLimit, {
     max: 100,
@@ -171,12 +174,16 @@ export function buildApp() {
   })
 
   // Handler global de erros
-  app.setErrorHandler((error, request, reply) => {
-    app.log.error({ err: error, url: request.url, method: request.method }, 'Erro não capturado')
+  app.setErrorHandler((error: FastifyError, request, reply) => {
     const statusCode = error.statusCode ?? 500
+    app.log.error({ err: error, url: request.url, method: request.method }, 'Erro não capturado')
+    if (statusCode >= 500) {
+      const storeId = (request.user as { storeId?: string } | undefined)?.storeId
+      captureError(error, { method: request.method, url: request.url, storeId })
+    }
     reply.status(statusCode).send({
       error: error.name ?? 'Internal Server Error',
-      message: statusCode === 500 ? 'Erro interno do servidor' : error.message,
+      message: statusCode >= 500 ? 'Erro interno do servidor' : error.message,
       statusCode,
     })
   })

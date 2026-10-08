@@ -236,7 +236,7 @@ export function AccountDashboard() {
                 className="flex items-center gap-3 p-4 hover:bg-muted/30 transition">
                 <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
                   {order.store.logoUrl
-                    ? <img src={order.store.logoUrl} alt="" className="h-full w-full object-cover" />
+                    ? <img loading="lazy" decoding="async" src={order.store.logoUrl} alt="" className="h-full w-full object-cover" />
                     : <span className="text-xs font-bold text-muted-foreground">#{order.orderNumber}</span>}
                 </div>
                 <div className="flex-1 min-w-0">
