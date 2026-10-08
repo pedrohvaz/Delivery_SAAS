@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { authenticate } from '../../middlewares/authenticate'
 import { hashPassword, verifyPassword } from '../../lib/hash'
+import { cacheDel } from '../../lib/cache.js'
 import { registerSchema, loginSchema, refreshSchema } from './schemas'
 import type { JwtPayload } from '@delivery/types'
 import { createCheckoutSession, createPreSignupCheckoutSession, retrieveCheckoutSession, getStripe } from '../../lib/stripe.js'
@@ -74,6 +75,9 @@ const authRoutes: FastifyPluginAsync = async (app) => {
 
       return { store, user }
     })
+
+    // Loja nova já aparece na vitrine (sem esperar o cache da lista expirar)
+    await cacheDel('stores:list')
 
     // Cria formas de pagamento padrão para a nova loja
     await app.prisma.paymentMethod.createMany({

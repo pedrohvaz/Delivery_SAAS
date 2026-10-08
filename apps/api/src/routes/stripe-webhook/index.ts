@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { getStripe } from '../../lib/stripe.js'
+import { cacheDel } from '../../lib/cache.js'
 
 const stripeWebhookRoutes: FastifyPluginAsync = async (app) => {
   // A assinatura do Stripe é calculada sobre o corpo EXATO recebido. Este parser
@@ -78,6 +79,7 @@ const stripeWebhookRoutes: FastifyPluginAsync = async (app) => {
             })
             return { store, user }
           })
+          await cacheDel('stores:list') // loja nova já aparece na vitrine
 
           // Métodos de pagamento padrão
           await app.prisma.paymentMethod.createMany({
