@@ -106,6 +106,18 @@ export function buildApp() {
     decorateReply: false,
   })
 
+  // Visitante que chegou por http:// é mandado para https:// (a Cloudflare informa o
+  // protocolo original em X-Forwarded-Proto). Chamadas internas (Evolution → api:3333)
+  // não passam pela Cloudflare e não têm esse cabeçalho.
+  app.addHook('onRequest', async (request, reply) => {
+    if (request.headers['x-forwarded-proto'] === 'http' && process.env.NODE_ENV !== 'development') {
+      const host = request.headers.host
+      if (host && !host.startsWith('localhost') && !host.startsWith('127.')) {
+        return reply.redirect(`https://${host}${request.url}`, 308)
+      }
+    }
+  })
+
   // Segurança
   app.register(helmet, { crossOriginResourcePolicy: { policy: 'cross-origin' } })
   app.register(cors, {

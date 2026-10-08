@@ -84,3 +84,16 @@ describe('socket do painel', () => {
     expect(await connect(A.refreshToken)).toBe('recusado')
   })
 })
+
+describe('http → https', () => {
+  it('visitante por http:// é redirecionado para https:// (mesma rota)', async () => {
+    const r = await call('GET', '/store?x=1', { headers: { host: 'api.bylink.shop', 'x-forwarded-proto': 'http' } })
+    expect(r.status).toBe(308)
+    expect(r.headers.location).toBe('https://api.bylink.shop/store?x=1')
+  })
+
+  it('https e chamadas internas (sem o cabeçalho) seguem normais', async () => {
+    expect((await call('GET', '/health', { headers: { host: 'api.bylink.shop', 'x-forwarded-proto': 'https' } })).status).toBe(200)
+    expect((await call('GET', '/health', { headers: { host: 'api:3333' } })).status).toBe(200)
+  })
+})
