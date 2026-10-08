@@ -147,8 +147,44 @@ export function OrderModal({ order, onClose, initialCancelling = false }: Props)
             )}
           </div>
 
-          {/* Avaliar cliente (privado) */}
-          {order.customer && <CustomerReview orderId={order.id} />}
+          {/* Itens */}
+          <div className="rounded-xl border p-3 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Itens do pedido</p>
+            {order.items.map((item, idx) => (
+              <div key={idx} className="flex justify-between text-sm">
+                <div>
+                  <span className="font-medium">{item.quantity}x {item.name}</span>
+                  {item.addons.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {item.addons.map((a) => a.optionName).join(', ')}
+                    </p>
+                  )}
+                  {item.notes && <p className="text-xs font-semibold text-amber-700">⚠ {item.notes}</p>}
+                </div>
+                <span className="shrink-0 font-medium">
+                  {currency((item.price + item.addons.reduce((s, a) => s + a.price, 0)) * item.quantity)}
+                </span>
+              </div>
+            ))}
+            <div className="border-t pt-2 space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Subtotal</span><span>{currency(order.subtotal)}</span>
+              </div>
+              {order.deliveryFee > 0 && (
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Entrega</span><span>{currency(order.deliveryFee)}</span>
+                </div>
+              )}
+              {order.discount > 0 && (
+                <div className="flex justify-between text-xs text-green-600">
+                  <span>Desconto</span><span>-{currency(order.discount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm font-bold pt-0.5">
+                <span>Total</span><span className="text-primary">{currency(order.total)}</span>
+              </div>
+            </div>
+          </div>
 
           {/* Endereço (só delivery) */}
           {order.type === 'DELIVERY' && order.address && (
@@ -198,45 +234,6 @@ export function OrderModal({ order, onClose, initialCancelling = false }: Props)
             </div>
           )}
 
-          {/* Itens */}
-          <div className="rounded-xl border p-3 space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Itens do pedido</p>
-            {order.items.map((item, idx) => (
-              <div key={idx} className="flex justify-between text-sm">
-                <div>
-                  <span className="font-medium">{item.quantity}x {item.name}</span>
-                  {item.addons.length > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      {item.addons.map((a) => a.optionName).join(', ')}
-                    </p>
-                  )}
-                  {item.notes && <p className="text-xs text-muted-foreground italic">{item.notes}</p>}
-                </div>
-                <span className="shrink-0 font-medium">
-                  {currency((item.price + item.addons.reduce((s, a) => s + a.price, 0)) * item.quantity)}
-                </span>
-              </div>
-            ))}
-            <div className="border-t pt-2 space-y-1">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Subtotal</span><span>{currency(order.subtotal)}</span>
-              </div>
-              {order.deliveryFee > 0 && (
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Entrega</span><span>{currency(order.deliveryFee)}</span>
-                </div>
-              )}
-              {order.discount > 0 && (
-                <div className="flex justify-between text-xs text-green-600">
-                  <span>Desconto</span><span>-{currency(order.discount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm font-bold pt-0.5">
-                <span>Total</span><span className="text-primary">{currency(order.total)}</span>
-              </div>
-            </div>
-          </div>
-
           {/* Pagamento */}
           {order.paymentMethod && (
             <div className="rounded-xl border p-3 space-y-1.5">
@@ -277,6 +274,9 @@ export function OrderModal({ order, onClose, initialCancelling = false }: Props)
               <p className="text-sm text-muted-foreground italic">{order.notes}</p>
             </div>
           )}
+
+          {/* Avaliar cliente (privado) */}
+          {order.customer && <CustomerReview orderId={order.id} />}
 
           {/* Motivo cancelamento */}
           {isCancelled && order.cancelReason && (

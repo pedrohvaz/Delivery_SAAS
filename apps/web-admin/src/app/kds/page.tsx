@@ -180,33 +180,33 @@ export default function KdsPage() {
   return (
     <div className="flex flex-col h-screen">
       {/* Header fixo */}
-      <header className="flex items-center justify-between border-b border-white/10 px-6 py-3 bg-gray-900 shrink-0">
-        <div className="flex items-center gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-white/10 px-3 sm:px-6 py-3 bg-gray-900 shrink-0">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
           <ChefHat className="h-6 w-6 text-orange-400" />
           <div>
             <h1 className="font-black text-white text-lg leading-none">KDS</h1>
             <p className="text-xs text-gray-400">{store?.name ?? 'Cozinha'}</p>
           </div>
           {/* Contadores */}
-          <div className="flex items-center gap-2 ml-4">
+          <div className="flex items-center gap-2 sm:ml-4 overflow-x-auto max-w-full">
             {[
               { key: 'PENDING', label: 'Pendente', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
               { key: 'CONFIRMED', label: 'Confirmado', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
               { key: 'IN_PRODUCTION', label: 'Produzindo', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
             ].map(({ key, label, color }) => (
-              <span key={key} className={`rounded-full border px-3 py-1 text-xs font-bold ${color}`}>
+              <span key={key} className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-bold ${color}`}>
                 {countByStatus[key] ?? 0} {label}
               </span>
             ))}
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Filtro tipo */}
           <div className="flex rounded-xl border border-white/10 bg-white/5 p-1 gap-1">
             {([['ALL', 'Todos'], ['DELIVERY', '🛵 Entrega'], ['PICKUP', '🏠 Retirada']] as const).map(([v, l]) => (
               <button key={v} onClick={() => setTypeFilter(v)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors
+                className={`whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold transition-colors
                   ${typeFilter === v ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-white'}`}>
                 {l}
               </button>
@@ -219,8 +219,8 @@ export default function KdsPage() {
             {lastUpdate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
 
-          <button onClick={refresh}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition">
+          <button onClick={refresh} aria-label="Atualizar"
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition">
             <RefreshCw className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -229,7 +229,7 @@ export default function KdsPage() {
       {/* Grid de pedidos */}
       <main className="flex-1 overflow-y-auto p-4">
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="h-64 rounded-2xl bg-white/5 animate-pulse" />
             ))}
@@ -243,7 +243,7 @@ export default function KdsPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 items-start">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 items-start">
             {kdsOrders.map((order) => (
               <KdsCard key={order.id} order={order} onAdvance={handleAdvance} />
             ))}

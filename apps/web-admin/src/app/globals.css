@@ -73,3 +73,13 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.2);
 }
+
+/* iPhone dá zoom na página ao focar um campo com fonte < 16px (e não volta sozinho).
+   No celular, todo campo de digitação usa 16px; no computador mantém o tamanho do design. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

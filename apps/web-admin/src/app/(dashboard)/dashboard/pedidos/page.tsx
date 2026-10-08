@@ -146,11 +146,12 @@ export default function PedidosPage() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Page header */}
-      <div className="flex items-center justify-between border-b bg-white px-6 py-4">
-        <div className="flex items-center gap-3">
+      {/* No celular o cabeçalho quebra em duas linhas (antes "Atualizar" ficava cortado) */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-white px-4 sm:px-6 py-3 sm:py-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <h1 className="text-xl font-bold text-foreground">Pedidos</h1>
           {pendingCount > 0 && (
-            <span className="flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-bold text-yellow-700">
+            <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-bold text-yellow-700">
               <Bell className="h-3 w-3" />
               {pendingCount} pendente{pendingCount > 1 ? 's' : ''}
             </span>
@@ -161,7 +162,7 @@ export default function PedidosPage() {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {newOrderCount > 0 && (
             <button onClick={() => setNewOrderCount(0)}
               className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition">
@@ -171,7 +172,7 @@ export default function PedidosPage() {
           {showNoticeInput ? (
             <div className="flex items-center gap-1.5">
               <input value={noticeMsg} onChange={e => setNoticeMsg(e.target.value)} placeholder="Aviso para a equipe..."
-                className="h-9 w-48 rounded-xl border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="h-9 w-40 sm:w-48 rounded-xl border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
               <button onClick={() => createNotice.mutate(noticeMsg)} disabled={!noticeMsg.trim() || createNotice.isPending}
                 className="h-9 px-3 rounded-xl bg-yellow-500 text-white text-xs font-semibold hover:bg-yellow-600 disabled:opacity-50 transition">Publicar</button>
               <button onClick={() => { setShowNoticeInput(false); setNoticeMsg('') }}

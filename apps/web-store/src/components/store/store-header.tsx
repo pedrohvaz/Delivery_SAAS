@@ -126,7 +126,7 @@ export function StoreHeader({ store }: { store: StoreData }) {
 
         {/* Rating e detalhes */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4 pt-4 border-t border-gray-100 text-xs sm:text-sm font-semibold text-gray-600">
-          <Link href={`/${store.slug}/avaliacoes`} className="flex items-center text-amber-500 hover:underline">
+          <Link href={`/${store.slug}/avaliacoes`} className="-my-2 flex items-center py-2 text-amber-500 hover:underline">
             <Star className="w-4 h-4 fill-amber-500 mr-1" />
             {ratingSummary && ratingSummary.count > 0 ? (
               <span className="text-gray-700 font-semibold">{ratingSummary.avg.toFixed(1)} <span className="text-gray-400 font-normal">({ratingSummary.count})</span></span>

@@ -111,7 +111,7 @@ export function CategoryList() {
                   title={cat.isActive ? 'Desativar' : 'Ativar'}
                   onClick={() => handleToggleActive(cat)}
                   className={cn(
-                    'flex h-7 w-7 items-center justify-center rounded-lg transition-colors',
+                    'flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-lg transition-colors',
                     cat.isActive
                       ? 'text-green-600 hover:bg-green-50'
                       : 'text-muted-foreground hover:bg-accent',
@@ -122,14 +122,14 @@ export function CategoryList() {
                 <button
                   title="Editar"
                   onClick={() => setEditTarget({ ...cat })}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className="flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
                 <button
                   title="Excluir"
                   onClick={() => handleDelete(cat.id)}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  className="flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

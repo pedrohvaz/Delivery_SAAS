@@ -121,7 +121,7 @@ export function ProductList({ categoryId, categoryName }: Props) {
                 <button
                   title="Complementos"
                   onClick={() => setAddonProduct(product)}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className="flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
                   <Settings2 className="h-3.5 w-3.5" />
                 </button>
@@ -129,7 +129,7 @@ export function ProductList({ categoryId, categoryName }: Props) {
                   title={product.isActive ? 'Desativar' : 'Ativar'}
                   onClick={() => handleToggleActive(product)}
                   className={cn(
-                    'flex h-7 w-7 items-center justify-center rounded-lg transition-colors',
+                    'flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-lg transition-colors',
                     product.isActive
                       ? 'text-green-600 hover:bg-green-50'
                       : 'text-muted-foreground hover:bg-accent',
@@ -140,14 +140,14 @@ export function ProductList({ categoryId, categoryName }: Props) {
                 <button
                   title="Editar"
                   onClick={() => openEdit(product)}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className="flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
                 <button
                   title="Excluir"
                   onClick={() => handleDelete(product.id)}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  className="flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

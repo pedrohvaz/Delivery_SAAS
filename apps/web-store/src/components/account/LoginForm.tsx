@@ -97,7 +97,7 @@ export function LoginForm({ defaultRedirect, registerHref, guestHref }: LoginFor
               Criar conta
             </Link>
           </div>
-          <Link href={guestHref} className="block text-center text-xs text-muted-foreground hover:underline">
+          <Link href={guestHref} className="block py-2 text-center text-xs text-muted-foreground hover:underline">
             Continuar como visitante
           </Link>
         </div>

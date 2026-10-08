@@ -46,7 +46,7 @@ export default function ContaPage() {
                 <UserPlus className="h-4 w-4" /> Criar conta
               </Link>
             </div>
-            <Link href="/" className="block text-center text-xs text-muted-foreground hover:underline">Voltar para as lojas</Link>
+            <Link href="/" className="block py-2 text-center text-xs text-muted-foreground hover:underline">Voltar para as lojas</Link>
           </div>
         )}
       </div>
