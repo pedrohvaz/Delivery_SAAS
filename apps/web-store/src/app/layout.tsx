@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, Outfit, JetBrains_Mono } from 'next/font/google'
 import { Providers } from '@/components/providers'
 import './globals.css'
@@ -12,17 +12,19 @@ export const metadata: Metadata = {
   title: 'Bylink — Peça das melhores lojas da sua cidade',
   description: 'Cardápio online, pedido direto com a loja e acompanhamento em tempo real.',
   manifest: '/manifest.json',
-  themeColor: '#f97316',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'Bylink',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
+}
+
+// Next 15: viewport e themeColor saíram de `metadata` e vão neste export próprio
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#f97316',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
