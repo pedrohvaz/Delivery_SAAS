@@ -1,0 +1,54 @@
+# Roda a stack de produção NO SEU PC, publicada via Cloudflare Tunnel (sem VPS).
+# Sobrepõe o docker-compose.server.yml: troca o Caddy pelo cloudflared e
+# injeta as URLs públicas de *.bylink.shop.
+#
+# Subir:   docker compose --env-file .env.tunnel -f docker-compose.server.yml -f docker-compose.tunnel.yml up -d --build
+# Parar:   docker compose --env-file .env.tunnel -f docker-compose.server.yml -f docker-compose.tunnel.yml stop
+# Logs:    docker compose --env-file .env.tunnel -f docker-compose.server.yml -f docker-compose.tunnel.yml logs -f api cloudflared
+#
+# Não rode `pnpm dev` ao mesmo tempo: as duas APIs disputariam o mesmo banco/Redis e o bot.
+
+x-public-urls: &public-urls
+  NEXT_PUBLIC_API_URL: https://api.bylink.shop
+  NEXT_PUBLIC_WS_URL: wss://api.bylink.shop
+  NEXT_PUBLIC_STORE_URL: https://bylink.shop
+
+services:
+  # HTTPS fica por conta da Cloudflare; o Caddy não sobe.
+  caddy:
+    profiles: ['disabled']
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: bylink_cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./deploy/tunnel/config.yml:/etc/cloudflared/config.yml:ro
+      - ${USERPROFILE}/.cloudflared:/etc/cloudflared/creds:ro
+    depends_on: [api, web-admin, web-store, web-superadmin]
+    networks: [delivery_net]
+
+  # Mantém o acesso local ao banco (Prisma Studio, psql) na mesma porta do dev.
+  postgres:
+    ports:
+      - '5433:5432'
+
+  api:
+    environment:
+      <<: *public-urls
+      NODE_ENV: production
+      CORS_ORIGIN: https://bylink.shop,https://www.bylink.shop,https://admin.bylink.shop,https://painel.bylink.shop
+      STORE_URL: https://bylink.shop
+      UPLOADS_PUBLIC_URL: https://api.bylink.shop
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
+
+  web-admin:
+    build:
+      args: *public-urls
+  web-store:
+    build:
+      args: *public-urls
+  web-superadmin:
+    build:
+      args: *public-urls

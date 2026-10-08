@@ -9,6 +9,10 @@ COPY packages/ packages/
 COPY apps/web-superadmin/ apps/web-superadmin/
 COPY apps/web-superadmin/.env.local apps/web-superadmin/.env.local
 RUN pnpm install --frozen-lockfile
+# URLs públicas opcionais no build (sobrepõem o .env.local quando informadas).
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_WS_URL
+ARG NEXT_PUBLIC_STORE_URL
 RUN pnpm --filter @delivery/web-superadmin build
 
 FROM node:20-alpine AS runner

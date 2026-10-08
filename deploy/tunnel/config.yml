@@ -1,0 +1,18 @@
+# Cloudflare Tunnel "bylink" — publica a stack Docker local em *.bylink.shop.
+# Usado pelo serviço "cloudflared" do docker-compose.tunnel.yml.
+# A credencial (<tunnel-id>.json) fica em %USERPROFILE%\.cloudflared e é montada no container.
+tunnel: 9b56fe09-d4e8-4364-97c8-9f1927a568ea
+credentials-file: /etc/cloudflared/creds/9b56fe09-d4e8-4364-97c8-9f1927a568ea.json
+
+ingress:
+  - hostname: bylink.shop
+    service: http://web-store:3001
+  - hostname: www.bylink.shop
+    service: http://web-store:3001
+  - hostname: api.bylink.shop
+    service: http://api:3333
+  - hostname: admin.bylink.shop
+    service: http://web-admin:3000
+  - hostname: painel.bylink.shop
+    service: http://web-superadmin:3002
+  - service: http_status:404
