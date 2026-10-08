@@ -61,7 +61,7 @@ export default function AutomationShowcase() {
     {
       id: "msg4",
       sender: "bot",
-      text: "👉 bylink.delivery/hamburgueria",
+      text: "👉 bylink.shop/hamburgueria",
       time: "20:00",
       isMenuLink: true,
       phaseIndex: 1
@@ -99,7 +99,7 @@ export default function AutomationShowcase() {
     {
       id: "msg9",
       sender: "bot",
-      text: "Diga adeus ao iFood! Acompanhe o preparo em tempo real clicando aqui:\n👉 bylink.delivery/acompanhar/BY-7489",
+      text: "Diga adeus ao iFood! Acompanhe o preparo em tempo real clicando aqui:\n👉 bylink.shop/acompanhar/BY-7489",
       time: "20:03",
       phaseIndex: 3
     }
@@ -108,37 +108,37 @@ export default function AutomationShowcase() {
   const stepsInfo = [
     {
       title: "Atende Sozinha",
-      subtitle: "Autonomia 100%",
-      description: "O robô atende o cliente no exato milissegundo em que ele manda um 'oi' no seu WhatsApp. Acabe para sempre com a demora que faz o cliente desistir e comprar do concorrente.",
-      highlight: "Resposta imediata 24 horas por dia, 7 dias por semana.",
-      badge: "Início Instantâneo",
+      subtitle: "Responde sozinho",
+      description: "Assim que o cliente manda um “oi”, o atendente responde — mesmo com a cozinha cheia e ninguém livre para pegar o celular.",
+      highlight: "Fora do horário, avisa quando a loja abre.",
+      badge: "Passo 1",
       icon: Bot,
-      color: "border-[#FF6B00] text-[#FF6B00] bg-[#FFF5F0]"
+      color: "border-[#C2410C] text-[#C2410C] bg-[#FBF1E7]"
     },
     {
       title: "Envia o Cardápio",
-      subtitle: "Link Inteligente",
-      description: "A automação envia o link exclusivo do seu cardápio virtual ByLink. O cliente escolhe tamanhos, complementos, adicionais (com fotos e promoções) no celular dele, sem fricção.",
-      highlight: "Sem instalar aplicativo, abre em qualquer navegador em 1 segundo.",
-      badge: "Zero Uploads",
+      subtitle: "Link da loja",
+      description: "Manda o link do seu cardápio. O cliente escolhe tamanho, sabor e adicionais no próprio celular, vendo foto e preço de cada item.",
+      highlight: "Sem baixar aplicativo: abre no navegador.",
+      badge: "Passo 2",
       icon: Smartphone,
       color: "border-amber-500 text-amber-600 bg-amber-50"
     },
     {
       title: "Recebe o Pedido",
-      subtitle: "Carrinho Estruturado",
-      description: "Quando o cliente finaliza o pedido na página web, o carrinho chega estruturado no seu WhatsApp e na tela do estabelecimento com o endereço, forma de pagamento e adicionais selecionados.",
-      highlight: "Nada de anotar errado ou esquecer dados. Evita erros de entrega em 100%.",
-      badge: "Integração Perfeita",
+      subtitle: "Pedido completo",
+      description: "O pedido chega no painel e na tela da cozinha com itens, observações, endereço e forma de pagamento — do jeito que o cliente escolheu.",
+      highlight: "Ninguém precisa anotar pedido à mão.",
+      badge: "Passo 3",
       icon: Receipt,
       color: "border-emerald-500 text-emerald-600 bg-emerald-50"
     },
     {
-      title: "Rastreamento Ativo",
-      subtitle: "Até a Entrega",
-      description: "Assim que aceito pelo restaurante, o cliente recebe um link dinâmico em que pode acompanhar o preparo e a moto saindo para entrega em tempo real, sem precisar ligar ou mandar mensagem cobrando.",
-      highlight: "Otimiza a sua expedição e gera encantamento de ponta a ponta.",
-      badge: "Fidelização Garantida",
+      title: "Avisa o Cliente",
+      subtitle: "Até a entrega",
+      description: "O cliente recebe mensagem quando o pedido é confirmado, sai para entrega ou fica pronto, e tem um link para acompanhar o status — sem ligar cobrando.",
+      highlight: "Menos ligação de “cadê meu pedido?”.",
+      badge: "Passo 4",
       icon: Flame,
       color: "border-purple-500 text-purple-600 bg-purple-50"
     }
@@ -167,19 +167,17 @@ export default function AutomationShowcase() {
   }, [activeStep]);
 
   return (
-    <div id="automacao-session" className="py-20 px-6 md:px-12 bg-white border-b border-[#E0E0E0] scroll-mt-20 select-none">
-      <div className="max-w-7xl mx-auto">
+    <div id="automacao-session" className="section border-b border-lp-line bg-white scroll-mt-16 select-none">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
         
         {/* Section Header */}
-        <div className="flex flex-col items-center justify-center text-center max-w-3xl mx-auto mb-14">
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#FF6B00] bg-[#FFF5F0] border border-[#FF6B00]/10 px-3.5 py-1.5 rounded-full font-mono">
-            <Sparkles className="w-3.5 h-3.5" /> AGENTE INTELIGENTE WHATSAPP
-          </span>
-          <h2 className="text-3xl md:text-5xl font-black font-display tracking-tight text-[#111111] mt-3 leading-tight">
-            Como funciona a nossa <span className="text-[#FF6B00] italic">Automação de Vendas</span>?
+        <div className="mb-12 grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <h2 className="font-display text-4xl font-semibold leading-[1.05] tracking-[-0.015em] text-[#1C1917] sm:text-5xl lg:col-span-6">
+            O WhatsApp atende enquanto você cozinha.
           </h2>
-          <p className="text-[#555555] text-sm md:text-base mt-3 max-w-xl font-sans leading-relaxed">
-            Esqueça o caos de ter que digitar comandas escrevendo tudo à mão, conferir comprovantes e deixar clientes no vácuo. Centralize e fature muito mais com robôs eficientes.
+          <p className="max-w-md leading-relaxed text-[#57534E] lg:col-span-5 lg:col-start-8 lg:pt-3">
+            O atendente automático responde na hora, manda o link do cardápio, confirma o pedido e avisa o cliente a
+            cada etapa. Veja a conversa acontecendo:
           </p>
         </div>
 
@@ -202,19 +200,19 @@ export default function AutomationShowcase() {
                     }}
                     className={`p-4 border rounded-2xl cursor-pointer transition-all relative overflow-hidden group ${
                       isActive 
-                        ? "bg-[#FFF9F5]/90 border-[#FF6B00] shadow-md shadow-[#FF6B00]/5" 
+                        ? "bg-[#F6F1E8]/90 border-[#C2410C] shadow-md shadow-[#C2410C]/5" 
                         : "bg-white hover:bg-neutral-50 border-neutral-200"
                     }`}
                   >
                     {/* Active highlight side line */}
                     {isActive && (
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FF6B00]" />
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#C2410C]" />
                     )}
 
                     <div className="flex items-start gap-3.5 relative z-10">
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 border transition-transform group-hover:scale-105 duration-200 ${
                         isActive 
-                          ? "bg-[#FF6B00] text-white border-[#FF6B00]" 
+                          ? "bg-[#C2410C] text-white border-[#C2410C]" 
                           : "bg-neutral-100 border-neutral-200 text-neutral-600"
                       }`}>
                         <IconComponent className="w-4 h-4 stroke-[2.2]" />
@@ -226,14 +224,14 @@ export default function AutomationShowcase() {
                             {step.subtitle}
                           </p>
                           <span className={`text-[8.5px] font-mono uppercase font-black px-1.5 py-0.2 rounded ${
-                            isActive ? "bg-[#FF6B00]/10 text-[#FF6B00]" : "bg-neutral-100 text-neutral-500"
+                            isActive ? "bg-[#C2410C]/10 text-[#C2410C]" : "bg-neutral-100 text-neutral-500"
                           }`}>
                             Fase {idx + 1}
                           </span>
                         </div>
 
                         <h3 className={`text-[13.5px] font-black font-display tracking-tight leading-none mt-1.5 ${
-                          isActive ? "text-[#FF6B00]" : "text-neutral-900"
+                          isActive ? "text-[#C2410C]" : "text-neutral-900"
                         }`}>
                           {step.title}
                         </h3>
@@ -250,10 +248,10 @@ export default function AutomationShowcase() {
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: "auto", opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
-                              className="mt-2.5 pt-2.5 border-t border-[#FF6B00]/10"
+                              className="mt-2.5 pt-2.5 border-t border-[#C2410C]/10"
                             >
                               <div className="flex items-center gap-1.5 text-[10.5px] font-bold text-neutral-800">
-                                <Check className="w-4 h-4 text-[#FF6B00]" />
+                                <Check className="w-4 h-4 text-[#C2410C]" />
                                 <span>{step.highlight}</span>
                               </div>
                             </motion.div>
@@ -267,12 +265,12 @@ export default function AutomationShowcase() {
             </div>
 
             {/* Automation Playback controller toolbar */}
-            <div className="p-4 bg-[#F8F9FA] rounded-2xl border border-neutral-200/80 mt-4 flex items-center justify-between text-xs font-sans text-neutral-500">
+            <div className="p-4 bg-[#F6F1E8] rounded-2xl border border-neutral-200/80 mt-4 flex items-center justify-between text-xs font-sans text-neutral-500">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsPlaying(!isPlaying)}
                   className={`w-8 h-8 rounded-lg flex items-center justify-center border border-neutral-200 transition-colors cursor-pointer bg-white ${
-                    isPlaying ? "text-[#FF6B00] hover:text-[#111111]" : "text-neutral-600 hover:text-[#FF6B00]"
+                    isPlaying ? "text-[#C2410C] hover:text-[#1C1917]" : "text-neutral-600 hover:text-[#C2410C]"
                   }`}
                   title={isPlaying ? "Pausar auto-simulação" : "Iniciar auto-simulação"}
                 >
@@ -283,15 +281,15 @@ export default function AutomationShowcase() {
                     setActiveStep(0);
                     setIsPlaying(true);
                   }}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center border border-neutral-200 hover:text-[#FF6B00] transition-colors cursor-pointer bg-white"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center border border-neutral-200 hover:text-[#C2410C] transition-colors cursor-pointer bg-white"
                   title="Reiniciar Simulação"
                 >
                   <RefreshCw className="w-4 h-4" />
                 </button>
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-2.5 w-2.5">
-                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF6B00] opacity-75 ${isPlaying ? "" : "hidden"}`}></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#FF6B00]"></span>
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C2410C] opacity-75 ${isPlaying ? "" : "hidden"}`}></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#C2410C]"></span>
                   </span>
                   <span className="text-[11px] font-mono font-bold text-neutral-600">
                     {isPlaying ? "Simulação Ativa (Auto)" : "Simulação Pausada"}
@@ -315,14 +313,14 @@ export default function AutomationShowcase() {
               <div className="absolute top-0 left-0 right-0 h-12 bg-neutral-950 border-b border-neutral-800 px-5 flex items-center justify-between z-10 select-none">
                 <div className="flex items-center gap-2 font-mono text-[10px] text-neutral-400 font-bold uppercase tracking-wider">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>ByLink Automation Terminal v2.4</span>
+                  <span>Conversa de exemplo</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] bg-white/5 border border-white/10 px-2.5 py-1 rounded text-neutral-300 font-mono font-bold">
-                    {activeStep === 0 && "Fase 1: Atendimento Comercial"}
-                    {activeStep === 1 && "Fase 2: Envio de Cardápio Virtual"}
-                    {activeStep === 2 && "Fase 3: Captura de Carrinho"}
-                    {activeStep === 3 && "Fase 4: Rastreamento em Tempo Real"}
+                    {activeStep === 0 && "1 · Atendimento"}
+                    {activeStep === 1 && "2 · Cardápio"}
+                    {activeStep === 2 && "3 · Pedido"}
+                    {activeStep === 3 && "4 · Acompanhamento"}
                   </span>
                 </div>
               </div>
@@ -350,7 +348,7 @@ export default function AutomationShowcase() {
                   </div>
 
                   {/* Chat Messages Frame area */}
-                  <div id="whatsapp-chat-container" className="flex-1 p-4 space-y-4 overflow-y-auto h-[380px] sm:h-[450px] scrollbar-none flex flex-col bg-[#0B141A] scroll-smooth">
+                  <div id="whatsapp-chat-container" className="flex-none p-4 space-y-4 overflow-y-auto h-[420px] sm:h-[460px] scrollbar-none flex flex-col bg-[#0B141A] scroll-smooth">
                     <AnimatePresence mode="popLayout">
                       {allMessages.map((msg, index) => {
                         const isFirstOfPhase = index === 0 || allMessages[index - 1].phaseIndex !== msg.phaseIndex;
@@ -376,15 +374,15 @@ export default function AutomationShowcase() {
                                   : "bg-neutral-800/95 text-neutral-100 self-start text-left rounded-tl-none rounded-bl-md"
                               }`}
                               style={{
-                                border: isActive ? `1.5px solid ${msg.sender === "customer" ? "#10b981" : "#FF6B00"}` : "1.5px solid transparent"
+                                border: isActive ? `1.5px solid ${msg.sender === "customer" ? "#10b981" : "#C2410C"}` : "1.5px solid transparent"
                               }}
                             >
                               {/* Rich Cards Render details inside chat */}
                               {msg.isMenuLink ? (
-                                <div className="text-left font-sans flex flex-col gap-1.5 rounded-xl bg-neutral-900/85 p-3.5 border-l-4 border-[#FF6B00] shadow-md w-full">
-                                  <p className="font-black text-[11px] text-[#FF6B00] uppercase font-mono tracking-widest leading-none">Cardápio Interativo 🍔</p>
+                                <div className="text-left font-sans flex flex-col gap-1.5 rounded-xl bg-neutral-900/85 p-3.5 border-l-4 border-[#C2410C] shadow-md w-full">
+                                  <p className="font-black text-[11px] text-[#C2410C] uppercase font-mono tracking-widest leading-none">Cardápio Interativo 🍔</p>
                                   <a href="#simulador" className="text-sky-300 hover:underline font-black font-mono text-sm block py-1 truncate">
-                                    bylink.delivery/hamburgueria
+                                    bylink.shop/hamburgueria
                                   </a>
                                   <p className="text-[11.5px] text-neutral-300 mt-0.5 font-sans leading-normal">Toque no cardápio para pedir em 30 segundos, sem taxas e sem precisar baixar nada!</p>
                                 </div>
@@ -434,11 +432,11 @@ export default function AutomationShowcase() {
                 </div>
 
                 {/* Visual Pane B: Establishing Screen Dashboard (Right half) */}
-                <div className="flex-1 bg-neutral-950 border border-neutral-800/80 rounded-2xl overflow-hidden flex flex-col justify-between shadow-lg max-h-[300px] lg:max-h-none">
+                <div className="hidden lg:flex flex-1 bg-neutral-950 border border-neutral-800/80 rounded-2xl overflow-hidden flex-col justify-between shadow-lg">
                   {/* PDV Header */}
                   <div className="bg-neutral-900 border-b border-neutral-850 p-3.5 flex items-center justify-between select-none">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded bg-[#FF6B00]/10 border border-[#FF6B00]/20 flex items-center justify-center text-[#FF6B00]">
+                      <div className="w-7 h-7 rounded bg-[#C2410C]/10 border border-[#C2410C]/20 flex items-center justify-center text-[#C2410C]">
                         <Receipt className="w-4 h-4" />
                       </div>
                       <span className="text-xs font-extrabold text-white uppercase tracking-wider font-mono">
@@ -488,7 +486,7 @@ export default function AutomationShowcase() {
                             </div>
                             <div className="w-full bg-neutral-950 rounded-full h-2 p-[1px] border border-neutral-850">
                               <div 
-                                className="h-full rounded-full bg-[#FF6B00] transition-all duration-700" 
+                                className="h-full rounded-full bg-[#C2410C] transition-all duration-700" 
                                 style={{ width: activeStep === 2 ? "35%" : "70%" }}
                               />
                             </div>
@@ -530,7 +528,7 @@ export default function AutomationShowcase() {
                           </motion.div>
                         ) : (
                           <div className="bg-neutral-900 border border-neutral-850 rounded-xl p-3.5 text-xs text-neutral-400 font-mono text-center">
-                            Sistema pronto para validar pedidos. Entrada: WhatsApp.
+                            Aguardando o próximo pedido.
                           </div>
                         )}
                       </AnimatePresence>
@@ -539,7 +537,7 @@ export default function AutomationShowcase() {
                     {/* Quick System KPIs */}
                     <div className="border-t border-neutral-850 pt-3 flex justify-between items-center text-[10.5px] font-mono text-neutral-500">
                       <span>Fila de Pedidos: 0</span>
-                      <span className="text-[#FF6B00] font-bold">Automação: 100% ativa</span>
+                      <span className="text-[#C2410C] font-bold">Automação: 100% ativa</span>
                     </div>
                   </div>
                 </div>
@@ -547,7 +545,7 @@ export default function AutomationShowcase() {
               </div>
 
               {/* Ambient watermark disclaimer label */}
-              <div className="mt-5 pt-3.5 border-t border-neutral-850 flex justify-between items-center text-xs font-mono text-[#FF6B00]">
+              <div className="mt-5 pt-3.5 border-t border-neutral-850 flex justify-between items-center text-xs font-mono text-[#C2410C]">
                 <span>Fluxo 100% integrado ao painel real do ByLink</span>
                 <span className="text-neutral-500 text-right">Sem taxas sobre seu faturamento</span>
               </div>
@@ -557,38 +555,14 @@ export default function AutomationShowcase() {
 
         </div>
 
-        {/* Dynamic Interactive Call-To-Action Card banner below the showcase */}
-        <div className="mt-14 p-6 bg-gradient-to-r from-neutral-900 to-neutral-950 border border-neutral-800 rounded-3xl text-white text-left relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[#FF6B00]/10 blur-3xl rounded-full pointer-events-none" />
-          <div className="z-10 flex items-center gap-4">
-            <div className="w-12 h-12 bg-[#FF6B00]/10 border border-[#FF6B00]/20 rounded-2xl flex items-center justify-center text-[#FF6B00] flex-shrink-0">
-              <Bot className="w-6 h-6 stroke-[2]" />
-            </div>
-            <div>
-              <h4 className="text-sm font-black font-display text-white uppercase tracking-wider mb-1">
-                Quer ver essa automação funcionando nos seus próprios produtos?
-              </h4>
-              <p className="text-[11px] text-neutral-400 leading-normal font-sans max-w-2xl">
-                Suba o seu próprio cardápio simulado em menos de 1 minuto na nossa página de teste. Faça pedidos de teste, veja as notificações caindo instantaneamente e sinta o poder da nossa validação de faturamento Pix.
-              </p>
-            </div>
-          </div>
-          
-          <a
-            href="#simulador"
-            className="px-5 h-11 bg-[#FF6B00] hover:bg-white text-white hover:text-neutral-900 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-2 flex-shrink-0 z-10"
-            onClick={(e) => {
-              e.preventDefault();
-              const el = document.getElementById("simulador-teaser");
-              if (el) {
-                el.scrollIntoView({ behavior: "smooth" });
-              }
-            }}
-          >
-            Experimente Grátis
-            <ArrowRight className="w-4 h-4" />
-          </a>
-        </div>
+        {/* Link para o simulador completo */}
+        <a
+          href="#simulador-page"
+          className="group mt-12 inline-flex items-center gap-2 font-semibold text-[#1C1917] underline decoration-[#C2410C] decoration-2 underline-offset-[6px] transition-colors duration-200 hover:text-[#C2410C]"
+        >
+          Fazer um pedido de teste no simulador
+          <span aria-hidden className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+        </a>
 
       </div>
     </div>

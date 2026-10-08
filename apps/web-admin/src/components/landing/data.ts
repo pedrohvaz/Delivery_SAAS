@@ -187,3 +187,9 @@ export const FAQS = [
     answer: "No Plano PRO você valida o PIX automaticamente no ato da compra. O dinheiro cai direto na sua conta bancária sem intermediários e sem cobrança de taxas ocultas."
   }
 ];
+
+/** Contato comercial real (usado no botão flutuante, CTA final e rodapé). */
+export const CONTACT = {
+  whatsappDisplay: '(31) 97132-7736',
+  whatsappLink: 'https://wa.me/5531971327736?text=' + encodeURIComponent('Olá! Quero saber mais sobre o cardápio digital da ByLink.'),
+}

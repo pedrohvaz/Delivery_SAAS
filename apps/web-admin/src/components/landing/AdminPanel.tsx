@@ -183,7 +183,7 @@ export default function AdminPanel({
             initial={{ opacity: 0, y: -50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.9 }}
-            className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-[#FF6B00] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-orange-500 font-bold text-xs font-sans uppercase tracking-wider"
+            className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-[#C2410C] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-orange-500 font-bold text-xs font-sans uppercase tracking-wider"
           >
             <span className="bg-white/20 p-1.5 rounded-full select-none">⚡</span>
             <span>{successToast}</span>
@@ -196,11 +196,11 @@ export default function AdminPanel({
         <div>
           {/* Logo unit matched directly */}
           <div className="p-4 border-b border-neutral-100 flex items-center gap-3.5 bg-neutral-50/50">
-            <div className="w-10 h-10 rounded-2xl bg-[#FF6B00] flex items-center justify-center text-white shadow-lg shadow-[#FF6B00]/15">
+            <div className="w-10 h-10 rounded-2xl bg-[#C2410C] flex items-center justify-center text-white shadow-lg shadow-[#C2410C]/15">
               <Store className="w-5 h-5 text-white" />
             </div>
             <div className="truncate">
-              <h4 className="font-extrabold text-[#111111] text-xs uppercase tracking-tight leading-tight font-sans">
+              <h4 className="font-extrabold text-[#1C1917] text-xs uppercase tracking-tight leading-tight font-sans">
                 {storeName || "pedro teste5"}
               </h4>
               <p className="text-[10px] text-neutral-400 font-mono font-bold mt-0.5">
@@ -220,16 +220,16 @@ export default function AdminPanel({
                   onClick={() => setActiveMenu(item.title)}
                   className={`w-full flex items-center justify-between px-3.5 h-[42px] rounded-2xl text-xs font-black font-sans tracking-wide transition-all cursor-pointer ${
                     isActive
-                      ? "bg-[#FFF0E6] text-[#FF6B00]"
+                      ? "bg-[#FFF0E6] text-[#C2410C]"
                       : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className={`w-4.5 h-4.5 ${isActive ? "text-[#FF6B00]" : "text-neutral-400"}`} />
+                    <Icon className={`w-4.5 h-4.5 ${isActive ? "text-[#C2410C]" : "text-neutral-400"}`} />
                     <span className="font-extrabold text-[12px]">{item.title}</span>
                   </div>
                   {item.badge !== undefined && (
-                    <span className="text-[9px] bg-[#FF6B00] text-white font-black font-mono px-2 py-0.5 rounded-full">
+                    <span className="text-[9px] bg-[#C2410C] text-white font-black font-mono px-2 py-0.5 rounded-full">
                       {item.badge}
                     </span>
                   )}
@@ -247,7 +247,7 @@ export default function AdminPanel({
           
           <a
             href="#simulador-demo"
-            className="flex items-center justify-between text-xs font-extrabold text-neutral-600 hover:text-[#FF6B00] transition-colors px-2 py-1"
+            className="flex items-center justify-between text-xs font-extrabold text-neutral-600 hover:text-[#C2410C] transition-colors px-2 py-1"
           >
             <span className="flex items-center gap-2">📱 Vitrine da Loja</span>
             <ExternalLink className="w-3.5 h-3.5" />
@@ -285,13 +285,13 @@ export default function AdminPanel({
             <div className="relative cursor-pointer p-2 hover:bg-neutral-100 rounded-full transition-colors">
               <Bell className="w-4.5 h-4.5 text-neutral-500" />
               {activeOrders.length > 0 && (
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#FF6B00] rounded-full ring-2 ring-white animate-pulse" />
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#C2410C] rounded-full ring-2 ring-white animate-pulse" />
               )}
             </div>
 
             {/* Profile badge style matched */}
             <div className="flex items-center gap-2.5 border-l border-neutral-200 pl-4">
-              <div className="w-8 h-8 rounded-full bg-[#FF6B00] text-white flex items-center justify-center text-xs font-black shadow-md shadow-[#FF6B00]/15">
+              <div className="w-8 h-8 rounded-full bg-[#C2410C] text-white flex items-center justify-center text-xs font-black shadow-md shadow-[#C2410C]/15">
                 P
               </div>
               <div className="hidden sm:block text-left">
@@ -348,7 +348,7 @@ export default function AdminPanel({
                 <div className="flex justify-between items-start gap-4 pb-4 border-b border-neutral-100">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[#FF6B00]">⚡</span>
+                      <span className="text-[#C2410C]">⚡</span>
                       <h3 className="font-bold text-sm md:text-base text-neutral-900 tracking-tight font-sans">
                         Configure sua loja
                       </h3>
@@ -359,7 +359,7 @@ export default function AdminPanel({
                   </div>
                   <button 
                     onClick={() => setChecklist({ shopData: true, menuReady: true, deliveryArea: true, hours: true, payments: true })}
-                    className="text-xs font-extrabold text-[#FF6B00] hover:underline cursor-pointer"
+                    className="text-xs font-extrabold text-[#C2410C] hover:underline cursor-pointer"
                   >
                     Concluir tudo
                   </button>
@@ -368,7 +368,7 @@ export default function AdminPanel({
                 {/* Simulated Orange Progress Bar */}
                 <div className="w-full bg-neutral-150 h-2 rounded-full overflow-hidden mt-4">
                   <div 
-                    className="bg-[#FF6B00] h-full transition-all duration-500" 
+                    className="bg-[#C2410C] h-full transition-all duration-500" 
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
@@ -384,7 +384,7 @@ export default function AdminPanel({
                     className="p-3 bg-neutral-50/50 hover:bg-neutral-50 border border-neutral-200/60 rounded-2xl flex items-center justify-between cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${checklist.shopData ? "bg-orange-50 text-[#FF6B00]" : "bg-neutral-200 text-neutral-400"}`}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${checklist.shopData ? "bg-orange-50 text-[#C2410C]" : "bg-neutral-200 text-neutral-400"}`}>
                         <Store className="w-4.5 h-4.5" />
                       </div>
                       <div>
@@ -404,7 +404,7 @@ export default function AdminPanel({
                     className="p-3 bg-neutral-50/50 hover:bg-neutral-50 border border-neutral-200/60 rounded-2xl flex items-center justify-between cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${checklist.menuReady ? "bg-orange-50 text-[#FF6B00]" : "bg-neutral-200 text-neutral-400"}`}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${checklist.menuReady ? "bg-orange-50 text-[#C2410C]" : "bg-neutral-200 text-neutral-400"}`}>
                         <UtensilsCrossed className="w-4.5 h-4.5" />
                       </div>
                       <div>
@@ -424,7 +424,7 @@ export default function AdminPanel({
                     className="p-3 bg-neutral-50/50 hover:bg-neutral-50 border border-neutral-200/60 rounded-2xl flex items-center justify-between cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${checklist.deliveryArea ? "bg-orange-50 text-[#FF6B00]" : "bg-neutral-200 text-neutral-400"}`}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${checklist.deliveryArea ? "bg-orange-50 text-[#C2410C]" : "bg-neutral-200 text-neutral-400"}`}>
                         <MapPin className="w-4.5 h-4.5" />
                       </div>
                       <div>
@@ -444,7 +444,7 @@ export default function AdminPanel({
                     className="p-3 bg-neutral-50/50 hover:bg-neutral-50 border border-[#EBEBEB] rounded-2xl flex items-center justify-between cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${checklist.hours ? "bg-orange-50 text-[#FF6B00]" : "bg-neutral-200 text-neutral-400"}`}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${checklist.hours ? "bg-orange-50 text-[#C2410C]" : "bg-neutral-200 text-neutral-400"}`}>
                         <Clock className="w-4.5 h-4.5" />
                       </div>
                       <div>
@@ -503,7 +503,7 @@ export default function AdminPanel({
 
                 {/* Metric 3 */}
                 <div className="bg-white border border-neutral-250 p-4 rounded-3xl flex items-center gap-4 shadow-xs">
-                  <div className="w-12 h-12 bg-amber-50 text-[#FF6B00] rounded-2xl flex items-center justify-center shrink-0">
+                  <div className="w-12 h-12 bg-amber-50 text-[#C2410C] rounded-2xl flex items-center justify-center shrink-0">
                     <TrendingUp className="w-6 h-6" />
                   </div>
                   <div>
@@ -530,7 +530,7 @@ export default function AdminPanel({
                 <div className="xl:col-span-7 bg-white border border-neutral-200 p-5 rounded-3xl shadow-xs space-y-4">
                   <div className="flex justify-between items-center pb-2 border-b border-neutral-150">
                     <h3 className="text-xs font-black uppercase tracking-wider text-neutral-800">📋 Controle de Cozinha</h3>
-                    <button onClick={() => setActiveMenu("Pedidos")} className="text-xs text-[#FF6B00] font-black hover:underline cursor-pointer">
+                    <button onClick={() => setActiveMenu("Pedidos")} className="text-xs text-[#C2410C] font-black hover:underline cursor-pointer">
                       Ver Todos os Pedidos
                     </button>
                   </div>
@@ -551,7 +551,7 @@ export default function AdminPanel({
                               <p className="text-[10px] text-neutral-400 mt-0.5">{item.date} • {item.deliveryType === "delivery" ? "🚀 Entrega" : "🏪 Retirada"}</p>
                             </div>
                             <div className="text-right">
-                              <span className="font-mono font-extrabold text-[#FF6B00]">R$ {item.totalAmount.toFixed(2)}</span>
+                              <span className="font-mono font-extrabold text-[#C2410C]">R$ {item.totalAmount.toFixed(2)}</span>
                               <span className="block text-[9px] uppercase font-black text-neutral-500 mt-0.5">
                                 {item.status.toUpperCase()}
                               </span>
@@ -638,7 +638,7 @@ export default function AdminPanel({
                     <h3 className="text-base font-bold text-neutral-900">Gestão Unificada de Pedidos</h3>
                     <p className="text-xs text-neutral-400">Gerencie todos os pedidos simulados vindos do cardápio digital.</p>
                   </div>
-                  <span className="text-xs bg-[#FFF5F0] text-[#FF6B00] px-3.5 py-1.5 rounded-xl font-bold font-mono">
+                  <span className="text-xs bg-[#FBF1E7] text-[#C2410C] px-3.5 py-1.5 rounded-xl font-bold font-mono">
                     Total: {orders.length} pedidos
                   </span>
                 </div>
@@ -661,10 +661,10 @@ export default function AdminPanel({
                                 {order.deliveryType}
                               </span>
                             </div>
-                            <h4 className="text-xs font-bold text-[#111111] mt-1">{order.customerName}</h4>
+                            <h4 className="text-xs font-bold text-[#1C1917] mt-1">{order.customerName}</h4>
                             <p className="text-[10px] text-neutral-400 font-mono">{order.phone} • {order.date}</p>
                           </div>
-                          <span className="text-xs font-black text-[#FF6B00] font-mono">R$ {order.totalAmount.toFixed(2)}</span>
+                          <span className="text-xs font-black text-[#C2410C] font-mono">R$ {order.totalAmount.toFixed(2)}</span>
                         </div>
 
                         {/* List items */}
@@ -693,7 +693,7 @@ export default function AdminPanel({
                                   onUpdateOrderStatus(order.id, next);
                                   triggerToast(`Pedido #${order.id} atualizado para ${next}!`);
                                 }}
-                                className="px-2.5 py-1.5 bg-[#FF6B00] text-white text-[10px] font-bold rounded-lg cursor-pointer"
+                                className="px-2.5 py-1.5 bg-[#C2410C] text-white text-[10px] font-bold rounded-lg cursor-pointer"
                               >
                                 {order.status === " cozinha" && "🍳 Cozinhar"}
                                 {order.status === "preparando" && "🛵 Despachar"}
@@ -745,9 +745,9 @@ export default function AdminPanel({
                         <img src={prod.image} alt={prod.name} className="w-12 h-12 rounded-xl object-cover" referrerPolicy="no-referrer" />
                         <div className="flex-1 min-w-0">
                           <h4 className="text-xs font-bold text-neutral-900 truncate">{prod.name}</h4>
-                          <span className="text-[11px] font-mono text-[#FF6B00] font-black block mt-0.5">R$ {prod.price.toFixed(2)}</span>
+                          <span className="text-[11px] font-mono text-[#C2410C] font-black block mt-0.5">R$ {prod.price.toFixed(2)}</span>
                         </div>
-                        <span className="w-6 h-6 bg-[#FFF5F0] text-[#FF6B00] rounded-full flex items-center justify-center text-xs font-black">+</span>
+                        <span className="w-6 h-6 bg-[#FBF1E7] text-[#C2410C] rounded-full flex items-center justify-center text-xs font-black">+</span>
                       </div>
                     ))}
                   </div>
@@ -804,7 +804,7 @@ export default function AdminPanel({
                         placeholder="Ex: Pedro Henrique" 
                         value={posCustomerName}
                         onChange={e => setPosCustomerName(e.target.value)}
-                        className="w-full text-xs bg-neutral-50 border border-neutral-200 focus:border-[#FF6B00] focus:ring-1 focus:ring-[#FF6B00]/20 rounded-xl px-3 h-9 outline-none"
+                        className="w-full text-xs bg-neutral-50 border border-neutral-200 focus:border-[#C2410C] focus:ring-1 focus:ring-[#C2410C]/20 rounded-xl px-3 h-9 outline-none"
                       />
                     </div>
 
@@ -830,8 +830,8 @@ export default function AdminPanel({
                     </div>
 
                     <div className="pt-3 border-t border-neutral-100 flex justify-between items-baseline font-sans">
-                      <span className="text-xs font-bold text-[#111111]">Total Geral:</span>
-                      <span className="text-lg font-black font-mono text-[#FF6B00]">
+                      <span className="text-xs font-bold text-[#1C1917]">Total Geral:</span>
+                      <span className="text-lg font-black font-mono text-[#C2410C]">
                         R$ {posCart.reduce((sum, item) => sum + item.product.price * item.qty, 0).toFixed(2)}
                       </span>
                     </div>
@@ -839,7 +839,7 @@ export default function AdminPanel({
                     <button 
                       onClick={handlePOSCheckout}
                       disabled={posCart.length === 0}
-                      className="w-full h-10 bg-[#FF6B00] hover:bg-[#E05E00] disabled:bg-neutral-200 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
+                      className="w-full h-10 bg-[#C2410C] hover:bg-[#E05E00] disabled:bg-neutral-200 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
                     >
                       <span>⚡</span>
                       <span>Fechar e Registrar Venda</span>
@@ -864,7 +864,7 @@ export default function AdminPanel({
                 <div className="bg-neutral-50 border border-neutral-150 rounded-2xl p-5 text-left font-sans space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-black uppercase tracking-wider text-neutral-400">Faturamento da Semana</span>
-                    <span className="text-xs bg-[#FFF5F0] text-[#FF6B00] border border-orange-200 px-3 py-1 rounded-full font-bold">Consolidado</span>
+                    <span className="text-xs bg-[#FBF1E7] text-[#C2410C] border border-orange-200 px-3 py-1 rounded-full font-bold">Consolidado</span>
                   </div>
 
                   <div className="h-44 flex items-end justify-between gap-2.5 pt-6 relative border-b border-dashed border-neutral-250 pb-2">
@@ -879,8 +879,8 @@ export default function AdminPanel({
                       { day: "Dom", val: 1850, height: "h-[85%]" }
                     ].map((bar, i) => (
                       <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end font-sans">
-                        <span className="text-[10px] font-mono font-bold text-[#FF6B00]">R$ {bar.val}</span>
-                        <div className={`w-full ${bar.height} bg-gradient-to-t from-[#FF6B00] to-orange-400 rounded-lg shadow-xs hover:to-orange-500 transition-all cursor-pointer`} />
+                        <span className="text-[10px] font-mono font-bold text-[#C2410C]">R$ {bar.val}</span>
+                        <div className={`w-full ${bar.height} bg-gradient-to-t from-[#C2410C] to-orange-400 rounded-lg shadow-xs hover:to-orange-500 transition-all cursor-pointer`} />
                         <span className="text-[10px] font-semibold text-neutral-500 font-mono">{bar.day}</span>
                       </div>
                     ))}
@@ -888,7 +888,7 @@ export default function AdminPanel({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 bg-[#FFF5F0]/80 border border-[#FF6B00]/15 rounded-2xl">
+                  <div className="p-4 bg-[#FBF1E7]/80 border border-[#C2410C]/15 rounded-2xl">
                     <h4 className="text-xs font-black uppercase tracking-wider text-neutral-800">Métodos de Pagamento Usados</h4>
                     <div className="space-y-3 mt-4 text-xs font-sans">
                       <div>
@@ -897,7 +897,7 @@ export default function AdminPanel({
                           <span className="font-mono">75%</span>
                         </div>
                         <div className="w-full bg-neutral-200 h-2 rounded-full overflow-hidden">
-                          <div className="bg-[#FF6B00] h-full" style={{ width: "75%" }} />
+                          <div className="bg-[#C2410C] h-full" style={{ width: "75%" }} />
                         </div>
                       </div>
                       <div>
@@ -927,7 +927,7 @@ export default function AdminPanel({
                       <p className="text-[11px] text-neutral-500 mt-2 font-sans">Sua margem de faturamento é superior em 22% porque não paga o imposto abusivo de marketplace.</p>
                     </div>
                     <div className="pt-4 border-t border-emerald-100 flex justify-between items-baseline font-sans">
-                      <span className="text-xs font-bold text-[#111111]">Sua margem adicional total:</span>
+                      <span className="text-xs font-bold text-[#1C1917]">Sua margem adicional total:</span>
                       <span className="text-base font-black font-mono text-emerald-700">+ R$ {(totalRevenue * 0.22).toFixed(2)}</span>
                     </div>
                   </div>
@@ -950,7 +950,7 @@ export default function AdminPanel({
                     onClick={() => {
                       triggerToast("Adicionar prato está indisponível na simulação.");
                     }}
-                    className="h-8.5 px-3 bg-[#FF6B00] hover:bg-[#E05E00] text-xs font-bold text-white rounded-xl transition-all cursor-pointer flex items-center gap-1 leading-none font-sans"
+                    className="h-8.5 px-3 bg-[#C2410C] hover:bg-[#E05E00] text-xs font-bold text-white rounded-xl transition-all cursor-pointer flex items-center gap-1 leading-none font-sans"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Novo Item</span>
@@ -962,7 +962,7 @@ export default function AdminPanel({
                     <div key={prod.id} className="border border-neutral-200 rounded-2xl p-4 flex gap-4 hover:shadow-2xs transition-shadow bg-white items-center">
                       <img src={prod.image} alt={prod.name} className="w-16 h-16 rounded-xl object-cover shrink-0" referrerPolicy="no-referrer" />
                       <div className="flex-1 min-w-0 font-sans space-y-1">
-                        <h4 className="text-xs font-bold text-[#111111] truncate">{prod.name}</h4>
+                        <h4 className="text-xs font-bold text-[#1C1917] truncate">{prod.name}</h4>
                         <div className="flex items-center gap-1 pt-1">
                           <span className="text-[10px] text-neutral-400 font-bold">R$</span>
                           <input 
@@ -973,7 +973,7 @@ export default function AdminPanel({
                               const val = parseFloat(e.target.value) || 0;
                               setLocalProducts(prev => prev.map(p => p.id === prod.id ? { ...p, price: val } : p));
                             }}
-                            className="bg-neutral-50 border border-neutral-250 w-20 text-xs px-2 py-0.5 rounded font-mono font-black text-[#FF6B00] outline-none"
+                            className="bg-neutral-50 border border-neutral-250 w-20 text-xs px-2 py-0.5 rounded font-mono font-black text-[#C2410C] outline-none"
                           />
                         </div>
                         <div className="flex justify-between items-center pt-2">
@@ -1045,7 +1045,7 @@ export default function AdminPanel({
                     <h3 className="text-sm font-bold text-neutral-900">Configuração de Raio de Logística</h3>
                     <p className="text-xs text-neutral-400">Defina suas taxas e tempo estimado de entrega de forma autônoma.</p>
                   </div>
-                  <button onClick={() => triggerToast("Novas áreas indisponíveis na simulação.")} className="px-3 h-8 text-xs bg-[#FF6B00] text-white font-bold rounded-lg cursor-pointer">
+                  <button onClick={() => triggerToast("Novas áreas indisponíveis na simulação.")} className="px-3 h-8 text-xs bg-[#C2410C] text-white font-bold rounded-lg cursor-pointer">
                     + Adicionar Bairro
                   </button>
                 </div>
@@ -1054,7 +1054,7 @@ export default function AdminPanel({
                   {deliveryAreas.map(area => (
                     <div key={area.id} className="p-4 border border-neutral-200 rounded-2xl flex justify-between items-center text-xs">
                       <div className="space-y-1">
-                        <strong className="text-[#111111] text-xs">{area.name}</strong>
+                        <strong className="text-[#1C1917] text-xs">{area.name}</strong>
                         <p className="text-[10px] text-neutral-400">Tempo estimado: {area.time} • Estimador Ativo</p>
                       </div>
 
@@ -1131,7 +1131,7 @@ export default function AdminPanel({
                           setOperatingHours(p => p.map(o => o.day === sched.day ? { ...o, status: !o.status } : o));
                           triggerToast(`${sched.day} alterado!`);
                         }}
-                        className={`px-3 py-1 text-[10px] font-black rounded-lg cursor-pointer ${sched.status ? "bg-[#FFF5F0] text-[#FF6B00] border border-orange-200" : "bg-neutral-100 text-neutral-400"}`}
+                        className={`px-3 py-1 text-[10px] font-black rounded-lg cursor-pointer ${sched.status ? "bg-[#FBF1E7] text-[#C2410C] border border-orange-200" : "bg-neutral-100 text-neutral-400"}`}
                       >
                         {sched.status ? "OPERANDO" : "FECHADO"}
                       </button>
@@ -1168,7 +1168,7 @@ export default function AdminPanel({
                           </div>
 
                           <div className="text-right">
-                            <span className="font-mono text-[#FF6B00] font-bold block">R$ {totalPurchased.toFixed(2)} acumulados</span>
+                            <span className="font-mono text-[#C2410C] font-bold block">R$ {totalPurchased.toFixed(2)} acumulados</span>
                             <span className="text-[9.5px] font-bold text-neutral-500 font-sans">{clientOrders.length} pedidos em andamento / fechados</span>
                           </div>
                         </div>
@@ -1189,7 +1189,7 @@ export default function AdminPanel({
                     <h3 className="text-sm font-bold text-neutral-900">Frota e Escala de Despacho</h3>
                     <p className="text-xs text-neutral-400">Monitore os motoboys vinculados ao restaurante.</p>
                   </div>
-                  <button onClick={() => triggerToast("Indisponível no ambiente de testes.")} className="px-3 h-8.5 bg-[#FF6B00] text-xs font-bold text-white rounded-xl cursor-pointer">
+                  <button onClick={() => triggerToast("Indisponível no ambiente de testes.")} className="px-3 h-8.5 bg-[#C2410C] text-xs font-bold text-white rounded-xl cursor-pointer">
                     + Vincular Motoboy
                   </button>
                 </div>
@@ -1198,7 +1198,7 @@ export default function AdminPanel({
                   {drivers.map(driver => (
                     <div key={driver.id} className="p-3.5 border border-neutral-200 rounded-2xl flex justify-between items-center text-xs">
                       <div>
-                        <strong className="text-[#111111]">{driver.name}</strong>
+                        <strong className="text-[#1C1917]">{driver.name}</strong>
                         <p className="text-[10px] text-neutral-400 font-mono mt-0.5">ID: {driver.id} • {driver.vehicle}</p>
                       </div>
 
@@ -1243,7 +1243,7 @@ export default function AdminPanel({
                     </p>
                     <button 
                       onClick={() => triggerToast("Desconto Pix ativado com sucesso!")} 
-                      className="mt-3 px-3 py-1 text-[10.5px] font-black uppercase text-white bg-[#FF6B00] rounded-lg tracking-wider cursor-pointer"
+                      className="mt-3 px-3 py-1 text-[10.5px] font-black uppercase text-white bg-[#C2410C] rounded-lg tracking-wider cursor-pointer"
                     >
                       Ativar Campanha Pix
                     </button>
@@ -1270,7 +1270,7 @@ export default function AdminPanel({
                         triggerToast(`Cupom ${codeInput.toUpperCase()} criado!`);
                       }
                     }} 
-                    className="px-3 h-8.5 bg-[#FF6B00] text-xs font-bold text-white rounded-xl cursor-pointer font-sans"
+                    className="px-3 h-8.5 bg-[#C2410C] text-xs font-bold text-white rounded-xl cursor-pointer font-sans"
                   >
                     + Criar Cupom
                   </button>
@@ -1280,7 +1280,7 @@ export default function AdminPanel({
                   {coupons.map((c, idx) => (
                     <div key={idx} className="p-3.5 border border-neutral-200 rounded-2xl flex justify-between items-center text-xs">
                       <div>
-                        <strong className="bg-[#FFF5F0] border border-orange-200/40 text-[#FF6B00] px-2.5 py-1 rounded-md font-mono text-xs font-black inline-block">{c.code}</strong>
+                        <strong className="bg-[#FBF1E7] border border-orange-200/40 text-[#C2410C] px-2.5 py-1 rounded-md font-mono text-xs font-black inline-block">{c.code}</strong>
                         <p className="text-[10px] text-neutral-400 font-sans mt-2">
                           Min. compra: R$ {c.minOrder.toFixed(2)} • {c.type === "free_delivery" ? "Frete Grátis!" : `${c.discount}% de Desconto`}
                         </p>
@@ -1306,21 +1306,21 @@ export default function AdminPanel({
           {!["Dashboard", "Pedidos", "Caixa / PDV", "Financeiro", "Cardápio", "Estoque", "Áreas de Entrega", "Horários", "Clientes", "Entregadores", "Promoções", "Cupons"].includes(activeMenu) && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="bg-white border border-neutral-200/80 p-10 rounded-3xl text-center shadow-xs flex flex-col items-center justify-center">
-                <div className="w-16 h-16 rounded-3xl bg-[#FF6B00]/10 flex items-center justify-center text-3xl mb-4">
+                <div className="w-16 h-16 rounded-3xl bg-[#C2410C]/10 flex items-center justify-center text-3xl mb-4">
                   🔒
                 </div>
                 <h3 className="text-sm font-black text-neutral-800 uppercase tracking-widest leading-none">
                   Módulo de Simulação {activeMenu}
                 </h3>
                 <p className="text-xs text-neutral-400 mt-2 max-w-sm font-sans leading-relaxed">
-                  O módulo de <strong className="text-[#FF6B00]">{activeMenu}</strong> está pré-configurado com inteligência de ponta para a sua loja fictícia! Todas as métricas gerais são computadas e visíveis no Dashboard geral interativamente.
+                  O módulo de <strong className="text-[#C2410C]">{activeMenu}</strong> está pré-configurado com inteligência de ponta para a sua loja fictícia! Todas as métricas gerais são computadas e visíveis no Dashboard geral interativamente.
                 </p>
                 <button 
                   onClick={() => {
                     setActiveMenu("Dashboard");
                     triggerToast("Voltando para o Dashboard Principal!");
                   }} 
-                  className="mt-6 px-5 h-9 bg-[#FF6B00] hover:bg-[#E05E00] text-xs font-bold text-white rounded-xl transition-all shadow-md shadow-[#FF6B00]/10 cursor-pointer"
+                  className="mt-6 px-5 h-9 bg-[#C2410C] hover:bg-[#E05E00] text-xs font-bold text-white rounded-xl transition-all shadow-md shadow-[#C2410C]/10 cursor-pointer"
                 >
                   Ir para Dashboard Principal
                 </button>
