@@ -14,6 +14,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# Com "powershell -File" uma lista chega como texto único ("api,web-store"): separa aqui
+$Services = @($Services | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 $compose = @('compose', '--env-file', '.env.tunnel', '-f', 'docker-compose.server.yml', '-f', 'docker-compose.tunnel.yml')
