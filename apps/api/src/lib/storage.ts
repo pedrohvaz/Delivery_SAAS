@@ -52,11 +52,13 @@ export async function uploadImage(file: MultipartFile, folder = 'products'): Pro
   }
   const rawBuffer = Buffer.concat(chunks)
 
-  // Comprime e redimensiona com Sharp (exceto GIFs)
+  // Comprime e redimensiona com Sharp (exceto GIFs). Banner é largo (topo da vitrine);
+  // logo aparece pequena, então 512px basta.
+  const maxDim = folder === 'banners' ? 1920 : folder === 'logos' ? 512 : MAX_DIMENSION
   let buffer: Buffer = rawBuffer
   if (!isGif) {
     buffer = await sharp(rawBuffer)
-      .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: 'inside', withoutEnlargement: true })
+      .resize(maxDim, maxDim, { fit: 'inside', withoutEnlargement: true })
       .webp({ quality: 82 })
       .toBuffer()
   }

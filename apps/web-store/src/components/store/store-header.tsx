@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import { ShoppingCart, Clock, MapPin, Star, User, ChevronDown } from 'lucide-react'
 import { useCartStore } from '@/store/cart'
 import { useCustomerAuth } from '@/store/customer-auth'
@@ -95,7 +94,7 @@ export function StoreHeader({ store }: { store: StoreData }) {
         {/* Logo sobreposto ao banner */}
         <div className="absolute -top-12 left-6 w-24 h-24 rounded-full bg-white shadow-md overflow-hidden flex items-center justify-center border-4 border-white">
           {store.logoUrl ? (
-            <Image src={store.logoUrl} alt={store.name} width={96} height={96} className="h-full w-full object-cover" />
+            <img src={store.logoUrl} alt={store.name} width={96} height={96} className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-primary/10 text-3xl">🍽️</div>
           )}

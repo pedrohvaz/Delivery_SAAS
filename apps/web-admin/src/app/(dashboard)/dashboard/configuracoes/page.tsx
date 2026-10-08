@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { CreditCard, Zap, Plus, Trash2, Check, X, MessageCircle, Palette, LayoutGrid, AlignJustify, ExternalLink, Building2, Bell, BarChart3 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
+import { ImageUploadField } from '@/components/ui/image-upload'
 import {
   useSettings, useUpdateSettings, useTogglePaymentMethod,
   useCreatePaymentMethod, useDeletePaymentMethod,
@@ -81,6 +82,7 @@ export default function ConfiguracoesPage() {
   const [primaryColor, setPrimaryColor] = useState('#f97316')
   const [layoutStyle, setLayoutStyle] = useState<'grid' | 'list'>('grid')
   const [bannerUrl, setBannerUrl] = useState('')
+  const [logoUrl, setLogoUrl] = useState('')
   const [appearanceSuccess, setAppearanceSuccess] = useState(false)
   const [appearanceError, setAppearanceError] = useState('')
 
@@ -98,6 +100,7 @@ export default function ConfiguracoesPage() {
       setPrimaryColor(settings.primaryColor ?? '#f97316')
       setLayoutStyle(settings.layoutStyle ?? 'grid')
       setBannerUrl(settings.bannerUrl ?? '')
+      setLogoUrl(settings.logoUrl ?? '')
     }
   }, [settings])
 
@@ -258,7 +261,9 @@ export default function ConfiguracoesPage() {
       await updateSettings.mutateAsync({
         primaryColor,
         layoutStyle,
-        bannerUrl: bannerUrl.trim() || undefined,
+        // '' remove a imagem (antes era undefined e não dava para tirar o banner)
+        bannerUrl: bannerUrl.trim(),
+        logoUrl: logoUrl.trim(),
       })
       setAppearanceSuccess(true)
       setTimeout(() => setAppearanceSuccess(false), 3000)
@@ -775,23 +780,27 @@ export default function ConfiguracoesPage() {
             </div>
           </div>
 
-          {/* Banner */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">URL do Banner <span className="text-muted-foreground font-normal">(opcional)</span></label>
-            <p className="text-xs text-muted-foreground">Imagem exibida no topo da vitrine, abaixo do cabeçalho</p>
-            <input
-              type="url"
-              value={bannerUrl}
-              onChange={(e) => setBannerUrl(e.target.value)}
-              placeholder="https://exemplo.com/banner.jpg"
-              className="w-full h-10 rounded-xl border border-input px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+          {/* Logo e banner (upload) */}
+          <div className="grid gap-5 sm:grid-cols-[10rem_1fr]">
+            <ImageUploadField
+              label="Logo"
+              hint="Quadrada, aparece no topo e na vitrine"
+              value={logoUrl}
+              onChange={setLogoUrl}
+              folder="logos"
+              aspectClass="aspect-square"
+              previewClass="w-40"
             />
-            {bannerUrl && (
-              <div className="mt-2 rounded-xl overflow-hidden border aspect-[3/1] bg-muted">
-                <img src={bannerUrl} alt="Banner preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-              </div>
-            )}
+            <ImageUploadField
+              label="Banner"
+              hint="Imagem larga no topo da loja (ideal 1500×500). No celular as laterais são cortadas: deixe textos e logo no centro."
+              value={bannerUrl}
+              onChange={setBannerUrl}
+              folder="banners"
+              aspectClass="aspect-[3/1]"
+            />
           </div>
+          <p className="text-xs text-muted-foreground">Depois de enviar, clique em <strong>Salvar aparência</strong> para publicar na vitrine.</p>
 
           <button
             type="submit"
