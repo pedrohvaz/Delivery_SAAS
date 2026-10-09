@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { usePlans, useMySubscription, useCheckout, useBillingPortal } from '@/hooks/use-plans'
-import { Check, CreditCard, Zap, Crown, ExternalLink, Loader2, Clock, AlertTriangle } from 'lucide-react'
+import { Check, CreditCard, Zap, Crown, ExternalLink, Loader2, Clock, AlertTriangle, MessageCircle } from 'lucide-react'
 import { cn } from '@delivery/ui'
+import { CYCLE_NAME, CYCLE_OPTIONS, brl, chargeText, discountPct, priceFor, savings, whatsappLink, type Cycle } from '@/lib/billing'
 
 function daysRemaining(date: string | null): number {
   if (!date) return 0
@@ -14,6 +15,7 @@ function daysRemaining(date: string | null): number {
 
 export default function AssinaturaPage() {
   const [error, setError] = useState('')
+  const [cycle, setCycle] = useState<Cycle>('ANNUAL')
 
   const { data: plans = [], isLoading: plansLoading } = usePlans()
   const { data: subscription, isLoading: subLoading } = useMySubscription()
@@ -22,7 +24,7 @@ export default function AssinaturaPage() {
 
   function handleSelectPlan(slug: string) {
     setError('')
-    checkout.mutate(slug, {
+    checkout.mutate({ planSlug: slug, cycle }, {
       onSuccess: (data: any) => { window.location.href = data.url },
       onError: (err: any) => {
         setError(err?.response?.data?.message ?? 'Erro ao iniciar checkout.')
@@ -37,6 +39,9 @@ export default function AssinaturaPage() {
   }
 
   const currentPlanSlug = subscription?.plan?.slug
+  const currentPlan = plans.find((p: any) => p.slug === currentPlanSlug)
+  const currentPrice = priceFor(currentPlan?.prices, cycle)
+  const currentOffline = !!currentPrice && !currentPrice.available
   const isLoading = plansLoading || subLoading
   const isTrialing = subscription?.status === 'TRIALING'
   const isActive = subscription?.status === 'ACTIVE'
@@ -81,14 +86,25 @@ export default function AssinaturaPage() {
                   </p>
                 )}
               </div>
-              <button
-                onClick={() => handleSelectPlan(currentPlanSlug!)}
-                disabled={checkout.isPending}
-                className="rounded-xl bg-white text-orange-600 font-bold px-6 py-3 hover:shadow-lg transition flex items-center gap-2 shrink-0"
-              >
-                {checkout.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-                {checkout.isPending ? 'Redirecionando...' : 'Assinar agora'}
-              </button>
+              {currentOffline ? (
+                <a
+                  href={whatsappLink(`Olá! Quero assinar o plano ${subscription.plan.name} (${CYCLE_NAME[currentPrice!.cycle]}) para a minha loja na ByLink.`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl bg-white text-orange-600 font-bold px-6 py-3 hover:shadow-lg transition flex items-center gap-2 shrink-0"
+                >
+                  <MessageCircle className="h-4 w-4" /> Assinar pelo WhatsApp
+                </a>
+              ) : (
+                <button
+                  onClick={() => handleSelectPlan(currentPlanSlug!)}
+                  disabled={checkout.isPending}
+                  className="rounded-xl bg-white text-orange-600 font-bold px-6 py-3 hover:shadow-lg transition flex items-center gap-2 shrink-0"
+                >
+                  {checkout.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                  {checkout.isPending ? 'Redirecionando...' : 'Assinar agora'}
+                </button>
+              )}
             </div>
             <div className="mt-4 pt-4 border-t border-white/20 text-xs text-white/80">
               Ao assinar agora você garante a continuidade do plano. Cancele quando quiser pelo painel.
@@ -120,7 +136,10 @@ export default function AssinaturaPage() {
                   <Crown className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">Plano {subscription.plan.name}</h2>
+                  <h2 className="text-xl font-bold">
+                    Plano {subscription.plan.name}
+                    {subscription.cycle && <span className="text-muted-foreground font-medium"> · {CYCLE_NAME[subscription.cycle]}</span>}
+                  </h2>
                   <p className="text-sm text-muted-foreground">
                     Status:{' '}
                     <span className={cn('font-medium', isActive ? 'text-green-600' : 'text-orange-500')}>
@@ -156,9 +175,29 @@ export default function AssinaturaPage() {
 
         {/* Lista de planos */}
         <div>
-          <h2 className="text-lg font-bold text-foreground mb-4">
-            {isTrialing || isPaid ? 'Mudar plano' : 'Escolha seu plano'}
-          </h2>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-bold text-foreground">
+              {isTrialing || isPaid ? 'Mudar plano' : 'Escolha seu plano'}
+            </h2>
+            {/* Período: quanto maior, menor a mensalidade (pago adiantado) */}
+            <div role="radiogroup" aria-label="Período do plano" className="inline-flex flex-wrap gap-1 rounded-xl border bg-muted/40 p-1">
+              {CYCLE_OPTIONS.map((o) => (
+                <button
+                  key={o.cycle}
+                  type="button"
+                  role="radio"
+                  aria-checked={cycle === o.cycle}
+                  onClick={() => setCycle(o.cycle)}
+                  className={cn(
+                    'min-h-9 rounded-lg px-3 text-sm font-semibold transition',
+                    cycle === o.cycle ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -168,6 +207,12 @@ export default function AssinaturaPage() {
               {plans.map((plan: any) => {
                 const isFree = Number(plan.monthlyPrice) === 0
                 const isCurrent = currentPlanSlug === plan.slug
+                const price = priceFor(plan.prices, cycle)
+                const saved = price ? savings(plan.prices, price) : 0
+                const pct = price ? discountPct(plan.prices, price) : 0
+                // Stripe ainda não ligada para esse preço: assina pelo WhatsApp
+                const offline = !isFree && !!price && !price.available
+                const zap = whatsappLink(`Olá! Quero assinar o plano ${plan.name} (${price ? CYCLE_NAME[price.cycle] : 'mensal'}) para a minha loja na ByLink.`)
                 return (
                   <div key={plan.slug} className={cn(
                     'relative rounded-2xl border-2 p-6 flex flex-col transition-all',
@@ -193,9 +238,15 @@ export default function AssinaturaPage() {
 
                     <div className="mb-6">
                       <span className="text-4xl font-black text-foreground">
-                        {isFree ? 'Grátis' : `R$ ${Number(plan.monthlyPrice).toFixed(0)}`}
+                        {isFree ? 'Grátis' : brl(price?.monthlyPrice ?? Number(plan.monthlyPrice))}
                       </span>
                       {!isFree && <span className="text-sm text-muted-foreground">/mês</span>}
+                      {!isFree && price && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {chargeText(price)}
+                          {saved > 0 && <span className="font-semibold text-green-600"> · economize {brl(saved)} ({pct}%)</span>}
+                        </p>
+                      )}
                     </div>
 
                     <ul className="space-y-2 flex-1 mb-6">
@@ -207,7 +258,17 @@ export default function AssinaturaPage() {
                       ))}
                     </ul>
 
-                    {!isCurrent && !isFree && (
+                    {offline && !(isCurrent && isPaid) && (
+                      <a
+                        href={zap}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full rounded-xl py-2.5 text-sm font-bold transition-all flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700"
+                      >
+                        <MessageCircle className="h-4 w-4" /> Assinar pelo WhatsApp
+                      </a>
+                    )}
+                    {!offline && !isCurrent && !isFree && (
                       <button
                         onClick={() => handleSelectPlan(plan.slug)}
                         disabled={checkout.isPending}
@@ -218,13 +279,13 @@ export default function AssinaturaPage() {
                             : 'bg-foreground text-background hover:opacity-90',
                         )}
                       >
-                        {checkout.isPending && checkout.variables === plan.slug
+                        {checkout.isPending && checkout.variables?.planSlug === plan.slug
                           ? <><Loader2 className="h-4 w-4 animate-spin" /> Redirecionando...</>
                           : <><Zap className="h-4 w-4" /> Assinar {plan.name}</>
                         }
                       </button>
                     )}
-                    {isCurrent && isTrialing && !isFree && (
+                    {!offline && isCurrent && isTrialing && !isFree && (
                       <button
                         onClick={() => handleSelectPlan(plan.slug)}
                         disabled={checkout.isPending}
@@ -252,7 +313,8 @@ export default function AssinaturaPage() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground">
-          💳 Pagamento seguro via Stripe · Cancele quando quiser
+          💳 Pagamento seguro pela Stripe · No mensal, cancele quando quiser. Nos planos de 3, 6 e 12 meses o valor é pago
+          adiantado; se cancelar, o plano segue até o fim do período e não renova. Sem multa.
         </p>
       </main>
     </div>

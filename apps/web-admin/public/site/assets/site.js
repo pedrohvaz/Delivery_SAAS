@@ -15,6 +15,16 @@
   const intFmt = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
   const brl0 = (v) => 'R$' + NB + intFmt.format(Math.round(v));
   const SVGNS = 'http://www.w3.org/2000/svg';
+
+  // Preço por mês de cada período (pago adiantado). Valores da página; a API atualiza se responder.
+  const PLAN_PRICES = {
+    pro: { MONTHLY: 99.9, QUARTERLY: 94.9, SEMIANNUAL: 89.9, ANNUAL: 79.9 },
+    elite: { MONTHLY: 249, QUARTERLY: 237, SEMIANNUAL: 224, ANNUAL: 199 },
+  };
+  const CYCLE_MONTHS = { MONTHLY: 1, QUARTERLY: 3, SEMIANNUAL: 6, ANNUAL: 12 };
+  const CYCLE_SLUG = { MONTHLY: 'mensal', QUARTERLY: 'trimestral', SEMIANNUAL: 'semestral', ANNUAL: 'anual' };
+  const money = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const periodTotal = (monthly, cycle) => (Math.round(monthly * 100) * CYCLE_MONTHS[cycle]) / 100;
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
   const MOBILE = matchMedia('(max-width: 899px)');
 
@@ -419,7 +429,11 @@
   function updateNumbers() {
     const v = Number(fat.value);
     const loss = v * (rate() / 100) * 12;
-    const keep = Math.max(0, loss - 79 * 12);
+    // custo de um ano de PRO no plano anual (pago adiantado), o menor custo por mês
+    const proMonthly = PLAN_PRICES.pro.ANNUAL || PLAN_PRICES.pro.MONTHLY;
+    const keep = Math.max(0, loss - periodTotal(proMonthly, 'ANNUAL'));
+    const keepPrice = $('#keep-price');
+    if (keepPrice) keepPrice.textContent = money(proMonthly);
     fatOut.textContent = brl0(v);
     lossEl.textContent = brl0(loss);
     keepEl.textContent = brl0(keep);
@@ -475,6 +489,64 @@
   $$('input[name="taxa"]').forEach((r) => r.addEventListener('change', () => { updateNumbers(); drawCalcBite(); }));
   updateNumbers();
   drawCalcBite();
+
+  /* =========================================================
+     PLANOS: período (mensal, 3, 6 ou 12 meses, pago adiantado)
+     ========================================================= */
+  function currentCycle() {
+    const el = $('input[name="ciclo"]:checked');
+    return (el && el.value) || 'ANNUAL';
+  }
+  function renderPlans() {
+    const chosen = currentCycle();
+    $$('[data-plan]').forEach((card) => {
+      const prices = PLAN_PRICES[card.dataset.plan];
+      if (!prices) return;
+      const cycle = prices[chosen] != null ? chosen : 'MONTHLY'; // plano sem esse período: mostra o mensal
+      const monthly = prices[cycle];
+      const months = CYCLE_MONTHS[cycle];
+      const total = periodTotal(monthly, cycle);
+      const save = prices.MONTHLY ? Math.max(0, periodTotal(prices.MONTHLY, cycle) - total) : 0;
+      const priceEl = $('[data-price]', card);
+      const subEl = $('[data-sub]', card);
+      const cta = $('[data-cta]', card);
+      if (priceEl) priceEl.textContent = money(monthly);
+      if (subEl) {
+        subEl.textContent = months === 1
+          ? 'cobrado todo mês'
+          : `${money(total)} ${months === 12 ? 'por ano' : `a cada ${months} meses`}${save > 0.004 ? ` · economize ${money(save)}` : ''}`;
+      }
+      if (cta) cta.href = `/comprar/${card.dataset.plan}?ciclo=${CYCLE_SLUG[cycle]}`;
+    });
+    // desconto de cada período, calculado sobre o PRO
+    const pro = PLAN_PRICES.pro;
+    $$('[data-off]').forEach((em) => {
+      const c = em.dataset.off;
+      if (pro && pro[c] && pro.MONTHLY) em.textContent = '−' + Math.round((1 - pro[c] / pro.MONTHLY) * 100) + '%';
+    });
+  }
+  $$('input[name="ciclo"]').forEach((r) => r.addEventListener('change', renderPlans));
+  renderPlans();
+
+  // Preços atualizados do superadmin (se a API não responder, ficam os da página)
+  // só no domínio de produção: em outro endereço a API recusa a origem (CORS) e o erro sujaria o console
+  const apiMeta = $('meta[name="bylink-api"]');
+  if (apiMeta && window.fetch && (/(^|\.)bylink\.shop$/.test(location.hostname) || window.__forceApi)) {
+    fetch(apiMeta.content.replace(/\/$/, '') + '/plans', { credentials: 'omit' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (!json || !Array.isArray(json.data)) return;
+        let changed = false;
+        for (const plan of json.data) {
+          if (!PLAN_PRICES[plan.slug] || !Array.isArray(plan.prices)) continue;
+          const next = {};
+          for (const p of plan.prices) if (CYCLE_MONTHS[p.cycle] && Number(p.monthlyPrice) > 0) next[p.cycle] = Number(p.monthlyPrice);
+          if (next.MONTHLY) { PLAN_PRICES[plan.slug] = next; changed = true; }
+        }
+        if (changed) { renderPlans(); updateNumbers(); }
+      })
+      .catch(() => {});
+  }
 
   /* =========================================================
      Entradas das seções e elementos vivos

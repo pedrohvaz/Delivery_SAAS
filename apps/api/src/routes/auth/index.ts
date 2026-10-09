@@ -6,6 +6,7 @@ import { cacheDel } from '../../lib/cache.js'
 import { registerSchema, loginSchema, refreshSchema } from './schemas'
 import type { JwtPayload } from '@delivery/types'
 import { createCheckoutSession, createPreSignupCheckoutSession, retrieveCheckoutSession, getStripe } from '../../lib/stripe.js'
+import { parseCycle, resolveCheckoutPrice } from '../../lib/billing.js'
 
 // Helper para assinar refresh token (payload mínimo)
 function signRefresh(app: Parameters<FastifyPluginAsync>[0], sub: string): string {
@@ -135,6 +136,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       password: z.string().min(6),
       phone: z.string().optional(),
       planSlug: z.string(),
+      cycle: z.string().optional(), // mensal, trimestral, semestral, anual (ou o enum)
       successUrl: z.string().url(),
       cancelUrl: z.string().url(),
     })
@@ -166,15 +168,16 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(409).send({ error: 'Conflict', message: 'Esse e-mail já está cadastrado', statusCode: 409 })
     }
 
-    const plan = await app.prisma.plan.findUnique({ where: { slug: d.planSlug } })
-    if (!plan?.stripePriceId) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Plano não encontrado ou sem preço no Stripe', statusCode: 404 })
+    const cycle = parseCycle(d.cycle)
+    const resolved = await resolveCheckoutPrice(app.prisma, d.planSlug, cycle)
+    if ('error' in resolved) {
+      return reply.status(404).send({ error: 'Not Found', message: resolved.error, statusCode: 404 })
     }
 
     const passwordHash = await hashPassword(d.password)
 
     const session = await createPreSignupCheckoutSession({
-      priceId: plan.stripePriceId,
+      priceId: resolved.stripePriceId,
       customerEmail: d.email,
       metadata: {
         signupType: 'paid',
@@ -185,6 +188,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
         passwordHash,
         phone: d.phone ?? '',
         planSlug: d.planSlug,
+        cycle,
       },
       successUrl: d.successUrl,
       cancelUrl: d.cancelUrl,

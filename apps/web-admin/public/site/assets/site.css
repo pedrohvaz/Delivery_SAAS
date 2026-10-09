@@ -365,7 +365,19 @@ input[type=range]:focus-visible{outline-color:var(--ketchup)}
 .badge-spin{transform-origin:60px 60px}
 .live .badge-spin{animation:spin 26s linear infinite;animation-delay:-8s}
 @keyframes spin{to{transform:rotate(360deg)}}
-.plans-note{margin-top:24px;font-weight:500;color:var(--ink-2)}
+.plans-note{margin-top:24px;font-weight:500;color:var(--ink-2);max-width:70ch}
+/* Período do plano: quanto maior, menor a mensalidade */
+.cycles{border:0;padding:0;margin:clamp(28px,4vw,40px) 0 0}
+.seg-cycles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:640px}
+.seg-cycles span{width:100%;gap:8px;font-family:var(--f-body);font-size:15px;font-weight:700;background:var(--papel)}
+.seg-cycles em{font-style:normal;font-family:var(--f-mono);font-size:12px;font-stretch:87.5%;font-weight:600;color:var(--ketchup)}
+.seg-cycles input:checked+span{background:var(--chapa);border-color:var(--chapa);color:var(--cream)}
+.seg-cycles input:checked+span em{color:var(--mostarda)}
+.price{flex-wrap:wrap}
+.price b{font-size:clamp(48px,4vw,56px)}
+.price-sub{margin-top:6px;font-size:14px;font-weight:500;color:var(--ink-2);min-height:1.5em}
+.plan-pro .price-sub{color:var(--cream-2)}
+@media (min-width:700px){.seg-cycles{grid-template-columns:repeat(4,auto);justify-content:start}}
 @media (min-width:900px){
   .plans{grid-template-columns:1fr 1.12fr 1fr;align-items:end}
   .plan-pro{padding:40px 30px 30px}

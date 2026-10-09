@@ -134,8 +134,32 @@ model Plan {
   updatedAt DateTime @updatedAt
 
   subscriptions Subscription[]
+  prices        PlanPrice[]
 
   @@index([isActive, position])
+}
+
+// Preço por período de contrato (pago adiantado: a Stripe cobra o período inteiro e renova sozinha).
+// O total cobrado é monthlyPrice x meses do ciclo (1, 3, 6 ou 12).
+model PlanPrice {
+  id            String       @id @default(uuid())
+  planId        String
+  cycle         BillingCycle
+  monthlyPrice  Decimal // valor por mês exibido (ex.: 79.90 no anual)
+  stripePriceId String?      @unique // preço recorrente na Stripe (a cada 1, 3, 6 ou 12 meses)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, cycle])
+}
+
+enum BillingCycle {
+  MONTHLY // mensal
+  QUARTERLY // 3 meses
+  SEMIANNUAL // 6 meses
+  ANNUAL // 12 meses
 }
 
 model Subscription {
@@ -143,6 +167,7 @@ model Subscription {
   storeId String             @unique
   planId  String
   status  SubscriptionStatus @default(TRIALING)
+  cycle   BillingCycle? // período contratado (null = mensal antigo ou teste)
 
   // Stripe
   stripeSubscriptionId String? @unique

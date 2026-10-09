@@ -4,7 +4,22 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
-import { Plus, Pencil, Trash2, Check, X, ToggleLeft, ToggleRight, Sparkles } from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, X, ToggleLeft, ToggleRight, Sparkles, RefreshCw } from 'lucide-react'
+
+// Períodos de contrato (pago adiantado). O mensal vem do "Valor mensal"; os outros são opcionais.
+const LONG_CYCLES = [
+  { cycle: 'QUARTERLY', key: 'q3', label: '3 meses', months: 3 },
+  { cycle: 'SEMIANNUAL', key: 'q6', label: '6 meses', months: 6 },
+  { cycle: 'ANNUAL', key: 'q12', label: '1 ano', months: 12 },
+] as const
+const ALL_CYCLES = [{ cycle: 'MONTHLY', label: 'Mensal', months: 1 }, ...LONG_CYCLES] as const
+const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+interface PlanPrice {
+  cycle: string
+  monthlyPrice: number | string
+  stripePriceId: string | null
+}
 
 interface Plan {
   id: string
@@ -20,6 +35,7 @@ interface Plan {
   position: number
   stripePriceId: string | null
   stripeProductId: string | null
+  prices: PlanPrice[]
 }
 
 interface FormState {
@@ -32,11 +48,14 @@ interface FormState {
   highlight: boolean
   badge: string
   position: string
+  q3: string // R$ por mês no plano de 3 meses ('' = não oferece)
+  q6: string
+  q12: string
 }
 
 const EMPTY_FORM: FormState = {
   slug: '', name: '', tagline: '', monthlyPrice: '0', features: '',
-  color: 'from-gray-400 to-gray-500', highlight: false, badge: '', position: '0',
+  color: 'from-gray-400 to-gray-500', highlight: false, badge: '', position: '0', q3: '', q6: '', q12: '',
 }
 
 const COLOR_PRESETS = [
@@ -47,6 +66,11 @@ const COLOR_PRESETS = [
   { value: 'from-blue-500 to-cyan-500',     label: 'Azul' },
   { value: 'from-yellow-400 to-orange-500', label: 'Amarelo → Laranja' },
 ]
+
+function priceOf(p: Plan, cycle: string) {
+  const v = p.prices?.find(x => x.cycle === cycle)?.monthlyPrice
+  return v == null ? '' : String(Number(v))
+}
 
 export default function PlanosPage() {
   const qc = useQueryClient()
@@ -69,6 +93,26 @@ export default function PlanosPage() {
     mutationFn: (id: string) => api.delete(`/plans/admin/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-plans'] }),
   })
+
+  // Cria na Stripe os produtos e preços que ainda não existem (depois de colocar a chave no servidor)
+  const syncStripe = useMutation({
+    mutationFn: () => api.post<{ data: { slug: string; created: number; error?: string }[] }>('/plans/admin/sync-stripe').then(r => r.data.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-plans'] }),
+  })
+  const [syncMsg, setSyncMsg] = useState('')
+  async function handleSync() {
+    setSyncMsg('')
+    try {
+      const r = await syncStripe.mutateAsync()
+      const created = r.reduce((n, x) => n + x.created, 0)
+      const errs = r.filter(x => x.error)
+      setSyncMsg(errs.length
+        ? 'Erro na Stripe: ' + errs.map(e => e.slug + ': ' + e.error).join(' | ')
+        : created ? created + ' preço(s) criado(s) na Stripe. A assinatura online já está ligada.' : 'Tudo já estava sincronizado com a Stripe.')
+    } catch (err: any) {
+      setSyncMsg(err?.response?.data?.message ?? 'Erro ao sincronizar com a Stripe')
+    }
+  }
 
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -94,6 +138,9 @@ export default function PlanosPage() {
       highlight: p.highlight,
       badge: p.badge ?? '',
       position: String(p.position),
+      q3: priceOf(p, 'QUARTERLY'),
+      q6: priceOf(p, 'SEMIANNUAL'),
+      q12: priceOf(p, 'ANNUAL'),
     })
     setError('')
     setShowForm(true)
@@ -121,14 +168,15 @@ export default function PlanosPage() {
       highlight: form.highlight,
       badge: form.badge.trim() || null,
       position: parseInt(form.position) || 0,
+      // vazio ou 0 = o plano não oferece esse período
+      prices: Object.fromEntries(LONG_CYCLES.map(c => [c.cycle, parseFloat(form[c.key]) || null])),
     }
 
     try {
-      if (editingId) {
-        await updatePlan.mutateAsync({ id: editingId, ...payload })
-      } else {
-        await createPlan.mutateAsync(payload)
-      }
+      const res: any = editingId
+        ? await updatePlan.mutateAsync({ id: editingId, ...payload })
+        : await createPlan.mutateAsync(payload)
+      if (res?.data?.stripeError) setSyncMsg('Plano salvo, mas a Stripe recusou: ' + res.data.stripeError)
       cancelForm()
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Erro ao salvar plano')
@@ -156,16 +204,28 @@ export default function PlanosPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Planos</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Gerencie os planos da plataforma. Ao criar/editar, o produto e preço são sincronizados automaticamente no Stripe.
+            Gerencie os planos e o preço de cada período (mensal, 3, 6 e 12 meses, pagos adiantado). Com a Stripe ligada, os preços são criados lá automaticamente.
           </p>
         </div>
-        {!showForm && (
-          <button onClick={openCreate}
-            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition">
-            <Plus className="h-4 w-4" /> Novo plano
+        <div className="flex shrink-0 gap-2">
+          <button onClick={handleSync} disabled={syncStripe.isPending}
+            className="flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold hover:bg-muted transition disabled:opacity-60">
+            <RefreshCw className={cn('h-4 w-4', syncStripe.isPending && 'animate-spin')} /> Sincronizar com a Stripe
           </button>
-        )}
+          {!showForm && (
+            <button onClick={openCreate}
+              className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition">
+              <Plus className="h-4 w-4" /> Novo plano
+            </button>
+          )}
+        </div>
       </div>
+
+      {syncMsg && (
+        <p className={cn('rounded-xl border px-3 py-2 text-sm', /Erro|recusou/.test(syncMsg) ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-800')}>
+          {syncMsg}
+        </p>
+      )}
 
       {/* Form */}
       {showForm && (
@@ -206,13 +266,32 @@ export default function PlanosPage() {
               <input type="number" min="0" step="0.01" value={form.monthlyPrice}
                 onChange={e => setForm(f => ({ ...f, monthlyPrice: e.target.value }))}
                 className="w-full h-10 rounded-xl border px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" required />
-              <p className="text-xs text-muted-foreground">0 = grátis. Acima disso, cria produto + preço no Stripe.</p>
+              <p className="text-xs text-muted-foreground">0 = grátis. Acima disso, cria produto + preço na Stripe.</p>
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Posição (ordem)</label>
               <input type="number" value={form.position}
                 onChange={e => setForm(f => ({ ...f, position: e.target.value }))}
                 className="w-full h-10 rounded-xl border px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+            </div>
+            {/* Preço por mês dos períodos longos (o total cobrado é o valor x meses) */}
+            <div className="col-span-2 grid grid-cols-3 gap-3 rounded-xl border bg-muted/30 p-3">
+              {LONG_CYCLES.map(c => {
+                const monthly = parseFloat(form.monthlyPrice) || 0
+                const v = parseFloat(form[c.key]) || 0
+                const pct = monthly && v ? Math.round((1 - v / monthly) * 100) : 0
+                return (
+                  <div key={c.cycle} className="space-y-1.5">
+                    <label className="text-sm font-medium">{c.label} (R$ por mês)</label>
+                    <input type="number" min="0" step="0.01" value={form[c.key]} placeholder="não oferece"
+                      onChange={e => setForm(f => ({ ...f, [c.key]: e.target.value }))}
+                      className="w-full h-10 rounded-xl border px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                    <p className="text-xs text-muted-foreground">
+                      {v ? brl(v * c.months) + ' a cada ' + c.months + ' meses' + (pct > 0 ? ' · ' + pct + '% off' : '') : 'vazio = não oferece'}
+                    </p>
+                  </div>
+                )
+              })}
             </div>
             <div className="col-span-2 space-y-1.5">
               <label className="text-sm font-medium">Features (uma por linha) *</label>
@@ -294,10 +373,29 @@ export default function PlanosPage() {
               </div>
 
               <div className="flex items-baseline gap-1">
-                <span className="text-sm font-bold text-muted-foreground">R$</span>
-                <span className="text-3xl font-black">{Number(plan.monthlyPrice).toFixed(0)}</span>
+                <span className="text-3xl font-black">{brl(Number(plan.monthlyPrice))}</span>
                 <span className="text-sm text-muted-foreground">/mês</span>
               </div>
+
+              {/* Preço de cada período e se já existe na Stripe */}
+              {plan.prices?.length > 0 && (
+                <div className="rounded-lg border divide-y text-xs">
+                  {ALL_CYCLES.map(c => {
+                    const p = plan.prices.find(x => x.cycle === c.cycle)
+                    if (!p) return null
+                    const v = Number(p.monthlyPrice)
+                    return (
+                      <div key={c.cycle} className="flex items-center justify-between gap-2 px-2 py-1.5">
+                        <span className="font-medium">{c.label}</span>
+                        <span className="text-muted-foreground">{brl(v)}/mês{c.months > 1 ? ' · ' + brl(v * c.months) : ''}</span>
+                        <span className={cn('rounded px-1.5 py-0.5 font-semibold', p.stripePriceId ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800')}>
+                          {p.stripePriceId ? 'Stripe ok' : 'pendente'}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
 
               <div className="flex-1 space-y-1.5">
                 {plan.features.slice(0, 5).map((f, i) => (
@@ -342,12 +440,13 @@ export default function PlanosPage() {
       {/* Info Stripe */}
       <div className="rounded-2xl border bg-blue-50/50 border-blue-200 p-4 text-sm space-y-2">
         <p className="font-semibold text-blue-900">💳 Configurar Stripe</p>
-        <p className="text-xs text-blue-800">Defina estas variáveis no Railway (serviço da API):</p>
+        <p className="text-xs text-blue-800">Coloque estas variáveis no arquivo .env do servidor (serviço da API), publique a API e depois clique em "Sincronizar com a Stripe":</p>
         <ul className="text-xs text-blue-800 list-disc pl-5 space-y-0.5 font-mono">
           <li><strong>STRIPE_SECRET_KEY</strong> — chave secreta do Stripe (sk_test_... ou sk_live_...)</li>
           <li><strong>STRIPE_WEBHOOK_SECRET</strong> — segredo do webhook (whsec_...)</li>
         </ul>
-        <p className="text-xs text-blue-800">Webhook URL: <code className="bg-blue-100 px-1 rounded">{typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname.replace('superadmin', 'api')}/stripe/webhook` : ''}</code></p>
+        <p className="text-xs text-blue-800">Webhook URL: <code className="bg-blue-100 px-1 rounded">{(process.env.NEXT_PUBLIC_API_URL ?? 'https://api.bylink.shop') + '/stripe/webhook'}</code></p>
+        <p className="text-xs text-blue-800">Eventos do webhook: checkout.session.completed, customer.subscription.created, customer.subscription.updated, customer.subscription.deleted, invoice.payment_failed.</p>
       </div>
     </div>
   )

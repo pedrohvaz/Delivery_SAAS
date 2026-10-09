@@ -6,6 +6,7 @@
 <title>ByLink: cardápio digital e pedido no WhatsApp, sem comissão</title>
 <meta name="description" content="Cardápio digital com o nome da sua loja, pedido pelo link ou pelo WhatsApp e comanda na cozinha. Zero de comissão por pedido. Grátis até 50 pedidos por mês.">
 <meta name="theme-color" content="#C01F16">
+<meta name="bylink-api" content="https://api.bylink.shop">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23C01F16'/%3E%3Ctext x='30' y='47' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='42' text-anchor='middle' fill='%23F4EBDD'%3EB%3C/text%3E%3Ccircle cx='51' cy='13' r='7' fill='%23FFC21F'/%3E%3C/svg%3E">
 <!-- DEPLOY STEP: og:url e og:image precisam da URL absoluta do ar (admin.bylink.shop) -->
 <meta property="og:type" content="website">
@@ -22,9 +23,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Martian+Mono:wdth,wght@75..112.5,400..600&family=Schibsted+Grotesk:wght@400;500;700&display=swap">
 <link rel="preload" as="image" href="/site/assets/burger-1400.webp" type="image/webp" fetchpriority="high">
-<link rel="stylesheet" href="/site/assets/site.css?v=1">
+<link rel="stylesheet" href="/site/assets/site.css?v=2">
 <script>document.documentElement.classList.replace('no-js', 'js')</script>
-<script src="/site/assets/site.js?v=1" defer></script>
+<script src="/site/assets/site.js?v=2" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Pular para o conteúdo</a>
@@ -152,7 +153,7 @@
         </div>
 
         <div class="won" id="won" aria-live="polite">
-          <p class="res-label">Com a ByLink PRO, a R$ 79 por mês, ficam</p>
+          <p class="res-label">Com o PRO anual, a <span id="keep-price">R$ 79,90</span> por mês, ficam</p>
           <p class="res-big res-keep" id="keep">R$ 47.652</p>
           <p class="res-after">no seu caixa por ano.</p>
           <a class="btn btn-ketchup btn-lg" href="/register?plan=gratis">Criar meu cardápio grátis</a>
@@ -292,10 +293,20 @@
         <p class="kicker rv">Planos</p>
         <h2 class="h2 rv" id="planos-title" style="--d:1">Preço fixo. Sem porcentagem.</h2>
       </div>
+      <fieldset class="cycles rv" style="--d:2">
+        <legend class="sr-only">Período do plano</legend>
+        <div class="seg seg-cycles">
+          <label><input type="radio" name="ciclo" value="MONTHLY"><span>Mensal</span></label>
+          <label><input type="radio" name="ciclo" value="QUARTERLY"><span>3 meses <em data-off="QUARTERLY">−5%</em></span></label>
+          <label><input type="radio" name="ciclo" value="SEMIANNUAL"><span>6 meses <em data-off="SEMIANNUAL">−10%</em></span></label>
+          <label><input type="radio" name="ciclo" value="ANNUAL" checked><span>1 ano <em data-off="ANNUAL">−20%</em></span></label>
+        </div>
+      </fieldset>
       <div class="plans">
         <article class="plan rv" style="--d:0">
           <h3>Starter</h3>
-          <p class="price"><b>R$ 0</b><span>grátis para sempre</span></p>
+          <p class="price"><b>R$ 0</b><span>por mês</span></p>
+          <p class="price-sub">grátis para sempre</p>
           <ul>
             <li>Até 50 pedidos por mês</li>
             <li>Cardápio digital com o nome da loja</li>
@@ -304,7 +315,7 @@
           </ul>
           <a class="btn btn-line" href="/register?plan=gratis">Começar grátis</a>
         </article>
-        <article class="plan plan-pro rv" style="--d:1">
+        <article class="plan plan-pro rv" style="--d:1" data-plan="pro">
           <svg class="badge" viewBox="0 0 120 120" aria-hidden="true">
             <defs><path id="badge-circle" d="M60 60 m-44 0 a44 44 0 1 1 88 0 a44 44 0 1 1 -88 0"/></defs>
             <circle cx="60" cy="60" r="58" class="badge-bg"/>
@@ -312,7 +323,8 @@
             <text x="60" y="70" text-anchor="middle" class="badge-star">★</text>
           </svg>
           <h3>PRO</h3>
-          <p class="price"><b>R$ 79</b><span>por mês</span></p>
+          <p class="price"><b data-price>R$ 79,90</b><span>por mês</span></p>
+          <p class="price-sub" data-sub>R$ 958,80 por ano · economize R$ 240,00</p>
           <p class="sr-only">Mais escolhido.</p>
           <ul>
             <li>Pedidos ilimitados</li>
@@ -320,21 +332,22 @@
             <li>Pix automático com validação</li>
             <li>Caixa de balcão (PDV)</li>
           </ul>
-          <a class="btn btn-mostarda" href="/register?plan=pro">Assinar o PRO</a>
+          <a class="btn btn-mostarda" data-cta href="/comprar/pro?ciclo=anual">Assinar o PRO</a>
         </article>
-        <article class="plan rv" style="--d:2">
+        <article class="plan rv" style="--d:2" data-plan="elite">
           <h3>Elite</h3>
-          <p class="price"><b>R$ 199</b><span>por mês</span></p>
+          <p class="price"><b data-price>R$ 199,00</b><span>por mês</span></p>
+          <p class="price-sub" data-sub>R$ 2.388,00 por ano · economize R$ 600,00</p>
           <ul>
             <li>Tudo do PRO</li>
             <li>Atendente com IA no WhatsApp</li>
             <li>Várias lojas no mesmo painel</li>
             <li>Programa de fidelidade</li>
           </ul>
-          <a class="btn btn-line" href="/register?plan=elite">Assinar o Elite</a>
+          <a class="btn btn-line" data-cta href="/comprar/elite?ciclo=anual">Assinar o Elite</a>
         </article>
       </div>
-      <p class="plans-note rv">Sem fidelidade. Você cancela pelo painel, quando quiser.</p>
+      <p class="plans-note rv">No mensal, sem fidelidade. Nos planos de 3, 6 e 12 meses você paga o período adiantado e não tem multa: se cancelar, o plano só não renova.</p>
     </div>
   </section>
 
@@ -361,7 +374,7 @@
         </details>
         <details class="rv" style="--d:4">
           <summary>Tem fidelidade ou multa?</summary>
-          <p>Não. Você cancela pelo próprio painel, quando quiser.</p>
+          <p>Não tem multa. No mensal, você cancela pelo painel quando quiser. Nos planos de 3, 6 e 12 meses você paga o período adiantado, com desconto; se cancelar, o plano segue até o fim do período e não renova.</p>
         </details>
       </div>
     </div>

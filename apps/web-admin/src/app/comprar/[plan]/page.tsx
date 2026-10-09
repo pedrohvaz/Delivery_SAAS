@@ -1,13 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { usePlans } from '@/hooks/use-plans'
 import { api } from '@/lib/api'
-import { ArrowLeft, Check, Loader2, ShieldCheck } from 'lucide-react'
+import { CYCLE_NAME, CYCLE_OPTIONS, brl, chargeText, cycleFromParam, discountPct, priceFor, savings, whatsappLink, type Cycle } from '@/lib/billing'
+import { ArrowLeft, Check, Loader2, MessageCircle, ShieldCheck } from 'lucide-react'
 
 function toSlug(value: string) {
   return value
@@ -36,6 +37,17 @@ export default function ComprarPlanoPage() {
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // Período vem do site (?ciclo=anual); sem ele, mostra o anual, que é o mais barato por mês
+  const [cycle, setCycle] = useState<Cycle>('ANNUAL')
+  useEffect(() => {
+    setCycle(cycleFromParam(new URLSearchParams(window.location.search).get('ciclo')))
+  }, [])
+
+  const price = priceFor(plan?.prices, cycle)
+  const saved = price && plan ? savings(plan.prices, price) : 0
+  // Assinatura online ainda não ligada (Stripe sem chave ou preço não sincronizado)
+  const offline = !price || !price.available
+  const cycleSlug = CYCLE_OPTIONS.find((o) => o.cycle === (price?.cycle ?? cycle))?.slug ?? 'anual'
 
   function handleStoreNameChange(value: string) {
     setStoreName(value)
@@ -50,11 +62,11 @@ export default function ComprarPlanoPage() {
     setLoading(true)
     try {
       const successUrl = `${window.location.origin}/welcome?session_id={CHECKOUT_SESSION_ID}`
-      const cancelUrl = `${window.location.origin}/comprar/${planSlug}?canceled=1`
+      const cancelUrl = `${window.location.origin}/comprar/${planSlug}?ciclo=${cycleSlug}&canceled=1`
 
       const { data } = await api.post('/auth/start-paid-signup', {
         storeName, storeSlug, name, email, password, phone,
-        planSlug, successUrl, cancelUrl,
+        planSlug, cycle: price?.cycle ?? cycle, successUrl, cancelUrl,
       })
 
       const url = data.data?.checkoutUrl
@@ -106,19 +118,48 @@ export default function ComprarPlanoPage() {
               <p className="text-sm text-white/80">{plan.tagline}</p>
             </div>
 
+            {/* Período: quanto maior, menor a mensalidade */}
+            {plan.prices?.length > 1 && (
+              <div role="radiogroup" aria-label="Período do plano" className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {CYCLE_OPTIONS.filter((o) => plan.prices.some((p: any) => p.cycle === o.cycle)).map((o) => {
+                  const p = plan.prices.find((x: any) => x.cycle === o.cycle)!
+                  const pct = discountPct(plan.prices, p)
+                  const on = (price?.cycle ?? cycle) === o.cycle
+                  return (
+                    <button
+                      key={o.cycle}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => setCycle(o.cycle)}
+                      className={`min-h-11 rounded-xl px-3 py-2 text-left transition ${on ? 'bg-white text-orange-600' : 'bg-white/15 text-white hover:bg-white/25'}`}
+                    >
+                      <span className="block text-sm font-bold">{o.label}</span>
+                      <span className="block text-xs opacity-80">{pct > 0 ? `${pct}% off` : 'sem desconto'}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
             <div className="mb-6">
               <div className="flex items-baseline gap-1">
-                <span className="text-sm text-white/80">R$</span>
-                <span className="text-6xl font-black">{Number(plan.monthlyPrice).toFixed(0)}</span>
+                <span className="text-5xl font-black">{brl(price?.monthlyPrice ?? Number(plan.monthlyPrice))}</span>
                 <span className="text-sm text-white/80">/mês</span>
               </div>
-              <p className="text-xs text-white/70 mt-1">Cobrado mensalmente. Cancele quando quiser.</p>
+              <p className="text-xs text-white/80 mt-1">
+                {price && price.months > 1
+                  ? `${chargeText(price)}, adiantado.${saved > 0 ? ` Você economiza ${brl(saved)}.` : ''} Renova sozinho; se cancelar, só não renova. Sem multa.`
+                  : 'Cobrado todo mês. Cancele quando quiser.'}
+              </p>
             </div>
 
-            <div className="rounded-2xl bg-white/10 p-4 mb-6">
-              <p className="text-sm font-bold mb-1">🎁 7 dias grátis</p>
-              <p className="text-xs text-white/80">Você só será cobrado após o período de teste. Cancele antes e não paga nada.</p>
-            </div>
+            {!offline && (
+              <div className="rounded-2xl bg-white/10 p-4 mb-6">
+                <p className="text-sm font-bold mb-1">🎁 7 dias grátis</p>
+                <p className="text-xs text-white/80">Você só será cobrado após o período de teste. Cancele antes e não paga nada.</p>
+              </div>
+            )}
 
             <ul className="space-y-2">
               {plan.features?.map((f: string) => (
@@ -129,13 +170,44 @@ export default function ComprarPlanoPage() {
               ))}
             </ul>
 
-            <div className="mt-6 pt-6 border-t border-white/20 flex items-center gap-2 text-xs text-white/80">
-              <ShieldCheck className="h-4 w-4" />
-              Pagamento processado pelo Stripe · Cartão protegido
-            </div>
+            {!offline && (
+              <div className="mt-6 pt-6 border-t border-white/20 flex items-center gap-2 text-xs text-white/80">
+                <ShieldCheck className="h-4 w-4" />
+                Pagamento processado pela Stripe · Cartão protegido
+              </div>
+            )}
           </div>
 
-          {/* Formulário */}
+          {/* Formulário (ou o caminho pelo WhatsApp, enquanto a assinatura online não está ligada) */}
+          {offline ? (
+            <div className="bg-white rounded-3xl p-8 shadow-xl space-y-5">
+              <div className="space-y-2">
+                <h1 className="text-2xl font-black text-gray-900">Assinatura online em breve</h1>
+                <p className="text-sm text-gray-600">
+                  Crie sua conta grátis agora e comece a montar o cardápio. Para ativar o plano {plan.name}
+                  {price ? ` de ${CYCLE_NAME[price.cycle]}` : ''}, fale com a gente no WhatsApp que a gente ativa para você.
+                </p>
+              </div>
+              <a
+                href={whatsappLink(`Olá! Quero assinar o plano ${plan.name}${price ? ` (${CYCLE_NAME[price.cycle]})` : ''} da ByLink.`)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-4 font-bold text-white transition hover:bg-green-700"
+              >
+                <MessageCircle className="h-5 w-5" /> Falar no WhatsApp
+              </a>
+              <Link
+                href="/register?plan=gratis"
+                className="flex min-h-12 w-full items-center justify-center rounded-xl border-2 border-gray-200 px-4 font-bold text-gray-800 transition hover:border-gray-400"
+              >
+                Criar minha conta grátis
+              </Link>
+              <p className="text-center text-sm text-gray-500">
+                Já tem conta?{' '}
+                <Link href="/login" className="font-medium text-orange-500 hover:underline">Entrar</Link>
+              </p>
+            </div>
+          ) : (
           <div className="bg-white rounded-3xl p-8 shadow-xl">
             <div className="space-y-1 mb-6">
               <h1 className="text-2xl font-black text-gray-900">Crie sua conta</h1>
@@ -255,6 +327,7 @@ export default function ComprarPlanoPage() {
               </Link>
             </p>
           </div>
+          )}
         </div>
       </div>
     </div>

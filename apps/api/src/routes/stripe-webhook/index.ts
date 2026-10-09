@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { getStripe } from '../../lib/stripe.js'
+import { findPlanByStripePrice } from '../../lib/billing.js'
 import { cacheDel } from '../../lib/cache.js'
 
 const stripeWebhookRoutes: FastifyPluginAsync = async (app) => {
@@ -43,7 +44,16 @@ const stripeWebhookRoutes: FastifyPluginAsync = async (app) => {
           const session = event.data.object as any
           const meta = session.metadata ?? {}
 
-          if (meta.signupType !== 'paid') break
+          // Assinatura feita de dentro do painel: guarda o cliente Stripe na loja
+          if (meta.signupType !== 'paid') {
+            if (meta.storeId && session.customer) {
+              await app.prisma.store.updateMany({
+                where: { id: meta.storeId, stripeCustomerId: null },
+                data: { stripeCustomerId: session.customer },
+              })
+            }
+            break
+          }
 
           // Verifica idempotência: se a conta já foi criada, sai
           const existing = await app.prisma.user.findUnique({ where: { email: meta.email } })
@@ -124,17 +134,21 @@ const stripeWebhookRoutes: FastifyPluginAsync = async (app) => {
             break
           }
 
+          // preço → plano + período (mensal, 3, 6 ou 12 meses)
           const stripePriceId = sub.items?.data?.[0]?.price?.id
-          const plan = stripePriceId
-            ? await app.prisma.plan.findFirst({ where: { stripePriceId } })
-            : null
-          if (!plan) break
+          const found = stripePriceId ? await findPlanByStripePrice(app.prisma, stripePriceId) : null
+          if (!found) {
+            app.log.warn({ subId: sub.id, stripePriceId }, 'Preço da assinatura não corresponde a nenhum plano')
+            break
+          }
+          const { plan, cycle } = found
 
           await app.prisma.subscription.upsert({
             where: { storeId },
             create: {
               storeId,
               planId: plan.id,
+              cycle,
               status: mapStripeStatus(sub.status),
               stripeSubscriptionId: sub.id,
               stripeCustomerId: sub.customer,
@@ -145,6 +159,7 @@ const stripeWebhookRoutes: FastifyPluginAsync = async (app) => {
             },
             update: {
               planId: plan.id,
+              cycle,
               status: mapStripeStatus(sub.status),
               stripeSubscriptionId: sub.id,
               stripeCustomerId: sub.customer,

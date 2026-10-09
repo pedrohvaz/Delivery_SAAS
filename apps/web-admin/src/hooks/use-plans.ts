@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import type { Cycle, PlanPriceInfo } from '@/lib/billing'
 
 export interface Plan {
   id: string
@@ -15,12 +16,14 @@ export interface Plan {
   isActive: boolean
   position: number
   stripePriceId: string | null
+  prices: PlanPriceInfo[] // um por período: mensal, 3, 6 e 12 meses
 }
 
 export interface Subscription {
   id: string
   storeId: string
   planId: string
+  cycle: Cycle | null
   status: 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'INCOMPLETE' | 'UNPAID'
   trialEndsAt: string | null
   currentPeriodEnd: string | null
@@ -48,9 +51,10 @@ export function useMySubscription() {
 
 export function useCheckout() {
   return useMutation({
-    mutationFn: (planSlug: string) =>
+    mutationFn: ({ planSlug, cycle }: { planSlug: string; cycle: Cycle }) =>
       api.post<{ data: { url: string } }>('/plans/checkout', {
         planSlug,
+        cycle,
         successUrl: `${window.location.origin}/dashboard?billing=success`,
         cancelUrl: `${window.location.origin}/dashboard?billing=canceled`,
       }).then((r) => r.data.data),

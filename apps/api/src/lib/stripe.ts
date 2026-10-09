@@ -1,4 +1,5 @@
 import Stripe from 'stripe'
+import { stripeRecurring, type Cycle } from './billing.js'
 
 let stripeClient: Stripe | null = null
 
@@ -20,14 +21,17 @@ export async function createStripeProduct(name: string, description?: string) {
   return stripe.products.create({ name, description })
 }
 
-export async function createStripePrice(productId: string, amountInCents: number) {
+/** Preço recorrente: amountInCents é o valor cobrado por período (mensal, 3, 6 ou 12 meses). */
+export async function createStripePrice(productId: string, amountInCents: number, cycle: Cycle = 'MONTHLY', nickname?: string) {
   const stripe = getStripe()
   if (!stripe) throw new Error('Stripe não configurado')
   return stripe.prices.create({
     product: productId,
     unit_amount: amountInCents,
     currency: 'brl',
-    recurring: { interval: 'month' },
+    recurring: stripeRecurring(cycle),
+    nickname,
+    metadata: { cycle },
   })
 }
 
@@ -51,7 +55,12 @@ export async function createCheckoutSession(params: {
     customer_email: params.customerId ? undefined : params.customerEmail,
     client_reference_id: params.storeId,
     metadata: { storeId: params.storeId },
-    subscription_data: params.trialDays ? { trial_period_days: params.trialDays } : undefined,
+    // storeId também na assinatura: os eventos customer.subscription.* chegam sem a sessão,
+    // e loja que ainda não tem stripeCustomerId não seria encontrada pelo cliente
+    subscription_data: {
+      ...(params.trialDays ? { trial_period_days: params.trialDays } : {}),
+      metadata: { storeId: params.storeId },
+    },
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
     allow_promotion_codes: true,
