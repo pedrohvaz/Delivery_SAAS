@@ -24,7 +24,13 @@ interface OrderData {
   createdAt: string
   store: { name: string; slug: string; logoUrl: string | null; estimatedTime: number }
   customer: { name: string } | null
-  items: { id: string; name: string; price: number; quantity: number; notes: string | null; addons: unknown[] }[]
+  items: { id: string; name: string; price: number | string; quantity: number; notes: string | null; addons: { optionName?: string; price?: number | string }[] }[]
+}
+
+// Linha do item com os adicionais (a API manda Decimal como texto, então converte antes de somar)
+function lineTotal(item: OrderData['items'][number]) {
+  const addons = (item.addons ?? []).reduce((s, a) => s + Number(a?.price ?? 0), 0)
+  return (Number(item.price) + addons) * item.quantity
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string; step: number }> = {
@@ -299,9 +305,17 @@ export default function OrderTrackPage() {
         <div className="rounded-2xl bg-white border p-4 space-y-3">
           <p className="font-semibold text-sm">Itens do pedido</p>
           {order.items.map((item) => (
-            <div key={item.id} className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{item.quantity}x {item.name}</span>
-              <span className="font-medium">{currency(item.price * item.quantity)}</span>
+            <div key={item.id} className="flex justify-between gap-3 text-sm">
+              <div className="min-w-0">
+                <span className="text-muted-foreground">{item.quantity}x {item.name}</span>
+                {item.addons?.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {item.addons.map((a) => a?.optionName).filter(Boolean).join(', ')}
+                  </p>
+                )}
+                {item.notes && <p className="text-xs text-muted-foreground">Obs.: {item.notes}</p>}
+              </div>
+              <span className="shrink-0 font-medium">{currency(lineTotal(item))}</span>
             </div>
           ))}
           <div className="border-t pt-2 space-y-1">

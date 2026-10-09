@@ -13,6 +13,10 @@ function esc(s: string): string {
   return s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] ?? c)
 }
 
+const PAYMENT_LABELS: Record<string, string> = {
+  CASH: 'Dinheiro', PIX: 'Pix', CREDIT_CARD: 'Cartão de crédito', DEBIT_CARD: 'Cartão de débito', PICPAY: 'PicPay',
+}
+
 function buildTicketHtml(order: Order, storeName: string): string {
   const dt = new Date(order.createdAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
 
@@ -20,7 +24,8 @@ function buildTicketHtml(order: Order, storeName: string): string {
     .map((i) => {
       const addons = i.addons.length ? `<div class="sub">+ ${esc(i.addons.map((a) => a.optionName).join(', '))}</div>` : ''
       const notes = i.notes ? `<div class="sub">obs: ${esc(i.notes)}</div>` : ''
-      const lineTotal = (i.price + i.addons.reduce((s, a) => s + a.price, 0)) * i.quantity
+      // A API manda preços Decimal como texto ("40"): sem Number(), "40" + 5 vira "405"
+      const lineTotal = (Number(i.price) + i.addons.reduce((s, a) => s + Number(a.price), 0)) * i.quantity
       return `<div class="item"><div class="item-row"><span class="qty">${i.quantity}x</span><span class="name">${esc(i.name)}</span><span class="price">${money(lineTotal)}</span></div>${addons}${notes}</div>`
     })
     .join('')
@@ -31,7 +36,7 @@ function buildTicketHtml(order: Order, storeName: string): string {
       : ''
 
   const payment = order.paymentMethod
-    ? `<div class="row"><span>Pagamento</span><span>${esc(order.paymentMethod.replace(/_/g, ' '))}</span></div>` +
+    ? `<div class="row"><span>Pagamento</span><span>${esc(PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod.replace(/_/g, ' '))}</span></div>` +
       (order.paymentMethod === 'CASH' && order.changeFor && Number(order.changeFor) > 0
         ? `<div class="row"><span>Troco p/</span><span>${money(Number(order.changeFor))}</span></div>`
         : '')

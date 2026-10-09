@@ -18,6 +18,10 @@ import { currency } from '@/lib/utils'
 import { CustomerReview } from './customer-review'
 import { printOrder } from './order-ticket'
 
+const PAYMENT_LABELS: Record<string, string> = {
+  CASH: 'Dinheiro', PIX: 'Pix', CREDIT_CARD: 'Cartão de crédito', DEBIT_CARD: 'Cartão de débito', PICPAY: 'PicPay',
+}
+
 const CANCEL_REASONS = [
   'Produto indisponível',
   'Endereço fora da área de entrega',
@@ -162,7 +166,7 @@ export function OrderModal({ order, onClose, initialCancelling = false }: Props)
                   {item.notes && <p className="text-xs font-semibold text-amber-700">⚠ {item.notes}</p>}
                 </div>
                 <span className="shrink-0 font-medium">
-                  {currency((item.price + item.addons.reduce((s, a) => s + a.price, 0)) * item.quantity)}
+                  {currency((Number(item.price) + item.addons.reduce((s, a) => s + Number(a.price), 0)) * item.quantity)}
                 </span>
               </div>
             ))}
@@ -239,7 +243,7 @@ export function OrderModal({ order, onClose, initialCancelling = false }: Props)
             <div className="rounded-xl border p-3 space-y-1.5">
               <div className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm capitalize">{order.paymentMethod.replace(/_/g, ' ').toLowerCase()}</span>
+                <span className="text-sm">{PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod}</span>
                 <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium
                   ${order.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                   {order.paymentStatus === 'PAID' ? 'Pago' : 'Pendente'}
