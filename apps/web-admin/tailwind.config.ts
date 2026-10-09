@@ -10,21 +10,10 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['var(--font-fraunces)', 'Georgia', 'serif'],
+        display: ['var(--font-space-grotesk)', 'sans-serif'],
         mono: ['var(--font-jetbrains-mono)', 'ui-monospace', 'monospace'],
       },
       colors: {
-        // Página de vendas (landing): 1 destaque + neutros quentes
-        lp: {
-          paper: 'var(--lp-paper)',
-          cream: 'var(--lp-cream)',
-          ink: 'var(--lp-ink)',
-          muted: 'var(--lp-muted)',
-          line: 'var(--lp-line)',
-          brand: 'var(--lp-brand)',
-          'brand-deep': 'var(--lp-brand-deep)',
-          whats: 'var(--lp-whats)',
-        },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',

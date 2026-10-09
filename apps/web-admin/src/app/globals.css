@@ -84,39 +84,3 @@
   }
 }
 
-/* ── Página de vendas (.lp) ──────────────────────────────────────────────
-   Paleta curta: papel creme + tinta + 1 destaque (laranja queimado).
-   Contraste: brand sobre paper 4.9:1; branco sobre brand 5.2:1; muted sobre paper 7.1:1. */
-.lp {
-  --lp-paper: #f6f1e8;
-  --lp-cream: #efe6d6;
-  --lp-ink: #1c1917;
-  --lp-muted: #57534e;
-  --lp-line: #e2d8c6;
-  --lp-brand: #c2410c;
-  --lp-brand-deep: #9a3412;
-  --lp-whats: #15803d;
-  /* escala de espaçamento das seções */
-  --lp-section: clamp(4rem, 9vw, 7rem);
-  font-family: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
-  color: var(--lp-ink);
-  background: var(--lp-paper);
-  -webkit-font-smoothing: antialiased;
-}
-.lp .font-sans { font-family: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif; }
-.lp .font-mono { font-family: var(--font-plex-mono), ui-monospace, monospace; }
-.lp .font-display { font-family: var(--font-fraunces), Georgia, serif; font-variation-settings: 'SOFT' 50; }
-.lp .section { padding-block: var(--lp-section); }
-.lp :focus-visible { outline: 2px solid var(--lp-brand); outline-offset: 3px; border-radius: 4px; }
-/* borda serrilhada de comanda impressa (pequenos "dentes" da cor do fundo) */
-.lp .perforated { position: relative; }
-.lp .perforated::after {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; bottom: -7px; height: 8px;
-  background: radial-gradient(circle at 7px 0, #fff 6px, transparent 6.5px) repeat-x;
-  background-size: 14px 8px;
-}
-@media (prefers-reduced-motion: reduce) {
-  .lp *, .lp *::before, .lp *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
-}

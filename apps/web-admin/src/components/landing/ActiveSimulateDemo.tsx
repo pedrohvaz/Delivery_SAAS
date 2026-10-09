@@ -9,11 +9,11 @@ import AdminPanel from "./AdminPanel";
 
 // Presets de Cores e Temas de Marca para Personalização de Layout
 const THEMES = [
-  { id: "orange", name: "Laranja Original", hex: "#C2410C", text: "text-[#C2410C]", bg: "bg-[#C2410C]", bgHover: "hover:bg-[#E05E00]", border: "border-[#C2410C]/20", bgLight: "bg-[#FBF1E7]" },
+  { id: "orange", name: "Laranja Original", hex: "#C01F16", text: "text-[#C01F16]", bg: "bg-[#C01F16]", bgHover: "hover:bg-[#E05E00]", border: "border-[#C01F16]/20", bgLight: "bg-[#FBF1E7]" },
   { id: "red", name: "Vermelho Gourmet", hex: "#DC2626", text: "text-[#DC2626]", bg: "bg-[#DC2626]", bgHover: "hover:bg-[#B91C1C]", border: "border-[#DC2626]/20", bgLight: "bg-[#FEF2F2]" },
   { id: "green", name: "Verde Orgânico", hex: "#16A34A", text: "text-[#16A34A]", bg: "bg-[#16A34A]", bgHover: "hover:bg-[#15803D]", border: "border-[#16A34A]/20", bgLight: "bg-[#F0FDF4]" },
   { id: "purple", name: "Açaí & Doces (Roxo)", hex: "#9333EA", text: "text-[#9333EA]", bg: "bg-[#9333EA]", bgHover: "hover:bg-[#7E22CE]", border: "border-[#9333EA]/20", bgLight: "bg-[#FAF5FF]" },
-  { id: "dark", name: "Estilo Midnight", hex: "#1C1917", text: "text-[#1C1917]", bg: "bg-[#1C1917]", bgHover: "hover:bg-[#000000]", border: "border-neutral-200", bgLight: "bg-[#F3F4F6]" }
+  { id: "dark", name: "Estilo Midnight", hex: "#1C1512", text: "text-[#1C1512]", bg: "bg-[#1C1512]", bgHover: "hover:bg-[#000000]", border: "border-neutral-200", bgLight: "bg-[#F3F4F6]" }
 ];
 
 // Presets de Nicho/Banners para Personalização de Layout
@@ -308,7 +308,7 @@ export default function ActiveSimulateDemo() {
       particleCount: 120,
       spread: 60,
       origin: { y: 0.65 },
-      colors: ["#C2410C", "#1C1917", "#00C851", "#25D366"],
+      colors: ["#C01F16", "#1C1512", "#00C851", "#25D366"],
     });
 
     const generatedId = `BY-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -348,7 +348,7 @@ export default function ActiveSimulateDemo() {
       particleCount: 180,
       spread: 80,
       origin: { y: 0.6 },
-      colors: ["#C2410C", "#25D366", "#ffffff"]
+      colors: ["#C01F16", "#25D366", "#ffffff"]
     });
     setShowSuccessToast(true);
     setTimeout(() => setShowSuccessToast(false), 4500);
@@ -504,7 +504,7 @@ export default function ActiveSimulateDemo() {
         <div className="flex justify-end">
           <button
             onClick={resetDemo}
-            className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#1C1917] border border-[#E2D8C6] hover:border-[#C2410C] hover:text-[#C2410C] transition-all bg-white px-3 py-2 rounded-lg cursor-pointer self-start md:self-auto font-mono"
+            className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#1C1512] border border-[#EADFCC] hover:border-[#C01F16] hover:text-[#C01F16] transition-all bg-white px-3 py-2 rounded-lg cursor-pointer self-start md:self-auto font-mono"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Recomeçar teste
@@ -517,7 +517,7 @@ export default function ActiveSimulateDemo() {
             onClick={() => setSimulationMode("client")}
             className={`flex-1 py-3 text-xs md:text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
               simulationMode === "client" 
-                ? "bg-white text-neutral-900 shadow-md font-black border-l-3 border-[#C2410C]" 
+                ? "bg-white text-neutral-900 shadow-md font-black border-l-3 border-[#C01F16]" 
                 : "text-neutral-500 hover:text-neutral-800"
             }`}
           >
@@ -528,13 +528,13 @@ export default function ActiveSimulateDemo() {
             onClick={() => setSimulationMode("staff")}
             className={`flex-1 py-3 text-xs md:text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
               simulationMode === "staff" 
-                ? "bg-white text-[#C2410C] shadow-md font-black border-l-3 border-[#C2410C]" 
+                ? "bg-white text-[#C01F16] shadow-md font-black border-l-3 border-[#C01F16]" 
                 : "text-neutral-500 hover:text-neutral-800"
             }`}
           >
             <span className="text-sm">🖥️</span>
             <span>Painel do Funcionário (Visão da Loja / ADM)</span>
-            <span className="bg-[#C2410C] text-white text-[9px] px-2 py-0.5 rounded-full font-black animate-pulse uppercase tracking-wider">
+            <span className="bg-[#C01F16] text-white text-[9px] px-2 py-0.5 rounded-full font-black animate-pulse uppercase tracking-wider">
               Painel ADM
             </span>
           </button>
@@ -544,7 +544,7 @@ export default function ActiveSimulateDemo() {
         <div className="bg-white border border-neutral-200 rounded-2xl p-4 md:p-5 shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
           <div className="flex-1 min-w-0 space-y-1">
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-[#C2410C]/10 text-[#C2410C]">
+              <span className="p-1.5 rounded-lg bg-[#C01F16]/10 text-[#C01F16]">
                 <Palette className="w-5 h-5" />
               </span>
               <h3 className="font-extrabold text-sm md:text-base text-neutral-900 tracking-tight font-display">
@@ -559,7 +559,7 @@ export default function ActiveSimulateDemo() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6 w-full xl:w-auto">
             {/* Color Select Control */}
             <div className="flex flex-col gap-1.5 flex-1 sm:flex-initial">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#C2410C] font-mono">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#C01F16] font-mono">
                 1. Cor de Destaque / Marca
               </span>
               <div className="flex items-center gap-2">
@@ -589,7 +589,7 @@ export default function ActiveSimulateDemo() {
 
             {/* Nicho / Banner Select Control */}
             <div className="flex flex-col gap-1.5 flex-1 sm:flex-initial">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#C2410C] font-mono">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#C01F16] font-mono">
                 2. Nicho de Atuação (Banner & Logo)
               </span>
               <div className="flex flex-wrap gap-1 md:max-w-xs xl:max-w-md">
@@ -619,7 +619,7 @@ export default function ActiveSimulateDemo() {
         {simulationMode === "client" ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           {/* Cardápio Virtual (7 cols) */}
-          <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E2D8C6] shadow-sm flex flex-col justify-between overflow-hidden">
+          <div className="lg:col-span-7 bg-white rounded-2xl border border-[#EADFCC] shadow-sm flex flex-col justify-between overflow-hidden">
             <div>
               {/* CABEÇALHO DO SIMULADOR COM BANNER PERSONALIZÁVEL */}
               <div className="relative">
@@ -651,10 +651,10 @@ export default function ActiveSimulateDemo() {
               <div className="pt-8 px-5 pb-3 border-b border-neutral-100 bg-neutral-50/40 text-left">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                   <div>
-                    <h3 className="font-black text-lg md:text-xl text-[#1C1917] font-display tracking-tight leading-tight transition-all duration-300">
+                    <h3 className="font-black text-lg md:text-xl text-[#1C1512] font-display tracking-tight leading-tight transition-all duration-300">
                       {selectedBanner.title}
                     </h3>
-                    <p className="text-[11px] md:text-xs text-[#57534E] mt-1 font-sans italic max-w-sm xl:max-w-md">
+                    <p className="text-[11px] md:text-xs text-[#5E5048] mt-1 font-sans italic max-w-sm xl:max-w-md">
                       {selectedBanner.desc}
                     </p>
                   </div>
@@ -666,9 +666,9 @@ export default function ActiveSimulateDemo() {
                 </div>
 
                 {/* Loja Status Extra Row */}
-                <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#57534E] font-medium mt-3.5 pt-2.5 border-t border-neutral-200/50">
+                <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#5E5048] font-medium mt-3.5 pt-2.5 border-t border-neutral-200/50">
                   <span className="flex items-center gap-1 text-amber-500 font-bold">
-                    ★ 4.9 <span className="text-[#57534E] font-normal">(150+ avaliações)</span>
+                    ★ 4.9 <span className="text-[#5E5048] font-normal">(150+ avaliações)</span>
                   </span>
                   <span className="text-neutral-300">•</span>
                   <span className="flex items-center gap-1 font-mono">
@@ -746,7 +746,7 @@ export default function ActiveSimulateDemo() {
                             placeholder="Pesquisar pratos pelo nome..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-9 h-9 text-xs bg-[#F6F1E8] hover:bg-neutral-100/80 focus:bg-white text-[#1C1917] placeholder-neutral-500 rounded-xl border border-neutral-200 focus:border-[#C2410C] focus:ring-1 focus:ring-[#C2410C]/20 transition-all outline-none"
+                            className="w-full pl-9 pr-9 h-9 text-xs bg-[#F4EBDD] hover:bg-neutral-100/80 focus:bg-white text-[#1C1512] placeholder-neutral-500 rounded-xl border border-neutral-200 focus:border-[#C01F16] focus:ring-1 focus:ring-[#C01F16]/20 transition-all outline-none"
                           />
                           {searchQuery && (
                             <button
@@ -768,7 +768,7 @@ export default function ActiveSimulateDemo() {
                               className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all cursor-pointer ${
                                 activeTab === cat
                                   ? `${selectedTheme.bg} text-white`
-                                  : "bg-[#F6F1E8] text-[#57534E] hover:bg-[#E2D8C6]"
+                                  : "bg-[#F4EBDD] text-[#5E5048] hover:bg-[#EADFCC]"
                               }`}
                             >
                               {cat === "all" ? "Todos" : cat}
@@ -780,9 +780,9 @@ export default function ActiveSimulateDemo() {
                       {/* Interactive Products List */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1">
                         {filteredProducts.length === 0 ? (
-                          <div className="col-span-full py-10 px-4 flex flex-col items-center justify-center text-center bg-[#F6F1E8] rounded-xl border border-dashed border-neutral-200">
+                          <div className="col-span-full py-10 px-4 flex flex-col items-center justify-center text-center bg-[#F4EBDD] rounded-xl border border-dashed border-neutral-200">
                             <span className="text-3xl mb-2">🔍</span>
-                            <p className="text-xs font-extrabold text-[#1C1917] font-sans">Nenhum prato encontrado</p>
+                            <p className="text-xs font-extrabold text-[#1C1512] font-sans">Nenhum prato encontrado</p>
                             <p className="text-[10px] text-neutral-500 font-sans mt-1 max-w-[240px]">
                               Não encontramos itens correspondentes a "{searchQuery}" nesta categoria.
                             </p>
@@ -793,7 +793,7 @@ export default function ActiveSimulateDemo() {
                             return (
                               <div
                                 key={prod.id}
-                                className="flex flex-col justify-between border border-[#E2D8C6] rounded-xl p-3 bg-[#F6F1E8] transition-all group font-sans"
+                                className="flex flex-col justify-between border border-[#EADFCC] rounded-xl p-3 bg-[#F4EBDD] transition-all group font-sans"
                                 style={{
                                   borderColor: qtyInCart > 0 ? selectedTheme.hex : undefined
                                 }}
@@ -803,26 +803,26 @@ export default function ActiveSimulateDemo() {
                                     src={prod.image}
                                     alt={prod.name}
                                     referrerPolicy="no-referrer"
-                                    className="w-14 h-14 rounded-lg object-cover border border-[#E2D8C6] bg-white flex-shrink-0"
+                                    className="w-14 h-14 rounded-lg object-cover border border-[#EADFCC] bg-white flex-shrink-0"
                                   />
                                   <div className="flex-1 min-w-0 text-left">
-                                    <p className="font-bold text-xs text-[#1C1917] leading-snug transition-colors truncate"
+                                    <p className="font-bold text-xs text-[#1C1512] leading-snug transition-colors truncate"
                                        style={{ color: qtyInCart > 0 ? selectedTheme.hex : undefined }}>
                                       {prod.name}
                                     </p>
-                                    <p className="text-[10px] text-[#57534E] leading-normal line-clamp-2 mt-0.5 font-sans">
+                                    <p className="text-[10px] text-[#5E5048] leading-normal line-clamp-2 mt-0.5 font-sans">
                                       {prod.description}
                                     </p>
                                     {(prod.addons && prod.addons.length > 0) && (
-                                      <p className="text-[8px] text-[#C2410C] font-bold font-mono tracking-wide mt-1 animate-pulse">
+                                      <p className="text-[8px] text-[#C01F16] font-bold font-mono tracking-wide mt-1 animate-pulse">
                                         ✦ OPÇÕES DE ADICIONAIS
                                       </p>
                                     )}
                                   </div>
                                 </div>
 
-                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#E2D8C6]/60 font-sans">
-                                  <span className="font-mono text-xs font-bold text-[#1C1917]">
+                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#EADFCC]/60 font-sans">
+                                  <span className="font-mono text-xs font-bold text-[#1C1512]">
                                     R$ {prod.price.toFixed(2)}
                                   </span>
 
@@ -832,7 +832,7 @@ export default function ActiveSimulateDemo() {
                                         <motion.button
                                           whileTap={{ scale: 0.9 }}
                                           onClick={() => handleRemoveOneMenu(prod.name)}
-                                          className="w-6 h-6 flex items-center justify-center rounded-md bg-white border border-[#E2D8C6] hover:bg-neutral-100 font-bold text-xs cursor-pointer transition-all"
+                                          className="w-6 h-6 flex items-center justify-center rounded-md bg-white border border-[#EADFCC] hover:bg-neutral-100 font-bold text-xs cursor-pointer transition-all"
                                         >
                                           -
                                         </motion.button>
@@ -841,7 +841,7 @@ export default function ActiveSimulateDemo() {
                                           initial={{ scale: 0.8 }}
                                           animate={{ scale: [0.8, 1.3, 1] }}
                                           transition={{ type: "spring", stiffness: 450, damping: 15 }}
-                                          className="w-5 text-center font-mono text-xs font-bold text-[#1C1917] inline-block"
+                                          className="w-5 text-center font-mono text-xs font-bold text-[#1C1512] inline-block"
                                         >
                                           {qtyInCart}
                                         </motion.span>
@@ -877,7 +877,7 @@ export default function ActiveSimulateDemo() {
                           Histórico de Simulações
                         </span>
                         
-                        <div className="flex items-center gap-2 bg-[#F6F1E8] border border-neutral-200 hover:border-neutral-300 rounded-xl px-2.5 py-1.5 focus-within:border-[#C2410C] focus-within:ring-1 focus-within:ring-[#C2410C]/15 transition-all">
+                        <div className="flex items-center gap-2 bg-[#F4EBDD] border border-neutral-200 hover:border-neutral-300 rounded-xl px-2.5 py-1.5 focus-within:border-[#C01F16] focus-within:ring-1 focus-within:ring-[#C01F16]/15 transition-all">
                           <span className="text-neutral-400 text-xs font-semibold">Filtro:</span>
                           <select
                             value={historyFilter}
@@ -892,9 +892,9 @@ export default function ActiveSimulateDemo() {
                       </div>
 
                       {ordersHistory.length === 0 ? (
-                        <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#F6F1E8] rounded-xl border border-dashed border-neutral-200">
+                        <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#F4EBDD] rounded-xl border border-dashed border-neutral-200">
                           <span className="text-3xl mb-2">📜</span>
-                          <p className="text-xs font-extrabold text-[#1C1917] font-sans">Sem histórico de pedidos</p>
+                          <p className="text-xs font-extrabold text-[#1C1512] font-sans">Sem histórico de pedidos</p>
                           <p className="text-[10px] text-neutral-500 font-sans mt-1 max-w-[240px]">
                             Faça um pedido no checkout direto ByLink para iniciar seu histórico simulado!
                           </p>
@@ -902,9 +902,9 @@ export default function ActiveSimulateDemo() {
                       ) : (
                         <div className="flex-1 max-h-[320px] overflow-y-auto pr-1 scrollbar-thin space-y-3.5">
                           {filteredHistoryOrders.length === 0 ? (
-                            <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#F6F1E8] rounded-xl border border-dashed border-neutral-200">
+                            <div className="py-12 px-4 flex flex-col items-center justify-center text-center bg-[#F4EBDD] rounded-xl border border-dashed border-neutral-200">
                               <span className="text-2xl mb-1">🔍</span>
-                              <p className="text-xs font-extrabold text-[#1C1917] font-sans">Nenhum pedido encontrado</p>
+                              <p className="text-xs font-extrabold text-[#1C1512] font-sans">Nenhum pedido encontrado</p>
                               <p className="text-[10px] text-neutral-500 font-sans mt-1">Nenhum pedido atende a este filtro de status.</p>
                             </div>
                           ) : (
@@ -943,12 +943,12 @@ export default function ActiveSimulateDemo() {
                                 <div
                                   key={order.id}
                                   onClick={() => setSelectedHistoryOrder(order)}
-                                  className="bg-[#F6F1E8] border border-[#E2D8C6] rounded-xl p-3.5 hover:border-neutral-400 hover:shadow-xs transition-all flex flex-col justify-between relative overflow-hidden cursor-pointer group"
+                                  className="bg-[#F4EBDD] border border-[#EADFCC] rounded-xl p-3.5 hover:border-neutral-400 hover:shadow-xs transition-all flex flex-col justify-between relative overflow-hidden cursor-pointer group"
                                 >
                                   <div className="flex items-start justify-between gap-2">
                                     <div>
                                       <div className="flex items-center gap-2">
-                                        <span className="font-mono text-xs font-black text-neutral-900 group-hover:text-[#C2410C] transition-colors">
+                                        <span className="font-mono text-xs font-black text-neutral-900 group-hover:text-[#C01F16] transition-colors">
                                           #{order.id}
                                         </span>
                                         {statusBadge}
@@ -965,7 +965,7 @@ export default function ActiveSimulateDemo() {
                                       <span className="text-[8px] font-mono uppercase bg-neutral-200/60 font-black px-1.5 py-0.2 rounded text-neutral-700 inline-block mt-1">
                                         {paymentLabel}
                                       </span>
-                                      <span className="text-[8px] font-bold text-[#C2410C] opacity-0 group-hover:opacity-100 transition-opacity block mt-1.5 font-sans uppercase tracking-wider">
+                                      <span className="text-[8px] font-bold text-[#C01F16] opacity-0 group-hover:opacity-100 transition-opacity block mt-1.5 font-sans uppercase tracking-wider">
                                         🔍 Ver Itens
                                       </span>
                                     </div>
@@ -1037,22 +1037,22 @@ export default function ActiveSimulateDemo() {
           </div>
 
           {/* Interactive Direct Checkout Terminal Panel (5 cols) */}
-          <div className="lg:col-span-5 flex flex-col justify-between bg-[#1C1917] rounded-2xl border border-neutral-800 p-5 shadow-xl text-white relative">
+          <div className="lg:col-span-5 flex flex-col justify-between bg-[#1C1512] rounded-2xl border border-neutral-800 p-5 shadow-xl text-white relative">
             
             {/* Steps Indicator Tracker Header */}
             <div className="border-b border-neutral-800 pb-3 mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#C2410C]" />
-                <h3 className="font-extrabold text-xs uppercase tracking-wider font-display text-[#C2410C]">
+                <span className="w-2 h-2 rounded-full bg-[#C01F16]" />
+                <h3 className="font-extrabold text-xs uppercase tracking-wider font-display text-[#C01F16]">
                   Checkout Inteligente
                 </h3>
               </div>
               <div className="flex gap-2 text-[10px] font-mono text-neutral-400 font-semibold">
-                <span className={checkoutStep === "details" ? "text-[#C2410C]" : ""}>1. Dados</span>
+                <span className={checkoutStep === "details" ? "text-[#C01F16]" : ""}>1. Dados</span>
                 <span>/</span>
-                <span className={checkoutStep === "checkout" ? "text-[#C2410C]" : ""}>2. Pagamento</span>
+                <span className={checkoutStep === "checkout" ? "text-[#C01F16]" : ""}>2. Pagamento</span>
                 <span>/</span>
-                <span className={checkoutStep === "receipt" ? "text-[#C2410C]" : ""}>3. Ticket</span>
+                <span className={checkoutStep === "receipt" ? "text-[#C01F16]" : ""}>3. Ticket</span>
               </div>
             </div>
 
@@ -1076,7 +1076,7 @@ export default function ActiveSimulateDemo() {
                     <div className="text-left bg-neutral-900/60 p-3 rounded-xl border border-neutral-800 space-y-2.5">
                       <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
                         <span className="flex items-center gap-1.5 text-xs font-black text-white uppercase tracking-wider font-display">
-                          <ShoppingCart className="w-3.5 h-3.5 text-[#C2410C]" />
+                          <ShoppingCart className="w-3.5 h-3.5 text-[#C01F16]" />
                           Itens no Carrinho
                         </span>
                         <motion.span
@@ -1143,7 +1143,7 @@ export default function ActiveSimulateDemo() {
                                     <motion.button
                                       whileTap={{ scale: 0.85 }}
                                       onClick={() => handleIncrementCartItem(item.cartId)}
-                                      className="text-neutral-400 hover:text-[#C2410C] font-black w-4.5 h-4.5 flex items-center justify-center text-[10px] rounded hover:bg-neutral-800 transition-colors cursor-pointer"
+                                      className="text-neutral-400 hover:text-[#C01F16] font-black w-4.5 h-4.5 flex items-center justify-center text-[10px] rounded hover:bg-neutral-800 transition-colors cursor-pointer"
                                       title="Adicionar mais um"
                                     >
                                       +
@@ -1190,7 +1190,7 @@ export default function ActiveSimulateDemo() {
                         onClick={() => setDeliveryType("delivery")}
                         className={`py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           deliveryType === "delivery"
-                            ? "bg-[#C2410C] text-white"
+                            ? "bg-[#C01F16] text-white"
                             : "text-neutral-400 hover:text-white"
                         }`}
                       >
@@ -1201,7 +1201,7 @@ export default function ActiveSimulateDemo() {
                         onClick={() => setDeliveryType("takeaway")}
                         className={`py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           deliveryType === "takeaway"
-                            ? "bg-[#C2410C] text-white"
+                            ? "bg-[#C01F16] text-white"
                             : "text-neutral-400 hover:text-white"
                         }`}
                       >
@@ -1220,7 +1220,7 @@ export default function ActiveSimulateDemo() {
                           type="text"
                           value={userName}
                           onChange={(e) => setUserName(e.target.value)}
-                          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-[#C2410C]"
+                          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-[#C01F16]"
                         />
                       </div>
                       
@@ -1232,7 +1232,7 @@ export default function ActiveSimulateDemo() {
                           type="text"
                           value={userPhone}
                           onChange={(e) => setUserPhone(e.target.value)}
-                          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-[#C2410C] font-mono"
+                          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-[#C01F16] font-mono"
                         />
                       </div>
 
@@ -1245,7 +1245,7 @@ export default function ActiveSimulateDemo() {
                             type="text"
                             value={userAddress}
                             onChange={(e) => setUserAddress(e.target.value)}
-                            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-[#C2410C]"
+                            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-[#C01F16]"
                           />
                         </div>
                       )}
@@ -1263,11 +1263,11 @@ export default function ActiveSimulateDemo() {
                           onClick={() => setPaymentMethod("pix")}
                           className={`flex flex-col gap-1 items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer ${
                             paymentMethod === "pix"
-                              ? "bg-[#C2410C]/10 border-[#C2410C] text-white"
+                              ? "bg-[#C01F16]/10 border-[#C01F16] text-white"
                               : "bg-neutral-950 border-neutral-800 text-neutral-400 hover:text-white"
                           }`}
                         >
-                          <Coins className="w-4 h-4 text-[#C2410C]" />
+                          <Coins className="w-4 h-4 text-[#C01F16]" />
                           <span className="text-[10px] font-bold">PIX Direto</span>
                           <span className="text-[8px] bg-green-500/10 text-green-400 font-bold px-1 rounded">Automático</span>
                         </button>
@@ -1277,7 +1277,7 @@ export default function ActiveSimulateDemo() {
                           onClick={() => setPaymentMethod("card")}
                           className={`flex flex-col gap-1 items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer ${
                             paymentMethod === "card"
-                              ? "bg-[#C2410C]/10 border-[#C2410C] text-white"
+                              ? "bg-[#C01F16]/10 border-[#C01F16] text-white"
                               : "bg-neutral-950 border-neutral-800 text-neutral-400 hover:text-white"
                           }`}
                         >
@@ -1291,7 +1291,7 @@ export default function ActiveSimulateDemo() {
                           onClick={() => setPaymentMethod("cash")}
                           className={`flex flex-col gap-1 items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer ${
                             paymentMethod === "cash"
-                              ? "bg-[#C2410C]/10 border-[#C2410C] text-white"
+                              ? "bg-[#C01F16]/10 border-[#C01F16] text-white"
                               : "bg-neutral-950 border-neutral-800 text-neutral-400 hover:text-white"
                           }`}
                         >
@@ -1312,7 +1312,7 @@ export default function ActiveSimulateDemo() {
                             value={cashChange}
                             onChange={(e) => setCashChange(e.target.value)}
                             placeholder="Ex: 100"
-                            className="bg-neutral-950 border border-neutral-800 rounded-lg p-1.5 text-xs text-white focus:outline-none focus:border-[#C2410C] w-24 text-center font-mono"
+                            className="bg-neutral-950 border border-neutral-800 rounded-lg p-1.5 text-xs text-white focus:outline-none focus:border-[#C01F16] w-24 text-center font-mono"
                           />
                         </div>
                       )}
@@ -1321,7 +1321,7 @@ export default function ActiveSimulateDemo() {
                     {/* Progress To Checkout Step CTA Button */}
                     <button
                       onClick={submitDirectCheckout}
-                      className="w-full mt-2 h-11 bg-[#C2410C] hover:bg-[#ff8c3a] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-[#C2410C]/10"
+                      className="w-full mt-2 h-11 bg-[#C01F16] hover:bg-[#ff8c3a] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-[#C01F16]/10"
                     >
                       Avançar para Checkout Direto
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -1334,11 +1334,11 @@ export default function ActiveSimulateDemo() {
                   <div className="flex flex-col gap-4 items-center text-center">
                     <div className="w-full flex justify-between items-center bg-neutral-900 px-3 py-2 rounded-lg border border-neutral-800 mb-1">
                       <span className="text-xs text-neutral-400">Total a pagar:</span>
-                      <span className="font-mono text-sm font-bold text-[#C2410C]">R$ {cartTotal.toFixed(2)}</span>
+                      <span className="font-mono text-sm font-bold text-[#C01F16]">R$ {cartTotal.toFixed(2)}</span>
                     </div>
 
                     {/* Dynamic Simulated High Contrast QR Code block */}
-                    <div className="bg-white p-3 rounded-2xl border-4 border-[#C2410C] shadow-xl relative overflow-hidden group">
+                    <div className="bg-white p-3 rounded-2xl border-4 border-[#C01F16] shadow-xl relative overflow-hidden group">
                       {/* Animated scanning line */}
                       <div className="absolute left-0 right-0 h-0.5 bg-green-500 top-1/2 animate-bounce opacity-80" />
                       
@@ -1425,7 +1425,7 @@ export default function ActiveSimulateDemo() {
                       
                       {/* Ticket paper effect style */}
                       <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3.5 font-mono text-[10px] text-neutral-300 leading-relaxed text-left max-h-[160px] overflow-y-auto">
-                        <p className="text-center font-bold text-[#C2410C]">*** BYLINK AUTOMATION ***</p>
+                        <p className="text-center font-bold text-[#C01F16]">*** BYLINK AUTOMATION ***</p>
                         <p className="text-center font-mono">LOJA EXEMPLO DELIVERY</p>
                         <p className="text-neutral-500">------------------------------------</p>
                         <p className="font-bold">PEDIDO #BY-7489</p>
@@ -1470,7 +1470,7 @@ export default function ActiveSimulateDemo() {
                           <p className="text-gray-400 text-[9px] pl-2">Troco para: R$ {parseFloat(cashChange).toFixed(2)}</p>
                         )}
                         <p className="text-neutral-500">------------------------------------</p>
-                        <p className="flex justify-between font-extrabold text-sm text-[#C2410C]">
+                        <p className="flex justify-between font-extrabold text-sm text-[#C01F16]">
                           <span>TOTAL LIQUIDO:</span>
                           <span>R$ {cartTotal.toFixed(2)}</span>
                         </p>
@@ -1488,7 +1488,7 @@ export default function ActiveSimulateDemo() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                           </span>
-                          <p className="text-[10px] font-extrabold uppercase tracking-widest text-[#C2410C] font-mono leading-none">
+                          <p className="text-[10px] font-extrabold uppercase tracking-widest text-[#C01F16] font-mono leading-none">
                             Rastreamento Ativo
                           </p>
                         </div>
@@ -1501,7 +1501,7 @@ export default function ActiveSimulateDemo() {
                       <div className="mb-6">
                         <div className="flex justify-between items-baseline mb-1.5">
                           <span className="text-[10px] text-neutral-400 font-bold font-sans">Status do Preparo</span>
-                          <span className="text-xs font-black font-mono text-[#C2410C]">
+                          <span className="text-xs font-black font-mono text-[#C01F16]">
                             {simulatedStatus === " cozinha" ? "25%" : simulatedStatus === "preparando" ? "65%" : "100%"}
                           </span>
                         </div>
@@ -1512,7 +1512,7 @@ export default function ActiveSimulateDemo() {
                               width: simulatedStatus === " cozinha" ? "25%" : simulatedStatus === "preparando" ? "65%" : "100%"
                             }}
                             transition={{ type: "spring", stiffness: 60, damping: 15 }}
-                            className="h-full rounded-full bg-gradient-to-r from-[#C2410C] via-amber-500 to-emerald-500"
+                            className="h-full rounded-full bg-gradient-to-r from-[#C01F16] via-amber-500 to-emerald-500"
                           />
                         </div>
                       </div>
@@ -1524,7 +1524,7 @@ export default function ActiveSimulateDemo() {
                         
                         {/* Connecting Line Tracker Active Highlight */}
                         <motion.div
-                          className="absolute left-[11px] top-2 w-[2px] rounded-full bg-[#C2410C]"
+                          className="absolute left-[11px] top-2 w-[2px] rounded-full bg-[#C01F16]"
                           animate={{
                             height: simulatedStatus === " cozinha" ? "15%" : simulatedStatus === "preparando" ? "60%" : "95%"
                           }}
@@ -1710,7 +1710,7 @@ export default function ActiveSimulateDemo() {
 
                       <button
                         onClick={resetDemo}
-                        className="w-full py-1 text-neutral-500 hover:text-[#C2410C] text-[10px] font-bold uppercase tracking-widest font-mono text-center cursor-pointer transition-colors"
+                        className="w-full py-1 text-neutral-500 hover:text-[#C01F16] text-[10px] font-bold uppercase tracking-widest font-mono text-center cursor-pointer transition-colors"
                       >
                         ← Fazer Outro Pedido (Limpar)
                       </button>
@@ -1758,7 +1758,7 @@ export default function ActiveSimulateDemo() {
                 </button>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
                   <div>
-                    <span className="text-[9px] font-bold text-white bg-[#C2410C] px-2 py-0.5 rounded-full uppercase tracking-wider font-mono">
+                    <span className="text-[9px] font-bold text-white bg-[#C01F16] px-2 py-0.5 rounded-full uppercase tracking-wider font-mono">
                       Personalizar item
                     </span>
                     <h3 className="text-lg font-black text-white font-display mt-1">
@@ -1777,7 +1777,7 @@ export default function ActiveSimulateDemo() {
                 {/* Addons Checklist */}
                 {customizingProduct.addons && customizingProduct.addons.length > 0 && (
                   <div className="space-y-2.5">
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#C2410C] font-mono block">
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#C01F16] font-mono block">
                       ➕ ADICIONAIS EXTRAS (Opcional)
                     </span>
                     <div className="space-y-1.5">
@@ -1884,7 +1884,7 @@ export default function ActiveSimulateDemo() {
                   </button>
                   <button
                     onClick={handleConfirmCustomization}
-                    className={`h-10 px-5 rounded-xl ${selectedTheme.bg} hover:bg-[#1C1917] text-white text-xs font-bold transition-all shadow-md shadow-neutral-950/10 cursor-pointer`}
+                    className={`h-10 px-5 rounded-xl ${selectedTheme.bg} hover:bg-[#1C1512] text-white text-xs font-bold transition-all shadow-md shadow-neutral-950/10 cursor-pointer`}
                   >
                     Confirmar
                   </button>
@@ -1916,7 +1916,7 @@ export default function ActiveSimulateDemo() {
                 </button>
                 <div className="text-left">
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-extrabold text-white bg-[#C2410C] px-2 py-0.5 rounded uppercase tracking-wider font-mono">
+                    <span className="text-[9px] font-extrabold text-white bg-[#C01F16] px-2 py-0.5 rounded uppercase tracking-wider font-mono">
                       #{selectedHistoryOrder.id}
                     </span>
                     <span className="text-[9px] font-mono font-bold text-neutral-500">
@@ -1979,7 +1979,7 @@ export default function ActiveSimulateDemo() {
 
                 {/* Itemized breakdown */}
                 <div className="space-y-2 pt-1 border-t border-neutral-100">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#C2410C] font-mono block">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#C01F16] font-mono block">
                     🍔 ITENS DO PEDIDO
                   </span>
                   <div className="space-y-2.5 p-1">
@@ -1987,7 +1987,7 @@ export default function ActiveSimulateDemo() {
                       <div key={idx} className="flex justify-between items-start text-xs border-b border-dashed border-neutral-100 pb-2 last:border-0 last:pb-0">
                         <div className="min-w-0 pr-2">
                           <p className="font-bold text-neutral-900 font-sans leading-tight">
-                            <span className="font-mono text-[#C2410C] pr-1">{item.quantity}x</span> {item.name}
+                            <span className="font-mono text-[#C01F16] pr-1">{item.quantity}x</span> {item.name}
                           </p>
                           {item.addons && item.addons.length > 0 && (
                             <p className="text-emerald-600 text-[10px] font-medium leading-tight mt-0.5 pl-5">
@@ -2055,7 +2055,7 @@ export default function ActiveSimulateDemo() {
                     handleReorder(selectedHistoryOrder);
                     setSelectedHistoryOrder(null);
                   }}
-                  className={`h-10 px-5 rounded-xl ${selectedTheme.bg} hover:bg-[#1C1917] text-white text-xs font-bold transition-all shadow-md shadow-neutral-950/10 cursor-pointer flex items-center gap-1.5`}
+                  className={`h-10 px-5 rounded-xl ${selectedTheme.bg} hover:bg-[#1C1512] text-white text-xs font-bold transition-all shadow-md shadow-neutral-950/10 cursor-pointer flex items-center gap-1.5`}
                 >
                   🔄 Repetir Pedido
                 </button>
@@ -2067,8 +2067,8 @@ export default function ActiveSimulateDemo() {
 
       {/* Success checkout Toast */}
       {showSuccessToast && (
-        <div className="fixed bottom-6 right-6 md:right-1/2 md:translate-x-1/2 bg-[#C2410C] text-white py-3 px-5 rounded-xl shadow-2xl z-50 flex items-center gap-3 animate-bounce border border-white/20">
-          <div className="bg-white rounded-full p-1 text-[#C2410C]">
+        <div className="fixed bottom-6 right-6 md:right-1/2 md:translate-x-1/2 bg-[#C01F16] text-white py-3 px-5 rounded-xl shadow-2xl z-50 flex items-center gap-3 animate-bounce border border-white/20">
+          <div className="bg-white rounded-full p-1 text-[#C01F16]">
             <Check className="w-4 h-4 stroke-[3px]" />
           </div>
           <div className="text-left">

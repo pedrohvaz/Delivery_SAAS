@@ -11,6 +11,10 @@ const nextConfig = {
   outputFileTracingRoot: join(__dirname, '../../'),
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
+  // A página de vendas é um site estático (HTML, CSS e JS puros) em public/site.
+  async rewrites() {
+    return { beforeFiles: [{ source: '/', destination: '/site/index.html' }] }
+  },
 };
 
 export default nextConfig;
