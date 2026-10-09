@@ -33,7 +33,7 @@ services:
   # Mantém o acesso local ao banco (Prisma Studio, psql) na mesma porta do dev.
   postgres:
     ports:
-      - '5433:5432'
+      - '127.0.0.1:5433:5432' # só este PC: o banco não fica acessível pela rede local
 
   api:
     environment:

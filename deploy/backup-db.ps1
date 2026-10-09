@@ -8,6 +8,9 @@
 #
 # Restaurar (CUIDADO: sobrescreve o banco):
 #   gzip -dc backups\delivery_AAAAMMDD_HHMM.sql.gz | docker exec -i delivery_postgres psql -U delivery -d delivery_dev
+# Restaurar as fotos:
+#   docker cp backups\uploads_AAAAMMDD_HHMM.tar.gz delivery_api:/tmp/u.tar.gz
+#   docker exec delivery_api tar -xzf /tmp/u.tar.gz -C /app/apps/api
 
 param(
   [int]$Keep = 14,
@@ -36,18 +39,29 @@ try {
   $size = (Get-Item $file).Length
   if ($size -lt 1024) { throw "Backup suspeito: só $size bytes" }
 
+  # Fotos enviadas pelo painel (produtos, banners, logos): ficam num volume do Docker, fora do banco
+  $uploadsFile = Join-Path $localDir "uploads_$stamp.tar.gz"
+  docker exec delivery_api sh -c "tar -czf /tmp/uploads.tar.gz -C /app/apps/api uploads"
+  if ($LASTEXITCODE -ne 0) { throw "backup das fotos falhou (código $LASTEXITCODE)" }
+  docker cp delivery_api:/tmp/uploads.tar.gz $uploadsFile
+  if ($LASTEXITCODE -ne 0) { throw "docker cp das fotos falhou (código $LASTEXITCODE)" }
+  docker exec delivery_api rm -f /tmp/uploads.tar.gz | Out-Null
+
   if (Test-Path (Split-Path -Parent $CloudDir)) {
     New-Item -ItemType Directory -Force -Path $CloudDir | Out-Null
     Copy-Item $file $CloudDir -Force
+    Copy-Item $uploadsFile $CloudDir -Force
   }
 
   foreach ($dir in @($localDir, $CloudDir)) {
     if (Test-Path $dir) {
-      Get-ChildItem $dir -Filter 'delivery_*.sql.gz' | Sort-Object Name -Descending | Select-Object -Skip $Keep | Remove-Item -Force
+      foreach ($pattern in @('delivery_*.sql.gz', 'uploads_*.tar.gz')) {
+        Get-ChildItem $dir -Filter $pattern | Sort-Object Name -Descending | Select-Object -Skip $Keep | Remove-Item -Force
+      }
     }
   }
 
-  Log "OK $file ($([math]::Round($size / 1KB)) KB)"
+  Log "OK $file ($([math]::Round($size / 1KB)) KB) + fotos $uploadsFile ($([math]::Round((Get-Item $uploadsFile).Length / 1KB)) KB)"
 } catch {
   Log "ERRO $($_.Exception.Message)"
   exit 1

@@ -50,7 +50,8 @@ const noticesRoutes: FastifyPluginAsync = async (app) => {
   // DELETE /notices/:id
   app.delete('/:id', { preHandler: [authenticate] }, async (request, reply) => {
     const { id } = request.params as { id: string }
-    await app.prisma.internalNotice.deleteMany({ where: { id, storeId: request.user.storeId } })
+    const { count } = await app.prisma.internalNotice.deleteMany({ where: { id, storeId: request.user.storeId } })
+    if (count === 0) return reply.status(404).send({ error: 'Not Found', message: 'Aviso não encontrado', statusCode: 404 })
     return reply.status(204).send()
   })
 }

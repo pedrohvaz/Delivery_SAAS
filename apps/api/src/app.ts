@@ -65,10 +65,21 @@ function isPrivate(addr: string): boolean {
     || /^172\.(1[6-9]|2\d|3[01])\./.test(a) || /^f[cd]/i.test(a)
 }
 
+/** Segredo curto ou igual a algum JWT_SECRET dos .env de exemplo do repositório (públicos no GitHub). */
+const EXAMPLE_JWT_SECRETS = new Set(["troque-por-uma-string-segura-em-producao","COLE_O_MESMO_JWT_SECRET_DO_RAILWAY   # (REUSAR DO RAILWAY — senão sessões quebram)"])
+function isWeakJwtSecret(secret: string): boolean {
+  return secret.length < 32 || EXAMPLE_JWT_SECRETS.has(secret)
+}
+
 export function buildApp() {
   const jwtSecret = process.env.JWT_SECRET
   if (!jwtSecret && process.env.NODE_ENV !== 'development') {
     throw new Error('JWT_SECRET não definido — a API não sobe sem ele fora do modo development')
+  }
+  // Em produção, segredo fraco ou copiado dos arquivos de exemplo (públicos no GitHub) permite
+  // que qualquer um fabrique um login, inclusive de superadmin: a API se recusa a subir.
+  if (process.env.NODE_ENV === 'production' && jwtSecret && isWeakJwtSecret(jwtSecret)) {
+    throw new Error('JWT_SECRET fraco ou igual ao dos arquivos de exemplo. Gere um novo: node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'base64url\'))"')
   }
 
   const app = Fastify({
