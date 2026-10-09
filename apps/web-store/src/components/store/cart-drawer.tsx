@@ -15,7 +15,9 @@ export function CartDrawer({ slug, checkoutHref }: Props) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[60] flex justify-end">
+    // No celular a sacola termina acima do menu inferior (h-16), que continua visível por cima;
+    // no computador (lg) o menu não existe e a sacola ocupa a altura toda.
+    <div className="fixed inset-x-0 top-0 bottom-16 lg:bottom-0 z-[45] flex justify-end">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeCart} />
 
       <div className="relative z-10 flex h-full w-full max-w-sm flex-col bg-white shadow-2xl">

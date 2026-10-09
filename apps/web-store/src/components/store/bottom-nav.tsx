@@ -16,18 +16,21 @@ export function StoreBottomNav() {
   const router = useRouter()
   const count = useCartStore((s) => s.totalItems())
   const openCart = useCartStore((s) => s.openCart)
+  const closeCart = useCartStore((s) => s.closeCart)
+  const cartOpen = useCartStore((s) => s.isOpen)
   const mounted = useMounted()
 
   if (!slug) return null
   if (HIDE_ON.some((p) => pathname.includes(p))) return null
 
   const base = `/${slug}`
-  const isMenu = pathname === base
-  const isPedidos = pathname.includes('/pedido/')
-  const isAvaliacoes = pathname.includes('/avaliacoes')
-  const isPerfil = pathname.includes('/minha-conta')
+  const isMenu = pathname === base && !cartOpen
+  const isPedidos = pathname.includes('/pedido/') && !cartOpen
+  const isAvaliacoes = pathname.includes('/avaliacoes') && !cartOpen
+  const isPerfil = pathname.includes('/minha-conta') && !cartOpen
 
-  const openSacola = () => { openCart(); router.push(base) }
+  // Sacola abre e fecha no mesmo botão; as outras abas fecham a sacola
+  const openSacola = () => { if (cartOpen) { closeCart(); return } openCart(); if (pathname !== base) router.push(base) }
 
   const tab = 'flex flex-1 flex-col items-center justify-center gap-0.5 py-2.5 select-none'
   const lbl = (active: boolean) => `text-[11px] font-semibold ${active ? 'opacity-100' : 'opacity-70'}`
@@ -39,32 +42,32 @@ export function StoreBottomNav() {
       <div className="h-16 lg:hidden" aria-hidden />
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-primary text-primary-foreground border-t border-black/10 shadow-[0_-2px_10px_rgba(0,0,0,0.12)]">
         <div className="mx-auto max-w-xl flex items-stretch">
-          <Link href={base} className={tab}>
+          <Link onClick={closeCart} href={base} className={tab}>
             <Home className={icn(isMenu)} />
             <span className={lbl(isMenu)}>Cardápio</span>
           </Link>
 
-          <button type="button" onClick={openSacola} className={`relative ${tab}`}>
+          <button type="button" onClick={openSacola} aria-expanded={cartOpen} className={`relative ${tab} ${cartOpen ? "bg-black/15" : ""}`}>
             {mounted && count > 0 && (
               <span className="absolute top-1.5 left-1/2 translate-x-2 h-4 min-w-[16px] px-1 rounded-full bg-white text-primary text-[9px] font-bold flex items-center justify-center">
                 {count}
               </span>
             )}
-            <ShoppingBag className={icn(false)} />
-            <span className={lbl(false)}>Sacola</span>
+            <ShoppingBag className={icn(cartOpen)} />
+            <span className={lbl(cartOpen)}>Sacola</span>
           </button>
 
-          <Link href={`${base}/minha-conta`} className={tab}>
+          <Link onClick={closeCart} href={`${base}/minha-conta`} className={tab}>
             <ReceiptText className={icn(isPedidos)} />
             <span className={lbl(isPedidos)}>Pedidos</span>
           </Link>
 
-          <Link href={`${base}/avaliacoes`} className={tab}>
+          <Link onClick={closeCart} href={`${base}/avaliacoes`} className={tab}>
             <Star className={icn(isAvaliacoes)} />
             <span className={lbl(isAvaliacoes)}>Avaliações</span>
           </Link>
 
-          <Link href={`${base}/minha-conta`} className={tab}>
+          <Link onClick={closeCart} href={`${base}/minha-conta`} className={tab}>
             <User className={icn(isPerfil)} />
             <span className={lbl(isPerfil)}>Perfil</span>
           </Link>
