@@ -46,13 +46,7 @@ const deliveryAreaRoutes: FastifyPluginAsync = async (app) => {
       })
     }
 
-    if (d.type === 'RADIUS' && !d.radiusKm) {
-      return reply.status(400).send({
-        error: 'Validation Error',
-        message: 'Campo "raio em km" é obrigatório para área do tipo RADIUS',
-        statusCode: 400,
-      })
-    }
+    // RADIUS = "Taxa fixa" no painel: vale para qualquer endereço, o raio não é usado
 
     const area = await app.prisma.deliveryArea.create({
       data: {

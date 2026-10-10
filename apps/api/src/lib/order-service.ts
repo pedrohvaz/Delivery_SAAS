@@ -142,13 +142,14 @@ export function resolveDeliveryFee(params: {
     const base = Number(districtMatch.fee)
     return districtMatch.freeFrom && subtotal >= Number(districtMatch.freeFrom) ? 0 : base
   }
+  // "Taxa fixa" (gravada como RADIUS): vale para qualquer endereço fora dos bairros cadastrados
+  const fixedArea = areas.find((a) => a.type === 'RADIUS')
+  if (fixedArea) {
+    const base = Number(fixedArea.fee)
+    return fixedArea.freeFrom && subtotal >= Number(fixedArea.freeFrom) ? 0 : base
+  }
   if (areas.some((a) => a.type === 'DISTRICT')) {
     throw new OrderError('DELIVERY_UNAVAILABLE', 'Não fazemos entregas neste bairro. Verifique o endereço.', 422)
-  }
-  const radiusArea = areas.find((a) => a.type === 'RADIUS')
-  if (radiusArea) {
-    const base = Number(radiusArea.fee)
-    return radiusArea.freeFrom && subtotal >= Number(radiusArea.freeFrom) ? 0 : base
   }
   return 0
 }

@@ -36,7 +36,7 @@ const EMPTY_FORM: FormState = {
 
 const TYPE_LABELS: Record<string, string> = {
   DISTRICT: 'Bairro',
-  RADIUS: 'Raio (km)',
+  RADIUS: 'Taxa fixa',
   POLYGON: 'Polígono',
 }
 
@@ -91,7 +91,6 @@ export default function AreasPage() {
     const fee = parseFloat(form.fee)
     if (isNaN(fee) || fee < 0) { setFormError('Taxa de entrega inválida'); return }
     if (form.type === 'DISTRICT' && !form.district.trim()) { setFormError('Nome do bairro é obrigatório'); return }
-    if (form.type === 'RADIUS' && !form.radiusKm.trim()) { setFormError('Raio em km é obrigatório'); return }
 
     const freeFromVal = form.freeFrom.trim() ? parseFloat(form.freeFrom) : null
     const nameVal = form.name.trim() || null
@@ -104,7 +103,7 @@ export default function AreasPage() {
           type: form.type,
           name: nameVal,
           district: form.type === 'DISTRICT' ? form.district.trim() : null,
-          radiusKm: form.type === 'RADIUS' ? parseFloat(form.radiusKm) : null,
+          radiusKm: null,
           fee,
           minOrder: parseFloat(form.minOrder) || 0,
           freeFrom: freeFromVal,
@@ -115,7 +114,7 @@ export default function AreasPage() {
           type: form.type,
           name: nameVal,
           district: form.type === 'DISTRICT' ? form.district.trim() : null,
-          radiusKm: form.type === 'RADIUS' ? parseFloat(form.radiusKm) : null,
+          radiusKm: null,
           fee,
           minOrder: parseFloat(form.minOrder) || 0,
           freeFrom: freeFromVal,
@@ -174,7 +173,7 @@ export default function AreasPage() {
                 <button key={t} type="button" onClick={() => set('type', t)}
                   className={`rounded-xl border py-2.5 text-sm font-medium transition-colors
                     ${form.type === t ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
-                  {t === 'DISTRICT' ? '🏘️ Por bairro' : '📏 Por raio (km)'}
+                  {t === 'DISTRICT' ? '🏘️ Por bairro' : '💲 Taxa fixa'}
                 </button>
               ))}
             </div>
@@ -191,12 +190,9 @@ export default function AreasPage() {
             )}
 
             {form.type === 'RADIUS' && (
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium">Raio em km *</label>
-                <input type="number" step="0.5" min="0.1"
-                  className="h-10 w-full rounded-xl border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="5" value={form.radiusKm} onChange={(e) => set('radiusKm', e.target.value)} required />
-              </div>
+              <p className="col-span-2 rounded-xl bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                Vale para qualquer endereço. Se você também cadastrar bairros, eles usam a taxa deles e os demais pagam a taxa fixa.
+              </p>
             )}
 
             <div className="flex flex-col gap-1">
@@ -251,8 +247,7 @@ export default function AreasPage() {
           <MapPin className="h-8 w-8 mx-auto text-muted-foreground/50" />
           <p className="font-medium text-muted-foreground">Nenhuma área configurada</p>
           <p className="text-xs text-muted-foreground">
-            Adicione os bairros ou raio de entrega para que o sistema calcule a taxa automaticamente.
-            Sem configuração, será usada uma taxa padrão de R$5,00.
+            Cadastre uma taxa fixa ou a taxa de cada bairro. Sem nenhuma área, a entrega sai sem taxa.
           </p>
         </div>
       ) : (
@@ -263,7 +258,7 @@ export default function AreasPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold">
-                    {area.type === 'DISTRICT' ? `🏘️ ${area.district}` : `📏 ${area.radiusKm} km`}
+                    {area.type === 'DISTRICT' ? `🏘️ ${area.district}` : '💲 Qualquer endereço'}
                   </span>
                   <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                     {TYPE_LABELS[area.type] ?? area.type}

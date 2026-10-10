@@ -225,6 +225,9 @@ export default function CheckoutPage() {
   const cartSubtotal = subtotal()
   const districtAreas = store?.deliveryAreas.filter((a) => a.type === 'DISTRICT') ?? []
   const hasDistrictConfig = districtAreas.length > 0
+  const fixedArea = store?.deliveryAreas.find((a) => a.type === 'RADIUS')
+  // Com taxa fixa o cliente digita qualquer bairro; sem ela, escolhe da lista de bairros atendidos
+  const districtAsList = hasDistrictConfig && !fixedArea
 
   // Calcula taxa de entrega com base nas áreas configuradas
   function calcDeliveryFee(): { fee: number; matched: boolean; areaError: string } {
@@ -233,23 +236,21 @@ export default function CheckoutPage() {
     // Sem áreas configuradas a loja não cobra taxa (mesma regra da API)
     if (areas.length === 0) return { fee: 0, matched: true, areaError: '' }
 
+    const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
     if (hasDistrictConfig && district.trim()) {
-      const match = districtAreas.find(
-        (a) => a.district?.toLowerCase().trim() === district.toLowerCase().trim(),
-      )
+      const match = districtAreas.find((a) => norm(a.district ?? '') === norm(district))
       if (match) {
         const isFree = match.freeFrom != null && cartSubtotal >= match.freeFrom
         return { fee: isFree ? 0 : Number(match.fee), matched: true, areaError: '' }
       }
-      return { fee: 0, matched: false, areaError: 'Não entregamos neste bairro' }
     }
 
-    // Sem área do tipo DISTRICT — usa raio ou fallback
-    const radiusArea = areas.find((a) => a.type === 'RADIUS')
-    if (radiusArea) {
-      const isFree = radiusArea.freeFrom != null && cartSubtotal >= radiusArea.freeFrom
-      return { fee: isFree ? 0 : Number(radiusArea.fee), matched: true, areaError: '' }
+    // Taxa fixa (gravada como RADIUS): qualquer endereço fora dos bairros cadastrados (mesma regra da API)
+    if (fixedArea) {
+      const isFree = fixedArea.freeFrom != null && cartSubtotal >= fixedArea.freeFrom
+      return { fee: isFree ? 0 : Number(fixedArea.fee), matched: true, areaError: '' }
     }
+    if (hasDistrictConfig && district.trim()) return { fee: 0, matched: false, areaError: 'Não entregamos neste bairro' }
     return { fee: 0, matched: true, areaError: '' }
   }
 
@@ -444,7 +445,7 @@ export default function CheckoutPage() {
               {/* Bairro — dropdown se houver áreas por bairro, senão texto livre */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-foreground">Bairro *</label>
-                {hasDistrictConfig ? (
+                {districtAsList ? (
                   <select
                     value={district}
                     onChange={(e) => setDistrict(e.target.value)}

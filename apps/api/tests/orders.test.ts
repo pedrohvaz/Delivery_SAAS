@@ -125,3 +125,21 @@ describe('observação do item chega ao painel/KDS', () => {
     expect(order.items[0].notes).toBe('sem bacon')
   })
 })
+
+describe('taxa fixa de entrega', () => {
+  it('cobra a taxa fixa em qualquer bairro e a do bairro quando ele está cadastrado', async () => {
+    const s = await createStore('taxafixa')
+    await openStore(s)
+    const p = await createProduct(s, { price: 20 })
+    await call('POST', '/delivery-areas', { token: s.token, body: { type: 'RADIUS', fee: 7 } })
+    await call('POST', '/delivery-areas', { token: s.token, body: { type: 'DISTRICT', district: 'Centro', fee: 3 } })
+    const addr = (district: string) => ({ type: 'DELIVERY', address: { street: 'Rua A', number: '1', district, city: 'BH', state: 'MG', zipCode: '30000000' } })
+    const qualquer = await call('POST', '/orders', { body: orderBody(s, [item(p.id, 20)], addr('Savassi')) })
+    expect(qualquer.status, JSON.stringify(qualquer.data)).toBe(201)
+    expect(qualquer.data.data.total).toBe(27)
+    const centro = await call('POST', '/orders', { body: orderBody(s, [item(p.id, 20)], addr('centro')) })
+    expect(centro.data.data.total).toBe(23)
+    const retirada = await call('POST', '/orders', { body: orderBody(s, [item(p.id, 20)]) })
+    expect(retirada.data.data.total).toBe(20)
+  })
+})
