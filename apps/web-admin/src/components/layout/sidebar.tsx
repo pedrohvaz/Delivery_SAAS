@@ -93,7 +93,7 @@ export function Sidebar() {
               <Icon className="h-4 w-4 shrink-0" />
               <span className="flex-1">{label}</span>
               {badge && (
-                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
+                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
                   {badge}
                 </span>
               )}

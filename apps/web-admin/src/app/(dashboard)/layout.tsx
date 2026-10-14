@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Menu, X, Store } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import { Sidebar } from '@/components/layout/sidebar'
+import { StoreTheme } from '@/hooks/use-store-theme'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -33,6 +34,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {/* Cores do painel = cores escolhidas para a vitrine da loja */}
+      <StoreTheme />
       {/* Sidebar fixa no desktop */}
       <div className="hidden md:block">
         <Sidebar />

@@ -75,6 +75,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
+        localStorage.removeItem('bylink:primaryColor') // próxima loja a entrar não herda a cor desta
         set({ user: null, store: null, accessToken: null, refreshToken: null, isAuthenticated: false })
       },
 

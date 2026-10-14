@@ -92,7 +92,7 @@ export default function DashboardPage() {
           if (!subscription) {
             return (
               <Link href="/dashboard/assinatura"
-                className="flex items-center gap-4 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 p-4 text-white hover:opacity-95 transition">
+                className="flex items-center gap-4 rounded-xl bg-primary p-4 text-primary-foreground hover:opacity-95 transition">
                 <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                   <Crown className="h-5 w-5 text-white" />
                 </div>
@@ -112,7 +112,7 @@ export default function DashboardPage() {
               <Link href="/dashboard/assinatura"
                 className={cn(
                   'flex items-center gap-4 rounded-xl p-4 text-white hover:opacity-95 transition',
-                  expired ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-orange-500 to-pink-500',
+                  expired ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-primary text-primary-foreground',
                 )}>
                 <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                   <Crown className="h-5 w-5 text-white" />

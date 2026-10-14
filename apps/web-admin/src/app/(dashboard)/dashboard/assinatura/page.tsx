@@ -70,7 +70,7 @@ export default function AssinaturaPage() {
 
         {/* Card de trial em andamento */}
         {isTrialing && (
-          <div className="rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 p-6 text-white">
+          <div className="rounded-2xl bg-primary p-6 text-primary-foreground">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="space-y-1">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-0.5 text-xs font-bold">
@@ -91,7 +91,7 @@ export default function AssinaturaPage() {
                   href={whatsappLink(`Olá! Quero assinar o plano ${subscription.plan.name} (${CYCLE_NAME[currentPrice!.cycle]}) para a minha loja na ByLink.`)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-xl bg-white text-orange-600 font-bold px-6 py-3 hover:shadow-lg transition flex items-center gap-2 shrink-0"
+                  className="rounded-xl bg-white text-primary font-bold px-6 py-3 hover:shadow-lg transition flex items-center gap-2 shrink-0"
                 >
                   <MessageCircle className="h-4 w-4" /> Assinar pelo WhatsApp
                 </a>
@@ -99,7 +99,7 @@ export default function AssinaturaPage() {
                 <button
                   onClick={() => handleSelectPlan(currentPlanSlug!)}
                   disabled={checkout.isPending}
-                  className="rounded-xl bg-white text-orange-600 font-bold px-6 py-3 hover:shadow-lg transition flex items-center gap-2 shrink-0"
+                  className="rounded-xl bg-white text-primary font-bold px-6 py-3 hover:shadow-lg transition flex items-center gap-2 shrink-0"
                 >
                   {checkout.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                   {checkout.isPending ? 'Redirecionando...' : 'Assinar agora'}
@@ -217,7 +217,7 @@ export default function AssinaturaPage() {
                   <div key={plan.slug} className={cn(
                     'relative rounded-2xl border-2 p-6 flex flex-col transition-all',
                     isCurrent ? 'border-primary bg-primary/5' :
-                    plan.highlight ? 'border-orange-300 shadow-lg' :
+                    plan.highlight ? 'border-primary/40 shadow-lg' :
                     'border-border hover:border-primary/40',
                   )}>
                     {isCurrent && (
@@ -226,7 +226,7 @@ export default function AssinaturaPage() {
                       </span>
                     )}
                     {plan.badge && !isCurrent && (
-                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-orange-500 px-3 py-0.5 text-xs font-bold text-white">
+                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-bold text-primary-foreground">
                         ⚡ {plan.badge}
                       </span>
                     )}
@@ -275,7 +275,7 @@ export default function AssinaturaPage() {
                         className={cn(
                           'w-full rounded-xl py-2.5 text-sm font-bold transition-all flex items-center justify-center gap-2',
                           plan.highlight
-                            ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:shadow-lg'
+                            ? 'bg-primary text-primary-foreground hover:shadow-lg'
                             : 'bg-foreground text-background hover:opacity-90',
                         )}
                       >
@@ -289,7 +289,7 @@ export default function AssinaturaPage() {
                       <button
                         onClick={() => handleSelectPlan(plan.slug)}
                         disabled={checkout.isPending}
-                        className="w-full rounded-xl py-2.5 text-sm font-bold bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:shadow-lg transition flex items-center justify-center gap-2"
+                        className="w-full rounded-xl py-2.5 text-sm font-bold bg-primary text-primary-foreground hover:shadow-lg transition flex items-center justify-center gap-2"
                       >
                         {checkout.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                         Confirmar assinatura
