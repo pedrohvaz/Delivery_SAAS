@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { authenticate } from '../../middlewares/authenticate.js'
+import { startOfLocalDay, endOfLocalDay, localDayKey, addDays, daysBetween, isDay } from '../../lib/tz.js'
 
 function getPeriodStart(period: string, from?: string): Date {
   if (period === 'custom' && from) return new Date(from)
@@ -32,6 +33,98 @@ function formatDate(date: Date): string {
 }
 
 const reportRoutes: FastifyPluginAsync = async (app) => {
+  const storeTz = async (storeId: string) =>
+    (await app.prisma.store.findUnique({ where: { id: storeId }, select: { timezone: true } }))?.timezone ?? 'America/Sao_Paulo'
+
+  // ─── GET /reports/financial ──────────────────────────────────────
+  // Resumo financeiro do período (dias no fuso da loja), com filtros de canal e forma de
+  // pagamento e comparação com o período anterior de mesmo tamanho.
+  app.get('/financial', { preHandler: [authenticate] }, async (request) => {
+    const q = request.query as { from?: string; to?: string; type?: string; paymentMethod?: string }
+    const storeId = request.user.storeId
+    const tz = await storeTz(storeId)
+
+    const toDay = isDay(q.to) ? q.to : localDayKey(new Date(), tz)
+    let fromDay = isDay(q.from) ? q.from : addDays(toDay, -29)
+    if (fromDay > toDay) fromDay = toDay
+    if (daysBetween(fromDay, toDay) > 366) fromDay = addDays(toDay, -365)
+    const nDays = daysBetween(fromDay, toDay)
+    const prevTo = addDays(fromDay, -1)
+    const prevFrom = addDays(prevTo, -(nDays - 1))
+
+    const TYPES = ['DELIVERY', 'PICKUP', 'TABLE', 'COUNTER']
+    const filters = {
+      ...(q.type && TYPES.includes(q.type) ? { type: q.type as never } : {}),
+      ...(q.paymentMethod ? { paymentMethod: q.paymentMethod } : {}),
+    }
+    const range = (a: string, b: string) => ({ gte: startOfLocalDay(a, tz), lte: endOfLocalDay(b, tz) })
+    const valid = { storeId, ...filters, createdAt: range(fromDay, toDay), status: { not: 'CANCELLED' as const } }
+
+    const [agg, prevAgg, cancelled, byPayment, byType, unpaid, orders, cash] = await Promise.all([
+      app.prisma.order.aggregate({
+        where: valid, _count: { id: true },
+        _sum: { total: true, subtotal: true, deliveryFee: true, discount: true },
+      }),
+      app.prisma.order.aggregate({
+        where: { ...valid, createdAt: range(prevFrom, prevTo) }, _count: { id: true }, _sum: { total: true },
+      }),
+      app.prisma.order.aggregate({
+        where: { storeId, ...filters, createdAt: range(fromDay, toDay), status: 'CANCELLED' },
+        _count: { id: true }, _sum: { total: true },
+      }),
+      app.prisma.order.groupBy({ by: ['paymentMethod'], where: valid, _count: { id: true }, _sum: { total: true } }),
+      app.prisma.order.groupBy({ by: ['type'], where: valid, _count: { id: true }, _sum: { total: true } }),
+      app.prisma.order.aggregate({
+        where: { ...valid, paymentStatus: { not: 'PAID' } }, _count: { id: true }, _sum: { total: true },
+      }),
+      app.prisma.order.findMany({ where: valid, select: { createdAt: true, total: true } }),
+      app.prisma.cashTransaction.groupBy({
+        by: ['type'], where: { storeId, createdAt: range(fromDay, toDay) }, _sum: { amount: true },
+      }),
+    ])
+
+    const revenue = Number(agg._sum.total ?? 0)
+    const count = agg._count.id
+    const prevRevenue = Number(prevAgg._sum.total ?? 0)
+    const prevCount = prevAgg._count.id
+    const growth = (cur: number, prev: number) => (prev > 0 ? ((cur - prev) / prev) * 100 : null)
+
+    const daily = new Map<string, { date: string; revenue: number; orders: number }>()
+    for (let d = fromDay; d <= toDay; d = addDays(d, 1)) daily.set(d, { date: d, revenue: 0, orders: 0 })
+    for (const o of orders) {
+      const day = daily.get(localDayKey(o.createdAt, tz))
+      if (day) { day.revenue += Number(o.total); day.orders += 1 }
+    }
+
+    const cashSum = (t: string) => Number(cash.find((c) => c.type === t)?._sum.amount ?? 0)
+
+    return {
+      data: {
+        from: fromDay, to: toDay, prevFrom, prevTo,
+        revenue,
+        ordersCount: count,
+        avgTicket: count > 0 ? revenue / count : 0,
+        subtotal: Number(agg._sum.subtotal ?? 0),
+        deliveryFees: Number(agg._sum.deliveryFee ?? 0),
+        discounts: Number(agg._sum.discount ?? 0),
+        prevRevenue, prevOrdersCount: prevCount,
+        revenueGrowth: growth(revenue, prevRevenue),
+        ordersGrowth: growth(count, prevCount),
+        cancelled: { count: cancelled._count.id, total: Number(cancelled._sum.total ?? 0) },
+        unpaid: { count: unpaid._count.id, total: Number(unpaid._sum.total ?? 0) },
+        byPayment: byPayment
+          .map((p) => ({ method: p.paymentMethod ?? 'OTHER', count: p._count.id, total: Number(p._sum.total ?? 0) }))
+          .sort((a, b) => b.total - a.total),
+        byType: byType
+          .map((t) => ({ type: t.type, count: t._count.id, total: Number(t._sum.total ?? 0) }))
+          .sort((a, b) => b.total - a.total),
+        daily: [...daily.values()],
+        cash: { deposits: cashSum('DEPOSIT'), withdrawals: cashSum('WITHDRAWAL') },
+      },
+    }
+  })
+
+
   // ─── GET /reports/summary ─────────────────────────────────────────
   app.get('/summary', { preHandler: [authenticate] }, async (request) => {
     const { period = 'today', from, to } = request.query as {
@@ -248,11 +341,12 @@ const reportRoutes: FastifyPluginAsync = async (app) => {
   // ─── GET /reports/daily-movements ────────────────────────────────
   app.get('/daily-movements', { preHandler: [authenticate] }, async (request) => {
     const { from, to } = request.query as { from?: string; to?: string }
+    const tz = await storeTz(request.user.storeId)
 
-    const startDate = from
-      ? new Date(from + 'T00:00:00')
-      : (() => { const d = new Date(); d.setDate(d.getDate() - 29); d.setHours(0, 0, 0, 0); return d })()
-    const endDate = to ? new Date(to + 'T23:59:59') : new Date()
+    const toDay = isDay(to) ? to : localDayKey(new Date(), tz)
+    const fromDay = isDay(from) ? from : addDays(toDay, -29)
+    const startDate = startOfLocalDay(fromDay, tz)
+    const endDate = endOfLocalDay(toDay, tz)
 
     const [orders, transactions] = await Promise.all([
       app.prisma.order.findMany({
@@ -282,15 +376,12 @@ const reportRoutes: FastifyPluginAsync = async (app) => {
       withdrawals: number
     }>()
 
-    const cursor = new Date(startDate)
-    while (cursor <= endDate) {
-      const key = cursor.toISOString().split('T')[0]!
+    for (let key = fromDay; key <= toDay; key = addDays(key, 1)) {
       byDay.set(key, { date: key, ordersCount: 0, revenue: 0, byPayment: {}, deposits: 0, withdrawals: 0 })
-      cursor.setDate(cursor.getDate() + 1)
     }
 
     for (const o of orders) {
-      const key = o.createdAt.toISOString().split('T')[0]!
+      const key = localDayKey(o.createdAt, tz)
       const day = byDay.get(key)
       if (!day) continue
       day.ordersCount += 1
@@ -300,7 +391,7 @@ const reportRoutes: FastifyPluginAsync = async (app) => {
     }
 
     for (const t of transactions) {
-      const key = t.createdAt.toISOString().split('T')[0]!
+      const key = localDayKey(t.createdAt, tz)
       const day = byDay.get(key)
       if (!day) continue
       if (t.type === 'DEPOSIT') day.deposits += Number(t.amount)

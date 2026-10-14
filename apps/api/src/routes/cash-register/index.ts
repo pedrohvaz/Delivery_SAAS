@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify'
+import { startOfLocalDay, endOfLocalDay, isDay } from '../../lib/tz.js'
 import { z } from 'zod'
 import { authenticate } from '../../middlewares/authenticate.js'
 
@@ -167,19 +168,32 @@ const cashRegisterRoutes: FastifyPluginAsync = async (app) => {
   // GET /cash-register/history — histórico de caixas
   app.get('/history', { preHandler: [authenticate] }, async (request, reply) => {
     const { storeId } = request.user
-    const { page = '1' } = request.query as { page?: string }
+    const { page = '1', from, to, status } = request.query as { page?: string; from?: string; to?: string; status?: string }
     const take = 20
-    const skip = (Number(page) - 1) * take
+    const skip = (Math.max(1, Number(page) || 1) - 1) * take
+
+    // Filtros opcionais: período de abertura (dias no fuso da loja) e situação
+    const tz = (await app.prisma.store.findUnique({ where: { id: storeId }, select: { timezone: true } }))?.timezone ?? 'America/Sao_Paulo'
+    const where = {
+      storeId,
+      ...(status === 'OPEN' || status === 'CLOSED' ? { status: status as never } : {}),
+      ...(isDay(from) || isDay(to) ? {
+        openedAt: {
+          ...(isDay(from) ? { gte: startOfLocalDay(from, tz) } : {}),
+          ...(isDay(to) ? { lte: endOfLocalDay(to, tz) } : {}),
+        },
+      } : {}),
+    }
 
     const [registers, total] = await Promise.all([
       app.prisma.cashRegister.findMany({
-        where: { storeId },
+        where,
         orderBy: { openedAt: 'desc' },
         skip,
         take,
         include: { transactions: true },
       }),
-      app.prisma.cashRegister.count({ where: { storeId } }),
+      app.prisma.cashRegister.count({ where }),
     ])
 
     // Para cada caixa, busca o total de pedidos

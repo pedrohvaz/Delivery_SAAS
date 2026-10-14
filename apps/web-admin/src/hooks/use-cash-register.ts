@@ -67,12 +67,13 @@ export function useAddCashTransaction() {
 }
 
 // ─── GET history ──────────────────────────────────────────────────────────────
-export function useCashRegisterHistory(page = 1) {
+export function useCashRegisterHistory(page = 1, filters: { from?: string; to?: string; status?: string } = {}) {
+  const qs = new URLSearchParams({ page: String(page), ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) })
   return useQuery({
-    queryKey: ['cash-register', 'history', page],
+    queryKey: ['cash-register', 'history', page, filters],
     queryFn: () =>
       api.get<{ data: (CashRegister & { ordersCount: number; totalRevenue: number; deposits: number; withdrawals: number })[]; total: number; totalPages: number }>(
-        `/cash-register/history?page=${page}`,
+        `/cash-register/history?${qs}`,
       ).then((r) => r.data),
   })
 }
