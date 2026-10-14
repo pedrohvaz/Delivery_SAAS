@@ -185,11 +185,12 @@ const productRoutes: FastifyPluginAsync = async (app) => {
     })
     if (!existing) return reply.status(404).send({ error: 'Not Found', message: 'Produto não encontrado', statusCode: 404 })
 
-    // Se veio delta, calcula novo stockQty
+    // Se veio delta (entrada/saída rápida), calcula o novo stockQty a partir do atual
     let newQty = body.data.stockQty
-    if (body.data.delta !== undefined && existing.stockQty !== null) {
+    if (body.data.delta !== undefined) {
       newQty = Math.max(0, (existing.stockQty ?? 0) + body.data.delta)
     }
+    const controlled = body.data.stockControl ?? existing.stockControl
 
     const updated = await app.prisma.product.update({
       where: { id },
@@ -197,11 +198,15 @@ const productRoutes: FastifyPluginAsync = async (app) => {
         ...(body.data.stockControl !== undefined ? { stockControl: body.data.stockControl } : {}),
         ...(newQty !== undefined ? { stockQty: newQty } : {}),
         ...(body.data.minStock !== undefined ? { minStock: body.data.minStock } : {}),
-        // Reativa ao ajustar para qty > 0 ou ao desligar controle de estoque
-        ...(newQty !== undefined && newQty > 0 ? { isActive: true } : {}),
+        // Com controle ligado, zerou → some do cardápio; voltou a ter → reaparece (igual à baixa por pedido)
+        ...(controlled && newQty !== undefined ? { isActive: newQty > 0 } : {}),
         ...(body.data.stockControl === false ? { isActive: true } : {}),
       },
     })
+
+    // O cardápio fica 5 min em cache: sem isso o cliente ainda via o produto esgotado
+    const storeSlug = await app.prisma.store.findUnique({ where: { id: request.user.storeId }, select: { slug: true } })
+    if (storeSlug) await cacheDelPattern(`menu:${storeSlug.slug}`)
 
     return { data: { id: updated.id, stockQty: updated.stockQty, stockControl: updated.stockControl, isActive: updated.isActive } }
   })

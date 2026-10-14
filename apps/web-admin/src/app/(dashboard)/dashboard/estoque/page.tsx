@@ -1,259 +1,293 @@
 'use client'
 
-import { useState } from 'react'
-import { Package, AlertTriangle, Check, ToggleLeft, ToggleRight, X } from 'lucide-react'
-import { useStockProducts, useStockAlerts, useUpdateStock } from '@/hooks/use-stock'
+import { useMemo, useState } from 'react'
+import { Package, AlertTriangle, Check, Minus, Plus, Search, X, PackageX, PackageCheck, Pencil, Power } from 'lucide-react'
+import { useStockProducts, useUpdateStock, type StockProduct } from '@/hooks/use-stock'
+import { cn } from '@delivery/ui'
 import { currency } from '@/lib/utils'
+
+type Filtro = 'todos' | 'ok' | 'baixo' | 'esgotado' | 'sem'
+
+function situacao(p: StockProduct): Filtro {
+  if (!p.stockControl) return 'sem'
+  const qty = p.stockQty ?? 0
+  if (qty <= 0) return 'esgotado'
+  if (p.minStock != null && qty <= p.minStock) return 'baixo'
+  return 'ok'
+}
+
+const SELO: Record<Filtro, { texto: string; cls: string }> = {
+  ok: { texto: 'Em dia', cls: 'bg-green-100 text-green-700' },
+  baixo: { texto: 'Baixo', cls: 'bg-orange-100 text-orange-700' },
+  esgotado: { texto: 'Esgotado', cls: 'bg-red-100 text-red-700' },
+  sem: { texto: 'Sem controle', cls: 'bg-muted text-muted-foreground' },
+  todos: { texto: '', cls: '' },
+}
 
 export default function EstoquePage() {
   const { data: products = [], isLoading } = useStockProducts()
-  const { data: alerts = [] } = useStockAlerts()
   const updateStock = useUpdateStock()
 
-  // id do produto sendo editado inline
+  const [busca, setBusca] = useState('')
+  const [categoria, setCategoria] = useState('')
+  const [filtro, setFiltro] = useState<Filtro>('todos')
+
+  // Produto em edição (quantidade + mínimo) ou sendo ativado (quantidade inicial)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editQty, setEditQty] = useState('')
   const [editMin, setEditMin] = useState('')
+  const [erro, setErro] = useState('')
 
-  function openEdit(id: string, qty: number | null, min: number | null) {
-    setEditingId(id)
-    setEditQty(qty != null ? String(qty) : '0')
-    setEditMin(min != null ? String(min) : '')
+  const categorias = useMemo(() => {
+    const m = new Map<string, string>()
+    products.forEach((p) => m.set(p.category.id, p.category.name))
+    return [...m].map(([id, name]) => ({ id, name }))
+  }, [products])
+
+  const contagem = useMemo(() => {
+    const c = { ok: 0, baixo: 0, esgotado: 0, sem: 0 }
+    products.forEach((p) => { c[situacao(p) as keyof typeof c]++ })
+    return c
+  }, [products])
+  const controlados = contagem.ok + contagem.baixo + contagem.esgotado
+  const precisaRepor = contagem.baixo + contagem.esgotado
+
+  const lista = useMemo(() => {
+    const q = busca.trim().toLowerCase()
+    const ordem: Record<Filtro, number> = { esgotado: 0, baixo: 1, ok: 2, sem: 3, todos: 4 }
+    return products
+      .filter((p) => !q || p.name.toLowerCase().includes(q))
+      .filter((p) => !categoria || p.category.id === categoria)
+      .filter((p) => filtro === 'todos' || situacao(p) === filtro)
+      .sort((a, b) => ordem[situacao(a)] - ordem[situacao(b)] || a.name.localeCompare(b.name))
+  }, [products, busca, categoria, filtro])
+
+  function abrirEdicao(p: StockProduct) {
+    setErro('')
+    setEditingId(p.id)
+    setEditQty(p.stockControl ? String(p.stockQty ?? 0) : '')
+    setEditMin(p.minStock != null ? String(p.minStock) : '')
   }
 
-  async function saveEdit(id: string) {
-    const parsedMin = editMin.trim() === '' ? null : parseInt(editMin)
-    await updateStock.mutateAsync({
-      id,
-      stockQty: parseInt(editQty) || 0,
-      minStock: parsedMin !== null && isNaN(parsedMin) ? null : parsedMin,
-    })
-    setEditingId(null)
+  async function salvar(p: StockProduct) {
+    const qty = parseInt(editQty)
+    if (isNaN(qty) || qty < 0) { setErro('Informe a quantidade (0 ou mais)'); return }
+    const min = editMin.trim() === '' ? null : parseInt(editMin)
+    if (min !== null && (isNaN(min) || min < 0)) { setErro('Mínimo inválido'); return }
+    try {
+      await updateStock.mutateAsync({ id: p.id, stockQty: qty, minStock: min, ...(p.stockControl ? {} : { stockControl: true }) })
+      setEditingId(null)
+    } catch {
+      setErro('Não foi possível salvar. Tente de novo.')
+    }
   }
 
-  const stockProducts = products.filter((p) => p.stockControl)
-  const noStockProducts = products.filter((p) => !p.stockControl)
+  const cards: { key: Filtro; label: string; valor: number; icon: typeof Package; cor: string }[] = [
+    { key: 'todos', label: 'Com controle', valor: controlados, icon: Package, cor: 'text-primary bg-primary/10' },
+    { key: 'ok', label: 'Em dia', valor: contagem.ok, icon: PackageCheck, cor: 'text-green-700 bg-green-100' },
+    { key: 'baixo', label: 'Estoque baixo', valor: contagem.baixo, icon: AlertTriangle, cor: 'text-orange-700 bg-orange-100' },
+    { key: 'esgotado', label: 'Esgotados', valor: contagem.esgotado, icon: PackageX, cor: 'text-red-700 bg-red-100' },
+  ]
+
+  const pills: { key: Filtro; label: string; n: number }[] = [
+    { key: 'todos', label: 'Todos', n: products.length },
+    { key: 'esgotado', label: 'Esgotados', n: contagem.esgotado },
+    { key: 'baixo', label: 'Baixo', n: contagem.baixo },
+    { key: 'ok', label: 'Em dia', n: contagem.ok },
+    { key: 'sem', label: 'Sem controle', n: contagem.sem },
+  ]
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Estoque</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Controle a disponibilidade dos seus produtos
-        </p>
-      </div>
+    <div className="flex-1 overflow-y-auto">
+      <div className="p-4 sm:p-6 space-y-5">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Estoque</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Controle quantas unidades você tem de cada produto. Quando acaba, ele sai do cardápio sozinho e volta quando você repõe.
+          </p>
+        </div>
 
-      {/* Alertas de estoque baixo */}
-      {alerts.length > 0 && (
-        <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 space-y-3">
-          <div className="flex items-center gap-2 text-orange-700">
+        {/* Resumo — cada cartão também filtra a lista */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {cards.map(({ key, label, valor, icon: Icon, cor }) => (
+            <button
+              key={label}
+              onClick={() => setFiltro(key)}
+              className={cn('flex items-center gap-3 rounded-2xl border bg-card p-4 text-left transition hover:border-primary/40',
+                filtro === key && 'border-primary ring-1 ring-primary')}
+            >
+              <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', cor)}><Icon className="h-5 w-5" /></span>
+              <span className="min-w-0">
+                <span className="block text-2xl font-bold leading-tight">{isLoading ? '–' : valor}</span>
+                <span className="block text-xs text-muted-foreground">{label}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {precisaRepor > 0 && (
+          <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
             <AlertTriangle className="h-4 w-4 shrink-0" />
-            <p className="font-semibold text-sm">
-              {alerts.length} produto{alerts.length !== 1 ? 's' : ''} com estoque baixo ou esgotado
-            </p>
+            <span className="flex-1 min-w-[12rem]">
+              <strong>{precisaRepor} produto{precisaRepor !== 1 ? 's precisam' : ' precisa'} de reposição</strong>
+              {contagem.esgotado > 0 && ` — ${contagem.esgotado} esgotado${contagem.esgotado !== 1 ? 's' : ''} e fora do cardápio`}
+            </span>
+            <button onClick={() => setFiltro(contagem.esgotado > 0 ? 'esgotado' : 'baixo')}
+              className="min-h-9 rounded-lg bg-white border border-orange-200 px-3 text-xs font-semibold hover:bg-orange-100 transition">
+              Ver produtos
+            </button>
           </div>
-          <div className="space-y-1.5">
-            {alerts.map((a) => (
-              <div key={a.id} className="flex items-center justify-between rounded-xl bg-white border border-orange-200 px-3 py-2">
-                <div>
-                  <p className="text-sm font-medium">{a.name}</p>
-                  <p className="text-xs text-muted-foreground">{a.category.name}</p>
-                </div>
-                <div className="text-right">
-                  <p className={`text-sm font-bold ${(a.stockQty ?? 0) <= 0 ? 'text-red-600' : 'text-orange-600'}`}>
-                    {(a.stockQty ?? 0) <= 0 ? 'Esgotado' : `${a.stockQty} un.`}
-                  </p>
-                  {a.minStock != null && a.minStock > 0 && (
-                    <p className="text-xs text-muted-foreground">mín: {a.minStock}</p>
-                  )}
-                </div>
-              </div>
+        )}
+
+        {/* Busca e filtros */}
+        <div className="space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar produto..."
+                className="h-10 w-full rounded-xl border bg-card pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <select
+              value={categoria}
+              onChange={(e) => setCategoria(e.target.value)}
+              className="h-10 rounded-xl border bg-card px-3 text-sm sm:w-56 focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">Todas as categorias</option>
+              {categorias.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {pills.map(({ key, label, n }) => (
+              <button key={key} onClick={() => setFiltro(key)}
+                className={cn('inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition',
+                  filtro === key ? 'border-primary bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted')}>
+                {label} <span className="opacity-70">{n}</span>
+              </button>
             ))}
           </div>
         </div>
-      )}
 
-      {/* Produtos com controle ativo */}
-      <div className="space-y-3">
-        <h2 className="font-semibold text-sm flex items-center gap-2">
-          <Package className="h-4 w-4 text-primary" />
-          Com controle de estoque ({stockProducts.length})
-        </h2>
-
+        {/* Lista */}
         {isLoading ? (
           <div className="space-y-2">
-            {[1, 2, 3].map(i => <div key={i} className="h-16 rounded-2xl bg-muted animate-pulse" />)}
+            {[1, 2, 3, 4].map((i) => <div key={i} className="h-16 rounded-2xl bg-muted animate-pulse" />)}
           </div>
-        ) : stockProducts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-            Nenhum produto com controle de estoque ativado.
+        ) : lista.length === 0 ? (
+          <div className="rounded-2xl border border-dashed p-10 text-center text-sm text-muted-foreground">
+            {products.length === 0 ? 'Você ainda não tem produtos no cardápio.' : 'Nenhum produto encontrado com esses filtros.'}
           </div>
         ) : (
-          <div className="rounded-2xl border bg-card overflow-hidden">
-            <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
-              <thead>
-                <tr className="border-b bg-muted/30 text-xs text-muted-foreground">
-                  <th className="py-2.5 px-4 text-left font-medium">Produto</th>
-                  <th className="py-2.5 px-4 text-left font-medium">Categoria</th>
-                  <th className="py-2.5 px-4 text-center font-medium">Estoque</th>
-                  <th className="py-2.5 px-4 text-center font-medium">Mínimo</th>
-                  <th className="py-2.5 px-4 text-center font-medium">Status</th>
-                  <th className="py-2.5 px-4 text-center font-medium">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stockProducts.map((p) => {
-                  const isLow = p.minStock != null && (p.stockQty ?? 0) <= p.minStock
-                  const isEmpty = (p.stockQty ?? 0) <= 0
-                  return (
-                    <tr key={p.id} className="border-b last:border-0 hover:bg-muted/20">
-                      <td className="py-3 px-4">
-                        <p className="font-medium">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">{currency(Number(p.price))}</p>
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground text-xs">{p.category.name}</td>
+          <div className="rounded-2xl border bg-card divide-y">
+            <div className="hidden md:grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_7rem_11rem_5rem_11rem] gap-3 bg-muted/30 px-4 py-2.5 text-xs font-medium text-muted-foreground rounded-t-2xl">
+              <span>Produto</span><span>Categoria</span><span className="text-center">Situação</span>
+              <span className="text-center">Quantidade</span><span className="text-center">Mínimo</span><span className="text-right">Ações</span>
+            </div>
 
-                      {/* Estoque editável inline */}
-                      <td className="py-3 px-4 text-center">
-                        {editingId === p.id ? (
-                          <input
-                            type="number" min="0"
-                            value={editQty}
-                            onChange={(e) => setEditQty(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(p.id); if (e.key === 'Escape') setEditingId(null) }}
-                            autoFocus
-                            className="w-16 rounded-lg border px-2 py-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                          />
-                        ) : (
-                          <span
-                            className={`font-bold cursor-pointer hover:underline
-                              ${isEmpty ? 'text-red-600' : isLow ? 'text-orange-600' : 'text-foreground'}`}
-                            onClick={() => openEdit(p.id, p.stockQty, p.minStock)}
-                            title="Clique para editar"
-                          >
-                            {p.stockQty ?? 0}
-                          </span>
-                        )}
-                      </td>
+            {lista.map((p) => {
+              const s = situacao(p)
+              const editando = editingId === p.id
+              return (
+                <div key={p.id}
+                  className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 px-4 py-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_7rem_11rem_5rem_11rem] md:items-center">
+                  {/* Produto */}
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {currency(Number(p.price))}<span className="md:hidden"> · {p.category.name}</span>
+                    </p>
+                  </div>
+                  <span className="hidden md:block truncate text-xs text-muted-foreground">{p.category.name}</span>
+                  <span className="justify-self-end md:justify-self-center">
+                    <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap', SELO[s].cls)}>{SELO[s].texto}</span>
+                  </span>
 
-                      {/* Mínimo editável inline */}
-                      <td className="py-3 px-4 text-center">
-                        {editingId === p.id ? (
-                          <input
-                            type="number" min="0"
-                            placeholder="—"
-                            value={editMin}
-                            onChange={(e) => setEditMin(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(p.id); if (e.key === 'Escape') setEditingId(null) }}
-                            className="w-16 rounded-lg border px-2 py-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                          />
-                        ) : (
-                          <span className="text-muted-foreground">{p.minStock ?? '—'}</span>
-                        )}
-                      </td>
-
-                      <td className="py-3 px-4 text-center">
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold
-                          ${p.isActive
-                            ? isEmpty ? 'bg-red-100 text-red-700'
-                            : isLow ? 'bg-orange-100 text-orange-700'
-                            : 'bg-green-100 text-green-700'
-                            : 'bg-muted text-muted-foreground'}`}>
-                          {!p.isActive ? 'Desativado' : isEmpty ? 'Esgotado' : isLow ? 'Baixo' : 'OK'}
-                        </span>
-                      </td>
-
-                      <td className="py-3 px-4 text-center">
-                        {editingId === p.id ? (
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => saveEdit(p.id)}
-                              disabled={updateStock.isPending}
-                              className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
-                            >
-                              <Check className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setEditingId(null)}
-                              className="rounded-lg border px-2 py-1 text-xs text-muted-foreground hover:bg-muted transition"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => openEdit(p.id, p.stockQty, p.minStock)}
-                              className="rounded-lg border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition"
-                            >
-                              Ajustar
-                            </button>
-                            <button
-                              onClick={() => updateStock.mutate({ id: p.id, stockControl: false })}
-                              title="Desativar controle de estoque"
-                              className="flex h-7 w-7 items-center justify-center rounded-lg border text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table></div>
+                  {editando ? (
+                    <div className="col-span-2 md:col-span-3 flex flex-wrap items-end gap-2 md:justify-end">
+                      <label className="text-xs text-muted-foreground">
+                        {p.stockControl ? 'Quantidade' : 'Quantas unidades você tem?'}
+                        <input type="number" min="0" inputMode="numeric" autoFocus value={editQty}
+                          onChange={(e) => setEditQty(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') salvar(p); if (e.key === 'Escape') setEditingId(null) }}
+                          className="mt-1 block h-10 w-24 rounded-lg border px-2 text-center text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+                      </label>
+                      <label className="text-xs text-muted-foreground">
+                        Avisar abaixo de
+                        <input type="number" min="0" inputMode="numeric" placeholder="—" value={editMin}
+                          onChange={(e) => setEditMin(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') salvar(p); if (e.key === 'Escape') setEditingId(null) }}
+                          className="mt-1 block h-10 w-24 rounded-lg border px-2 text-center text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+                      </label>
+                      <button onClick={() => salvar(p)} disabled={updateStock.isPending}
+                        className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 transition">
+                        <Check className="h-4 w-4" /> Salvar
+                      </button>
+                      <button onClick={() => setEditingId(null)} aria-label="Cancelar"
+                        className="flex h-10 w-10 items-center justify-center rounded-lg border text-muted-foreground hover:bg-muted transition">
+                        <X className="h-4 w-4" />
+                      </button>
+                      {erro && <p className="w-full text-xs text-destructive md:text-right">{erro}</p>}
+                    </div>
+                  ) : p.stockControl ? (
+                    <>
+                      {/* Quantidade com entrada/saída rápida */}
+                      <div className="flex items-center gap-1.5 md:justify-center">
+                        <button onClick={() => updateStock.mutate({ id: p.id, delta: -1 })}
+                          disabled={(p.stockQty ?? 0) <= 0} aria-label={`Tirar 1 de ${p.name}`}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border text-muted-foreground hover:bg-muted disabled:opacity-40 transition">
+                          <Minus className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => abrirEdicao(p)} title="Clique para digitar a quantidade"
+                          className={cn('min-w-[3rem] rounded-lg px-2 py-1 text-center text-lg font-bold tabular-nums hover:bg-muted transition',
+                            s === 'esgotado' ? 'text-red-600' : s === 'baixo' ? 'text-orange-600' : 'text-foreground')}>
+                          {p.stockQty ?? 0}
+                        </button>
+                        <button onClick={() => updateStock.mutate({ id: p.id, delta: 1 })} aria-label={`Somar 1 em ${p.name}`}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border text-muted-foreground hover:bg-muted transition">
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <span className="self-center text-right text-sm text-muted-foreground md:text-center">
+                        <span className="md:hidden text-xs">mín. </span>{p.minStock ?? '—'}
+                      </span>
+                      <div className="col-span-2 flex justify-end gap-1.5 md:col-span-1">
+                        <button onClick={() => abrirEdicao(p)}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium text-muted-foreground hover:bg-muted transition">
+                          <Pencil className="h-3.5 w-3.5" /> Ajustar
+                        </button>
+                        <button
+                          onClick={() => { if (confirm(`Parar de controlar o estoque de "${p.name}"? Ele volta a aparecer no cardápio sem limite.`)) updateStock.mutate({ id: p.id, stockControl: false }) }}
+                          title="Parar de controlar o estoque" aria-label={`Desligar controle de ${p.name}`}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition">
+                          <Power className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="hidden md:block text-center text-sm text-muted-foreground">—</span>
+                      <span className="hidden md:block text-center text-sm text-muted-foreground">—</span>
+                      <div className="col-span-2 flex justify-end md:col-span-1">
+                        <button onClick={() => abrirEdicao(p)}
+                          className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg border border-primary/30 px-3 text-xs font-semibold text-primary hover:bg-primary/10 transition">
+                          <Package className="h-3.5 w-3.5" /> Controlar estoque
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
-      </div>
 
-      {/* Produtos SEM controle — toggle para ativar */}
-      {noStockProducts.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="font-semibold text-sm text-muted-foreground">
-            Sem controle de estoque ({noStockProducts.length})
-          </h2>
-          <div className="rounded-2xl border bg-card overflow-hidden">
-            <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
-              <thead>
-                <tr className="border-b bg-muted/30 text-xs text-muted-foreground">
-                  <th className="py-2.5 px-4 text-left font-medium">Produto</th>
-                  <th className="py-2.5 px-4 text-left font-medium">Categoria</th>
-                  <th className="py-2.5 px-4 text-center font-medium">Controle</th>
-                </tr>
-              </thead>
-              <tbody>
-                {noStockProducts.map((p) => (
-                  <tr key={p.id} className="border-b last:border-0 hover:bg-muted/20">
-                    <td className="py-3 px-4 font-medium">{p.name}</td>
-                    <td className="py-3 px-4 text-xs text-muted-foreground">{p.category.name}</td>
-                    <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => updateStock.mutate({ id: p.id, stockControl: true, stockQty: 0 })}
-                        className="flex items-center gap-1.5 mx-auto text-xs text-muted-foreground hover:text-primary transition"
-                        title="Ativar controle de estoque"
-                      >
-                        <ToggleLeft className="h-4 w-4" />
-                        Ativar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table></div>
-          </div>
-        </div>
-      )}
-
-      {/* Legenda rápida */}
-      <div className="rounded-2xl border bg-card p-4">
-        <p className="text-xs font-semibold text-muted-foreground mb-2">Legenda</p>
-        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-green-500 inline-block" />OK — estoque acima do mínimo</span>
-          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-orange-400 inline-block" />Baixo — abaixo do mínimo configurado</span>
-          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-red-500 inline-block" />Esgotado — produto ocultado do cardápio</span>
-          <span className="flex items-center gap-1.5"><ToggleRight className="h-3.5 w-3.5" />Clique em "Ajustar" para editar quantidade</span>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Dica: use <strong>−</strong> e <strong>+</strong> para dar baixa ou entrada rápida, ou clique no número para digitar.
+          Os pedidos confirmados descontam do estoque sozinhos, e pedidos cancelados devolvem.
+        </p>
       </div>
     </div>
   )

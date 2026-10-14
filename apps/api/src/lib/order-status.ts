@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
+import { cacheDelPattern } from './cache.js'
 
 // Ordem das etapas. O pedido só anda para frente (pode pular etapas);
 // CANCELLED é permitido de qualquer etapa não final. DELIVERED e CANCELLED são finais.
@@ -36,7 +37,8 @@ export async function changeOrderStatus(
 ) {
   const { orderId, storeId, to, cancelReason } = params
 
-  return prisma.$transaction(async (tx) => {
+  let stockMoved = false
+  const result = await prisma.$transaction(async (tx) => {
     const order = await tx.order.findFirst({
       where: { id: orderId, storeId },
       select: { id: true, status: true, couponId: true, paymentMethod: true, paymentStatus: true, items: { select: { productId: true, quantity: true } } },
@@ -74,6 +76,7 @@ export async function changeOrderStatus(
       for (const [productId, qty] of qtyByProduct) {
         const product = await tx.product.findFirst({ where: { id: productId, storeId }, select: { stockControl: true, name: true } })
         if (!product?.stockControl) continue
+        stockMoved = true
         const dec = await tx.product.updateMany({
           where: { id: productId, storeId, stockControl: true, stockQty: { gte: qty } },
           data: { stockQty: { decrement: qty } },
@@ -96,6 +99,7 @@ export async function changeOrderStatus(
             where: { id: productId, storeId, stockControl: true },
             data: { stockQty: { increment: qty }, isActive: true },
           })
+          stockMoved = true
         }
       }
       if (order.couponId) {
@@ -108,4 +112,11 @@ export async function changeOrderStatus(
 
     return { id: order.id, from, status: to }
   })
+
+  // Estoque mudou (produto pode ter esgotado ou voltado): o cardápio em cache precisa refletir
+  if (stockMoved) {
+    const store = await prisma.store.findUnique({ where: { id: storeId }, select: { slug: true } })
+    if (store) await cacheDelPattern(`menu:${store.slug}`)
+  }
+  return result
 }
