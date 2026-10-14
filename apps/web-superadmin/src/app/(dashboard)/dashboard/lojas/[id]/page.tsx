@@ -269,7 +269,7 @@ export default function LojaDetalhesPage() {
       {/* Tab: Pedidos */}
       {tab === 'pedidos' && (
         <div className="bg-card border rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
+          <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
             <thead>
               <tr className="border-b bg-muted/40">
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Nº</th>
@@ -300,14 +300,14 @@ export default function LojaDetalhesPage() {
                   })
               }
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 
       {/* Tab: Usuários */}
       {tab === 'usuarios' && (
         <div className="bg-card border rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
+          <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
             <thead>
               <tr className="border-b bg-muted/40">
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Nome</th>
@@ -333,7 +333,7 @@ export default function LojaDetalhesPage() {
                   ))
               }
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

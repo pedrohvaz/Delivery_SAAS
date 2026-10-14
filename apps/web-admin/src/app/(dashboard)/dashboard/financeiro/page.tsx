@@ -258,7 +258,7 @@ function DailyMovementsTab() {
 
       {/* Tabela de movimentações */}
       <div className="bg-card border rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+        <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
           <thead>
             <tr className="border-b bg-muted/40">
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Data</th>
@@ -299,7 +299,7 @@ function DailyMovementsTab() {
               )
             })}
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   )
@@ -344,7 +344,7 @@ export default function FinanceiroPage() {
           <>
             {/* Tabela de caixas */}
             <div className="bg-card border rounded-xl overflow-hidden">
-              <table className="w-full text-sm">
+              <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
                 <thead>
                   <tr className="border-b bg-muted/40">
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Abertura</th>
@@ -404,7 +404,7 @@ export default function FinanceiroPage() {
                     )
                   })}
                 </tbody>
-              </table>
+              </table></div>
             </div>
 
             {/* Paginação */}

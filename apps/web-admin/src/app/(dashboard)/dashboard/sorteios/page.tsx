@@ -78,9 +78,9 @@ export default function SorteiosPage() {
     <div className="flex flex-col flex-1 overflow-hidden">
       <Header title="Sorteios" />
       <main className="flex-1 overflow-y-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div><h1 className="text-2xl font-bold">Sorteios</h1><p className="text-sm text-muted-foreground mt-1">Crie sorteios para engajar seus clientes</p></div>
-          <button onClick={() => setShowNew(true)} className="flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition">
+          <button onClick={() => setShowNew(true)} className="flex shrink-0 self-start sm:self-auto items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition">
             <Plus className="h-4 w-4" /> Novo Sorteio
           </button>
         </div>

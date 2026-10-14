@@ -602,7 +602,7 @@ export default function ClientesPage() {
               </button>
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
               <thead className="bg-muted/30 text-xs text-muted-foreground">
                 <tr>
                   <th className="px-6 py-3 text-left font-medium">Cliente</th>
@@ -638,7 +638,7 @@ export default function ClientesPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
 

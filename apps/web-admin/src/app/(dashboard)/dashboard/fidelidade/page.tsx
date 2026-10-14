@@ -159,7 +159,7 @@ export default function FidelidadePage() {
           {(customersData?.data ?? []).length === 0 ? (
             <div className="py-10 text-center text-muted-foreground text-sm">Nenhum cliente com pontos ainda.</div>
           ) : (
-            <table className="w-full text-sm">
+            <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
               <thead><tr className="border-b bg-muted/40">
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Cliente</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Pontos</th>
@@ -211,7 +211,7 @@ export default function FidelidadePage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
         </section>
       </main>

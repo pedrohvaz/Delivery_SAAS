@@ -66,7 +66,7 @@ export function StoreHeader({ store }: { store: StoreData }) {
         <div className="absolute top-3 left-0 right-0 px-4 flex items-center justify-between">
           <Link
             href={`/${store.slug}/minha-conta`}
-            className="flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-white hover:bg-white/20 transition px-3 py-1.5 text-xs font-bold"
+            className="flex min-h-10 items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-white hover:bg-white/20 transition px-3 py-1.5 text-xs font-bold"
             title="Minha conta"
           >
             {mounted && isAuthenticated && account ? (

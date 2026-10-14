@@ -137,18 +137,18 @@ export default function RelatoriosPage() {
   const maxQty = Math.max(...topProducts.map((p) => p.quantity), 1)
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl">
+    <div className="p-4 sm:p-6 space-y-6 max-w-5xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Relatórios</h1>
           <p className="text-sm text-muted-foreground mt-1">Visão financeira e operacional da loja</p>
         </div>
         {/* Seletor de período */}
-        <div className="flex rounded-xl border bg-card p-1 gap-1">
+        <div className="flex max-w-full self-start overflow-x-auto rounded-xl border bg-card p-1 gap-1">
           {PERIODS.map((p) => (
             <button key={p.value} onClick={() => { setPeriod(p.value); setOrdersPage(1) }}
-              className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors
+              className={`shrink-0 whitespace-nowrap rounded-lg px-3 sm:px-4 py-1.5 text-sm font-medium transition-colors
                 ${period === p.value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
               {p.label}
             </button>

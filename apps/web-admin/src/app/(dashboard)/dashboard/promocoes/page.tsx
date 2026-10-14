@@ -291,23 +291,23 @@ export default function PromocoesPage() {
 
         {/* ── Cupons ── */}
         <section className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-3">
               <h2 className="text-base font-semibold text-foreground">Cupons de Desconto</h2>
               <span className="text-xs text-muted-foreground">{coupons.length} total</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Filtro */}
               <div className="flex rounded-xl border bg-muted/30 p-0.5 gap-0.5">
                 {([['all', 'Todos'], ['active', 'Ativos'], ['inactive', 'Inativos']] as const).map(([v, l]) => (
                   <button key={v} onClick={() => setFilter(v)}
-                    className={cn('px-2.5 py-1 rounded-lg text-xs font-medium transition-colors', filter === v ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground')}>
+                    className={cn('inline-flex min-h-9 items-center px-3 py-1 rounded-lg text-xs font-medium transition-colors', filter === v ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground')}>
                     {l}
                   </button>
                 ))}
               </div>
               <button onClick={() => setShowNewCoupon(true)}
-                className="flex items-center gap-1.5 h-8 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition">
+                className="flex shrink-0 items-center gap-1.5 h-9 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition">
                 <Plus className="h-3.5 w-3.5" /> Novo Cupom
               </button>
             </div>

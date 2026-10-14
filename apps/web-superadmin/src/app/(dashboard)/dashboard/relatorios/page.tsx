@@ -63,7 +63,7 @@ export default function RelatoriosPage() {
               <Icon className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{value}</p>
+              <p className="text-lg sm:text-2xl font-bold text-foreground break-words">{value}</p>
               <p className="text-xs text-muted-foreground">{label}</p>
               {sub && <p className={cn('text-xs mt-0.5 font-medium', growthPositive ? 'text-green-600' : 'text-red-600')}>{sub}</p>}
             </div>
@@ -104,7 +104,7 @@ export default function RelatoriosPage() {
           <h2 className="text-sm font-semibold">Receita por Loja</h2>
           <span className="text-xs text-muted-foreground">Período: {period}</span>
         </div>
-        <table className="w-full text-sm">
+        <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
           <thead>
             <tr className="border-b bg-muted/40">
               <th className="text-left px-5 py-3 font-medium text-muted-foreground">#</th>
@@ -136,7 +136,7 @@ export default function RelatoriosPage() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </div>
 
       {/* Lojas inativas */}

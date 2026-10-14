@@ -128,7 +128,7 @@ export default function GarcomPage() {
           <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-none bg-white border-b">
             {categories.map(cat => (
               <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
-                className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition whitespace-nowrap',
+                className={cn('shrink-0 inline-flex min-h-10 items-center rounded-full px-3 py-1.5 text-xs font-semibold transition whitespace-nowrap',
                   activeCatId === cat.id ? 'bg-primary text-white' : 'bg-muted text-muted-foreground')}>
                 {cat.name}
               </button>

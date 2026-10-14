@@ -115,7 +115,7 @@ export default function EntregadoresPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-3xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Entregadores</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -124,7 +124,7 @@ export default function EntregadoresPage() {
         </div>
         {!showForm && (
           <button onClick={openCreate}
-            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition">
+            className="flex shrink-0 self-start sm:self-auto items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition">
             <Plus className="h-4 w-4" />
             Novo entregador
           </button>
@@ -315,7 +315,7 @@ export default function EntregadoresPage() {
       {!isLoading && deliverymen.length > 0 && (
         <div className="rounded-2xl border bg-card p-5 space-y-3">
           <h2 className="font-semibold text-sm">Relatório de entregas</h2>
-          <table className="w-full text-sm">
+          <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
             <thead>
               <tr className="border-b text-xs text-muted-foreground">
                 <th className="py-2 text-left font-medium">Entregador</th>
@@ -341,7 +341,7 @@ export default function EntregadoresPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

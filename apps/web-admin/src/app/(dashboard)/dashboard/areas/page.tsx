@@ -133,7 +133,7 @@ export default function AreasPage() {
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
     <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-3xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Áreas de Entrega</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -143,7 +143,7 @@ export default function AreasPage() {
         {!showForm && (
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition"
+            className="flex shrink-0 self-start sm:self-auto items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition"
           >
             <Plus className="h-4 w-4" />
             Adicionar área

@@ -84,3 +84,22 @@
   }
 }
 
+
+/* Telas de toque: área clicável invisível de 6px a mais em volta de botões e links pequenos,
+   sem mudar o desenho (dedo erra menos em interruptores, filtros e ações de tabela). */
+@media (pointer: coarse) {
+  :where(button, a[href], [role='button'], summary):not(.absolute):not(.fixed):not(.sticky) {
+    position: relative;
+  }
+  :where(button, a[href], [role='button'], summary)::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+  }
+}
+
+/* Foco visível pelo teclado em tudo que é clicável (na cor da loja) */
+:where(button, a[href], [role='button'], summary, input, select, textarea):focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}

@@ -89,7 +89,7 @@ export default function UsuariosPage() {
       </div>
 
       <div className="flex gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative min-w-[200px] flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} placeholder="Buscar por nome ou e-mail..."
             className="w-full h-10 pl-9 pr-3 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-background" />
@@ -104,7 +104,7 @@ export default function UsuariosPage() {
       </div>
 
       <div className="bg-card border rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+        <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
           <thead>
             <tr className="border-b bg-muted/40">
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Usuário</th>
@@ -165,7 +165,7 @@ export default function UsuariosPage() {
               )
             })}
           </tbody>
-        </table>
+        </table></div>
       </div>
 
       {data && data.totalPages > 1 && (

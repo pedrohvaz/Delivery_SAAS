@@ -248,7 +248,7 @@ export default function OrderTrackPage() {
           <h1 className="font-bold text-base">Pedido #{order.orderNumber}</h1>
           {!subscribed && !isDone && !isCancelled && (
             <button onClick={subscribe}
-              className="ml-auto flex items-center gap-1.5 rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition">
+              className="ml-auto flex min-h-10 items-center gap-1.5 rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition">
               <Bell className="h-3.5 w-3.5" /> Notificar
             </button>
           )}

@@ -71,7 +71,7 @@ export default function DashboardPage() {
 
       <main className="flex-1 overflow-y-auto p-6 space-y-5">
         {/* Boas-vindas + status */}
-        <div className="rounded-xl border bg-card p-5 flex items-center justify-between">
+        <div className="rounded-xl border bg-card p-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-foreground">Olá, {user?.name?.split(' ')[0]} 👋</h2>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -79,7 +79,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Status da loja:</span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Status da loja:</span>
             <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium', store?.isOpen ? 'bg-green-50 text-green-700' : 'bg-muted text-muted-foreground')}>
               <span className={cn('h-1.5 w-1.5 rounded-full', store?.isOpen ? 'bg-green-500' : 'bg-gray-400')} />
               {store?.isOpen ? 'Aberta' : 'Fechada'}

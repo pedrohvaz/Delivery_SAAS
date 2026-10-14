@@ -137,8 +137,10 @@ export function buildApp() {
     // @fastify/cors >= 10 libera só GET/HEAD/POST por padrão; o painel usa PATCH/PUT/DELETE
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   })
+  // Limite geral por IP. Uma loja inteira (painel, cozinha, celular do dono) sai pelo mesmo IP do Wi-Fi,
+  // e clientes de operadora dividem IP (CGNAT): 100/min derrubava a loja no pico. Login tem limite próprio (10/min).
   app.register(rateLimit, {
-    max: 100,
+    max: Number(process.env.RATE_LIMIT_MAX) || 600,
     timeWindow: '1 minute',
     keyGenerator: clientIp,
   })

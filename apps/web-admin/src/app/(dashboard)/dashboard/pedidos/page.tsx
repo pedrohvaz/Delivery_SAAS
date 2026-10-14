@@ -229,7 +229,7 @@ export default function PedidosPage() {
           <div className="flex gap-1.5 flex-wrap">
             {STATUS_FILTERS.map((f) => (
               <button key={f.value} onClick={() => setStatusFilter(f.value)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${statusFilter === f.value ? 'bg-primary text-primary-foreground' : 'bg-white border text-muted-foreground hover:border-primary/40'}`}>
+                className={`inline-flex min-h-9 items-center rounded-full px-3.5 py-1 text-xs font-medium transition-colors ${statusFilter === f.value ? 'bg-primary text-primary-foreground' : 'bg-white border text-muted-foreground hover:border-primary/40'}`}>
                 {f.label}
                 {f.value && STATUS_CONFIG[f.value] && (
                   <span className={`ml-1.5 inline-block h-1.5 w-1.5 rounded-full ${STATUS_CONFIG[f.value]!.dot}`} />
@@ -243,7 +243,7 @@ export default function PedidosPage() {
           <div className="flex gap-1 rounded-xl border bg-white p-0.5">
             {[['', 'Todos'], ['DELIVERY', '🛵 Entrega'], ['PICKUP', '🏠 Retirada'], ['TABLE', '🪑 Mesa'], ['COUNTER', '🧾 Balcão']].map(([v, l]) => (
               <button key={v} onClick={() => setTypeFilter(v)}
-                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors whitespace-nowrap ${typeFilter === v ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                className={`inline-flex min-h-9 items-center rounded-lg px-3 py-1 text-xs font-medium transition-colors whitespace-nowrap ${typeFilter === v ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
                 {l}
               </button>
             ))}

@@ -39,14 +39,14 @@ export default function AdminsPage() {
   })
 
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-8 space-y-6">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Super Admins</h1>
           <p className="text-sm text-muted-foreground mt-1">Gerencie os administradores da plataforma</p>
         </div>
         <button onClick={() => { setShowNew(true); setError('') }}
-          className="flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition">
+          className="flex shrink-0 items-center gap-2 h-10 whitespace-nowrap px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition">
           <Plus className="h-4 w-4" /> Novo Admin
         </button>
       </div>
@@ -92,7 +92,7 @@ export default function AdminsPage() {
       )}
 
       <div className="bg-card border rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+        <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
           <thead>
             <tr className="border-b bg-muted/40">
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Admin</th>
@@ -131,7 +131,7 @@ export default function AdminsPage() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   )

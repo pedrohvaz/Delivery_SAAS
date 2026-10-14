@@ -287,8 +287,8 @@ export default function AutomacaoPage() {
     <div className="flex flex-col flex-1 overflow-hidden">
       <Header title="Automação" />
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-2xl">
+      <div className="flex flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
+        <div className="min-w-0 p-4 sm:p-6 space-y-6 lg:flex-1 lg:overflow-y-auto lg:max-w-2xl">
 
           {/* ① Toggle principal */}
           <div className="bg-card border rounded-2xl p-5 flex items-center justify-between">
@@ -503,7 +503,7 @@ export default function AutomacaoPage() {
         </div>
 
         {/* ⑤ Monitor de conversas */}
-        <div className={cn('flex flex-col border-l bg-white', selectedConvId ? 'w-96' : 'w-80')}>
+        <div className={cn('flex min-h-[28rem] w-full flex-col border-t bg-white lg:min-h-0 lg:border-l lg:border-t-0', selectedConvId ? 'lg:w-96' : 'lg:w-80')}>
           {selectedConvId ? (
             <ConversationPanel id={selectedConvId} onClose={() => setSelectedConvId(null)} />
           ) : (

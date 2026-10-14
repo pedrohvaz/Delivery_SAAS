@@ -44,9 +44,9 @@ export default function DashboardPage() {
         {cards.map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-card border rounded-xl p-4 flex items-center gap-3">
             <div className={`p-2.5 rounded-lg ${color}`}><Icon className="h-4 w-4" /></div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground leading-tight">{label}</p>
-              <p className="text-xl font-bold text-foreground">{value}</p>
+              <p className="text-lg sm:text-xl font-bold text-foreground break-words">{value}</p>
             </div>
           </div>
         ))}
@@ -86,7 +86,7 @@ export default function DashboardPage() {
         <div className="px-5 py-4 border-b">
           <h2 className="text-sm font-semibold text-foreground">Top 5 Lojas por Pedidos</h2>
         </div>
-        <table className="w-full text-sm">
+        <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
           <thead>
             <tr className="border-b bg-muted/40">
               <th className="text-left px-5 py-2.5 font-medium text-muted-foreground">#</th>
@@ -110,7 +110,7 @@ export default function DashboardPage() {
               <tr><td colSpan={4} className="px-5 py-6 text-center text-muted-foreground">Nenhum dado.</td></tr>
             )}
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   )

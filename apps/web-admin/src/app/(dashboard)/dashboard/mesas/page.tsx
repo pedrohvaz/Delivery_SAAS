@@ -121,7 +121,7 @@ export default function MesasPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-4xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Mesas e QR Code</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -130,7 +130,7 @@ export default function MesasPage() {
         </div>
         {!showForm && (
           <button onClick={openCreate}
-            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition">
+            className="flex shrink-0 self-start sm:self-auto items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition">
             <Plus className="h-4 w-4" />
             Nova mesa
           </button>

@@ -441,7 +441,7 @@ export default function CheckoutPage() {
               <Input label="Número *" placeholder="123" value={number} onChange={(e) => setNumber(e.target.value)} required />
             </div>
             <Input label="Complemento" placeholder="Apto, bloco..." value={complement} onChange={(e) => setComplement(e.target.value)} />
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {/* Bairro — dropdown se houver áreas por bairro, senão texto livre */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-foreground">Bairro *</label>
@@ -482,7 +482,7 @@ export default function CheckoutPage() {
 
             {/* Salvar endereço na conta (logado, digitando um endereço novo) */}
             {isAuthenticated && (showAddressForm || !savedAddresses || savedAddresses.length === 0) && (
-              <label className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+              <label className="flex min-h-10 items-center gap-2 pt-1 cursor-pointer select-none">
                 <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} className="h-4 w-4 rounded border-input text-primary focus:ring-primary/40" />
                 <span className="text-sm text-foreground">Salvar este endereço na minha conta</span>
               </label>

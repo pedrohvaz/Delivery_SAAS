@@ -87,34 +87,6 @@ export default function StorePage() {
     return () => observer.disconnect()
   }, [menu])
 
-  // Aplica cor primária da loja via CSS variable
-  useEffect(() => {
-    if (store?.primaryColor) {
-      const hex = store.primaryColor
-      const r = parseInt(hex.slice(1, 3), 16) / 255
-      const g = parseInt(hex.slice(3, 5), 16) / 255
-      const b = parseInt(hex.slice(5, 7), 16) / 255
-      const max = Math.max(r, g, b), min = Math.min(r, g, b)
-      let h = 0, s = 0
-      const l = (max + min) / 2
-      if (max !== min) {
-        const d = max - min
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-        switch (max) {
-          case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
-          case g: h = ((b - r) / d + 2) / 6; break
-          case b: h = ((r - g) / d + 4) / 6; break
-        }
-      }
-      const hsl = `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`
-      document.documentElement.style.setProperty('--primary', hsl)
-      document.documentElement.style.setProperty('--ring', hsl)
-    }
-    return () => {
-      document.documentElement.style.removeProperty('--primary')
-      document.documentElement.style.removeProperty('--ring')
-    }
-  }, [store?.primaryColor])
 
   if (storeLoading) return <PageSkeleton />
 
@@ -166,7 +138,7 @@ export default function StorePage() {
                   data-cat={cat.id}
                   onClick={() => scrollToCategory(cat.id)}
                   className={cn(
-                    'shrink-0 rounded-xl px-4 py-1.5 text-xs font-extrabold uppercase tracking-widest transition-all whitespace-nowrap border',
+                    'shrink-0 inline-flex min-h-10 items-center rounded-xl px-4 py-1.5 text-xs font-extrabold uppercase tracking-widest transition-all whitespace-nowrap border',
                     activeCategory === cat.id
                       ? 'bg-primary text-primary-foreground border-primary shadow-md'
                       : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-800',
@@ -240,7 +212,7 @@ export default function StorePage() {
                   key={tag}
                   onClick={() => setActiveTag(activeTag === tag ? null : tag)}
                   className={cn(
-                    'shrink-0 rounded-full px-3 py-1 text-xs font-semibold border transition-all capitalize',
+                    'shrink-0 inline-flex min-h-9 items-center rounded-full px-3 py-1 text-xs font-semibold border transition-all capitalize',
                     activeTag === tag
                       ? 'bg-primary text-primary-foreground border-primary shadow-sm'
                       : cn(TAG_STYLES[tag] ?? 'bg-white text-gray-500 border-gray-200', 'hover:opacity-80'),
@@ -407,11 +379,11 @@ function ProductCardGrid({ product, onClick }: { product: Product; onClick: () =
             ✦ Opções de Adicionais
           </span>
         )}
-        <div className="flex items-center justify-between mt-auto pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-1.5 mt-auto pt-2">
           <span className="font-extrabold text-gray-900 text-sm">
             {currency(Number(product.price))}
           </span>
-          <div className="flex items-center gap-1 bg-primary text-primary-foreground text-xs font-bold px-2.5 py-1 rounded-lg shadow-sm">
+          <div className="flex shrink-0 items-center gap-1 bg-primary text-primary-foreground text-xs font-bold px-2.5 py-1.5 rounded-lg shadow-sm">
             <Plus className="w-3.5 h-3.5" />
             <span>Adicionar</span>
           </div>

@@ -326,7 +326,7 @@ export default function ConfiguracoesPage() {
               <strong>Informe o endereço da loja.</strong> Sem a cidade, sua loja não aparece quando o cliente filtra por cidade ou usa a localização no bylink.shop.
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="col-span-2 space-y-1.5">
               <label className="text-sm font-medium">Nome da Loja</label>
               <input value={storeName} onChange={(e) => setStoreName(e.target.value)}

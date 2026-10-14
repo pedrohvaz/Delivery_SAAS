@@ -90,7 +90,7 @@ export default function EstoquePage() {
           </div>
         ) : (
           <div className="rounded-2xl border bg-card overflow-hidden">
-            <table className="w-full text-sm">
+            <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
               <thead>
                 <tr className="border-b bg-muted/30 text-xs text-muted-foreground">
                   <th className="py-2.5 px-4 text-left font-medium">Produto</th>
@@ -202,7 +202,7 @@ export default function EstoquePage() {
                   )
                 })}
               </tbody>
-            </table>
+            </table></div>
           </div>
         )}
       </div>
@@ -214,7 +214,7 @@ export default function EstoquePage() {
             Sem controle de estoque ({noStockProducts.length})
           </h2>
           <div className="rounded-2xl border bg-card overflow-hidden">
-            <table className="w-full text-sm">
+            <div data-table-scroll className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
               <thead>
                 <tr className="border-b bg-muted/30 text-xs text-muted-foreground">
                   <th className="py-2.5 px-4 text-left font-medium">Produto</th>
@@ -240,7 +240,7 @@ export default function EstoquePage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
         </div>
       )}
