@@ -1,4 +1,4 @@
-# Roda as mesmas verificações da publicação, mas sem publicar nada.
+﻿# Roda as mesmas verificações da publicação, mas sem publicar nada.
 #
 #   powershell -ExecutionPolicy Bypass -File deploy\testar.ps1            # tipos + testes da API
 #   powershell -ExecutionPolicy Bypass -File deploy\testar.ps1 -SoTipos   # só a checagem de tipos (rápido)

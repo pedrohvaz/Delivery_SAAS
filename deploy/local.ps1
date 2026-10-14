@@ -1,4 +1,4 @@
-# Liga o Bylink no próprio PC para testar mudanças na hora, sem publicar.
+﻿# Liga o Bylink no próprio PC para testar mudanças na hora, sem publicar.
 # Usa o banco de TESTES (delivery_qa) e o Redis de testes (qa_redis): não mexe na loja real.
 #
 #   powershell -ExecutionPolicy Bypass -File deploy\local.ps1          # liga tudo
@@ -17,6 +17,10 @@ $root = Split-Path -Parent $PSScriptRoot
 $portas = @(3433, 3101, 3110, 3102)
 
 function Desligar {
+  # Processos "vigia" (tsx watch / next dev) que reabrem o servidor se só a porta for derrubada
+  Get-CimInstance Win32_Process -Filter "Name='node.exe'" |
+    Where-Object { $_.CommandLine -match 'tsx(\\dist\\cli\.mjs"?|\\dist\\preflight)|tsx watch src/index\.ts|next dev -p 31(01|10|02)' } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -Confirm:$false -ErrorAction SilentlyContinue }
   foreach ($p in $portas) {
     Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction SilentlyContinue |
       ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -Confirm:$false -ErrorAction SilentlyContinue }

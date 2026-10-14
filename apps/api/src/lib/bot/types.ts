@@ -87,6 +87,9 @@ export interface BotStore {
   city?: string | null
   state?: string | null
   schedules: { dayOfWeek: number; openTime: string; closeTime: string }[]
+  autoSchedule?: boolean
+  pausedUntil?: Date | null
+  specialDays?: { date: string; isClosed: boolean; openTime: string | null; closeTime: string | null }[]
   paymentMethods: { id: string; type: string; label: string }[]
   deliveryAreas: { type: string; fee: number; freeFrom: number | null; district: string | null; name: string | null }[]
   automationConfig: {

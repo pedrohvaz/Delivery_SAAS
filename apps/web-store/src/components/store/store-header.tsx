@@ -18,6 +18,8 @@ interface StoreData {
   address: string | null; number: string | null; district: string | null
   city: string | null; state: string | null
   schedules: Schedule[]
+  pausedUntil?: string | null
+  specialDays?: { date: string; isClosed: boolean; openTime: string | null; closeTime: string | null; note: string | null }[]
 }
 
 const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
@@ -46,7 +48,17 @@ export function StoreHeader({ store }: { store: StoreData }) {
   })
   const itemCount = totalItems()
   const cartTotal = subtotal()
-  const nextOpen = !store.isOpen ? getNextOpenLabel(store.schedules) : null
+  const paused = store.pausedUntil && new Date(store.pausedUntil).getTime() > Date.now()
+  const nextOpen = !store.isOpen
+    ? paused
+      ? `Volta às ${new Date(store.pausedUntil!).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+      : getNextOpenLabel(store.schedules)
+    : null
+  const hoje = new Date().getDay()
+  const porDia = DAY_NAMES.map((nome, d) => ({
+    d, nome, turnos: store.schedules.filter((s) => s.dayOfWeek === d).map((s) => s.openTime === s.closeTime ? '24 horas' : `${s.openTime} – ${s.closeTime}`),
+  }))
+  const especiais = store.specialDays ?? []
 
   const addressLine = [store.address, store.number].filter(Boolean).join(', ')
   const timeRange = `${store.estimatedTime} - ${store.estimatedTime + 20}min`
@@ -174,12 +186,23 @@ export function StoreHeader({ store }: { store: StoreData }) {
             </button>
             {showHours && (
               <div className="mt-2 rounded-xl bg-gray-50 border border-gray-100 p-3 space-y-1.5">
-                {store.schedules.map((s) => (
-                  <div key={s.dayOfWeek} className="flex justify-between text-[12px]">
-                    <span className="font-medium text-gray-700 w-24">{DAY_NAMES[s.dayOfWeek]}</span>
-                    <span className="text-gray-500">{s.openTime} – {s.closeTime}</span>
+                {porDia.map(({ d, nome, turnos }) => (
+                  <div key={d} className={`flex justify-between gap-3 text-[12px] ${d === hoje ? 'font-semibold text-gray-900' : ''}`}>
+                    <span className="w-24 shrink-0 font-medium text-gray-700">{nome}{d === hoje ? ' (hoje)' : ''}</span>
+                    <span className={`text-right ${turnos.length ? 'text-gray-500' : 'text-gray-400'}`}>{turnos.length ? turnos.join(' · ') : 'Fechado'}</span>
                   </div>
                 ))}
+                {especiais.length > 0 && (
+                  <div className="mt-2 border-t border-gray-200 pt-2 space-y-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Datas especiais</p>
+                    {especiais.map((e) => (
+                      <div key={e.date} className="flex justify-between gap-3 text-[12px]">
+                        <span className="font-medium text-gray-700">{e.date.slice(8, 10)}/{e.date.slice(5, 7)}{e.note ? ` · ${e.note}` : ''}</span>
+                        <span className={e.isClosed ? 'text-red-500' : 'text-gray-500'}>{e.isClosed ? 'Fechado' : `${e.openTime} – ${e.closeTime}`}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </>

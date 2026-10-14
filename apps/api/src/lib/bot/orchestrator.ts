@@ -6,7 +6,7 @@ import { loadProfile, syncCustomerName } from './crm.js'
 import { getDraft, loadSession, resetToFree, saveMessage, setState } from './session.js'
 import { buildWelcome, buildClosedMessage } from './welcome.js'
 import { handleLlmFree } from './llm-flow.js'
-import { isStoreOpenNow } from '../../routes/schedules/index.js'
+import { acceptingOrdersNow } from '../../routes/schedules/index.js'
 import { MAX_MSG_CHARS, isDuplicateMessage, rateLimited, shouldNotifyRateLimit } from './limits.js'
 import { handleAddress } from './fixed-flow/address.js'
 import { handlePayment } from './fixed-flow/payment.js'
@@ -38,6 +38,8 @@ async function loadStoreForBot(app: FastifyInstance, slug: string): Promise<BotS
       minOrderValue: true,
       timezone: true,
       isOpen: true,
+      autoSchedule: true,
+      pausedUntil: true,
       acceptOrders: true,
       evolutionApiUrl: true,
       evolutionApiKey: true,
@@ -45,6 +47,7 @@ async function loadStoreForBot(app: FastifyInstance, slug: string): Promise<BotS
       city: true,
       state: true,
       schedules: { where: { isActive: true }, select: { dayOfWeek: true, openTime: true, closeTime: true } },
+      specialDays: { select: { date: true, isClosed: true, openTime: true, closeTime: true } },
       paymentMethods: { where: { isActive: true }, select: { id: true, type: true, label: true } },
       deliveryAreas: {
         where: { isActive: true },
@@ -81,8 +84,7 @@ async function loadStoreForBot(app: FastifyInstance, slug: string): Promise<BotS
 /** A loja está aberta para pedidos agora? (mesma regra do order-service.) */
 function isOpenForOrders(store: BotStore): boolean {
   if (!store.acceptOrders) return false
-  if (store.isOpen) return true
-  return isStoreOpenNow(store.schedules.map((s) => ({ ...s, isActive: true })), store.timezone)
+  return acceptingOrdersNow(store, store.schedules.map((s) => ({ ...s, isActive: true })), store.specialDays ?? []).open
 }
 
 async function sendWhatsApp(store: BotStore, phone: string, text: string): Promise<void> {

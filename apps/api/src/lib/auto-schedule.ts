@@ -1,6 +1,6 @@
 import { invalidateStorePublicCache } from './cache.js'
 import type { PrismaClient } from '@prisma/client'
-import { isStoreOpenNow } from '../routes/schedules/index.js'
+import { isStoreOpenNow, isPaused } from '../routes/schedules/index.js'
 
 /**
  * Worker de abertura/fechamento automático.
@@ -18,12 +18,30 @@ export function startAutoScheduleWorker(prisma: PrismaClient): NodeJS.Timeout {
 
   async function tick() {
     try {
+      // Pausas que terminaram: reabre (respeitando os horários se a abertura automática estiver ligada)
+      const now = new Date()
+      const fimDaPausa = await prisma.store.findMany({
+        where: { pausedUntil: { lte: now }, status: 'ACTIVE' },
+        select: {
+          id: true, autoSchedule: true, timezone: true,
+          schedules: { where: { isActive: true }, select: { dayOfWeek: true, openTime: true, closeTime: true, isActive: true } },
+          specialDays: { select: { date: true, isClosed: true, openTime: true, closeTime: true } },
+        },
+      })
+      for (const s of fimDaPausa) {
+        const isOpen = s.autoSchedule ? isStoreOpenNow(s.schedules, s.timezone ?? 'America/Sao_Paulo', s.specialDays) : true
+        await prisma.store.update({ where: { id: s.id }, data: { pausedUntil: null, isOpen } })
+        await invalidateStorePublicCache(prisma, s.id)
+      }
+
       const stores = await prisma.store.findMany({
         where: { autoSchedule: true, status: 'ACTIVE' }, // suspensa não reabre sozinha
         select: {
           id: true,
           isOpen: true,
           timezone: true,
+          pausedUntil: true,
+          specialDays: { select: { date: true, isClosed: true, openTime: true, closeTime: true } },
           schedules: {
             where: { isActive: true },
             select: { dayOfWeek: true, openTime: true, closeTime: true, isActive: true },
@@ -34,7 +52,7 @@ export function startAutoScheduleWorker(prisma: PrismaClient): NodeJS.Timeout {
       const seen = new Set<string>()
       for (const s of stores) {
         seen.add(s.id)
-        const desired = isStoreOpenNow(s.schedules, s.timezone ?? 'America/Sao_Paulo')
+        const desired = isStoreOpenNow(s.schedules, s.timezone ?? 'America/Sao_Paulo', s.specialDays)
         const prev = lastDesired.get(s.id)
         lastDesired.set(s.id, desired)
 
@@ -42,7 +60,8 @@ export function startAutoScheduleWorker(prisma: PrismaClient): NodeJS.Timeout {
         // horário "vira". Lojas que ligaram o autoSchedule no meio do caminho
         // (prev === undefined) já tiveram isOpen ajustado pelo PATCH /schedules/auto.
         const apply = firstTick || (prev !== undefined && prev !== desired)
-        if (apply && desired !== s.isOpen) {
+        // Pausada: fica fechada até o fim da pausa (tratado acima)
+        if (apply && desired !== s.isOpen && !isPaused(s.pausedUntil)) {
           await prisma.store.update({ where: { id: s.id }, data: { isOpen: desired } })
           await invalidateStorePublicCache(prisma, s.id)
         }

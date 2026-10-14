@@ -68,10 +68,18 @@ const storePublicRoutes: FastifyPluginAsync = async (app) => {
         googleTagManagerId: true,
         storeNotice: true,
         storeNoticeType: true,
+        pausedUntil: true,
         schedules: {
           where: { isActive: true },
           select: { dayOfWeek: true, openTime: true, closeTime: true },
-          orderBy: { dayOfWeek: 'asc' },
+          orderBy: [{ dayOfWeek: 'asc' }, { openTime: 'asc' }],
+        },
+        // Próximas datas especiais (feriados/folgas) para o cliente ver
+        specialDays: {
+          where: { date: { gte: new Date(Date.now() - 86_400_000).toISOString().slice(0, 10) } },
+          select: { date: true, isClosed: true, openTime: true, closeTime: true, note: true },
+          orderBy: { date: 'asc' },
+          take: 5,
         },
         paymentMethods: {
           where: { isActive: true },

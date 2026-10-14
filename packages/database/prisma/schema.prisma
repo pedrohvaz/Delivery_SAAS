@@ -36,6 +36,7 @@ model Store {
   isOpen        Boolean     @default(false)
   acceptOrders  Boolean     @default(true)
   autoSchedule  Boolean     @default(false) // abre/fecha sozinho conforme os horários
+  pausedUntil   DateTime? // pausa temporária: fechada até este instante, depois reabre sozinha
   timezone      String      @default("America/Sao_Paulo")
   minOrderValue Decimal     @default(0)
   estimatedTime Int         @default(45) // minutos
@@ -87,6 +88,7 @@ model Store {
   tables            Table[]
   paymentMethods    PaymentMethod[]
   schedules         StoreSchedule[]
+  specialDays       StoreSpecialDay[]
   cashback          CashbackConfig?
   cashRegisters     CashRegister[]
   automationConfig  AutomationConfig?
@@ -588,6 +590,22 @@ model StoreSchedule {
   isActive  Boolean @default(true)
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+
+// Datas especiais (feriados, folgas, horário diferente num dia). Vale mais que a grade semanal.
+model StoreSpecialDay {
+  id        String   @id @default(uuid())
+  storeId   String
+  date      String // "2026-12-25" (dia no fuso da loja)
+  isClosed  Boolean  @default(true) // true = fechado o dia todo; false = usa openTime/closeTime
+  openTime  String?
+  closeTime String?
+  note      String? // ex.: "Natal"
+  createdAt DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, date])
 }
 
 // ─────────────────────────────────────────

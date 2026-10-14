@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { asaasCreateCustomer, asaasCreatePixCharge, asaasGetPixQrCode } from './asaas.js'
-import { isStoreOpenNow } from '../routes/schedules/index.js'
+import { acceptingOrdersNow, isPaused } from '../routes/schedules/index.js'
 import { notifyOrderStatus } from './notifications.js'
 import { enqueueOrderNotification } from './queue.js'
 import { invalidateStorePublicCache } from './cache.js'
@@ -256,15 +256,18 @@ export async function createOrder(app: FastifyInstance, input: CreateOrderInput)
   }
 
   // Verifica horário de funcionamento
-  if (!store.isOpen) {
-    const schedules = await app.prisma.storeSchedule.findMany({
-      where: { storeId: store.id, isActive: true },
-    })
-    const shouldBeOpen = isStoreOpenNow(schedules, store.timezone)
-    if (!shouldBeOpen) {
+  if (!store.isOpen || isPaused(store.pausedUntil)) {
+    const [schedules, specials] = await Promise.all([
+      app.prisma.storeSchedule.findMany({ where: { storeId: store.id, isActive: true } }),
+      app.prisma.storeSpecialDay.findMany({ where: { storeId: store.id } }),
+    ])
+    const { open, heal } = acceptingOrdersNow(store, schedules, specials)
+    if (!open) {
       throw new OrderError('STORE_CLOSED', 'A loja está fechada no momento', 422)
     }
-    // Horário bate mas isOpen ainda false — atualiza em background
+  }
+  if (!store.isOpen) {
+    // Turno acabou de começar e o worker ainda não abriu a loja — abre em background
     app.prisma.store.update({ where: { id: store.id }, data: { isOpen: true } })
       .then(() => invalidateStorePublicCache(app.prisma, store.id))
       .catch(() => {})
