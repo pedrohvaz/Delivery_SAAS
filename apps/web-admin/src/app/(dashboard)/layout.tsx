@@ -14,6 +14,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const store = useAuthStore((s) => s.store)
   const [hydrated, setHydrated] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  // Menu recolhido no computador (lembrado neste navegador)
+  const [collapsed, setCollapsed] = useState(false)
+  useEffect(() => {
+    try { setCollapsed(localStorage.getItem('painel-menu-recolhido') === '1') } catch { /* sem localStorage */ }
+  }, [])
+  function toggleCollapsed() {
+    setCollapsed((c) => {
+      try { localStorage.setItem('painel-menu-recolhido', c ? '0' : '1') } catch { /* ignora */ }
+      return !c
+    })
+  }
+  // Largura do menu para elementos fixos (ex.: barra de "salvar" no rodapé)
+  useEffect(() => {
+    document.documentElement.style.setProperty('--sidebar-w', collapsed ? '4rem' : '15rem')
+  }, [collapsed])
+  // Atalho Ctrl+B (ou ⌘+B) para recolher/mostrar
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') { e.preventDefault(); toggleCollapsed() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   useEffect(() => {
     const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true))
@@ -39,7 +62,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <StoreTheme />
       {/* Sidebar fixa no desktop */}
       <div className="hidden md:block">
-        <Sidebar />
+        <Sidebar collapsed={collapsed} onToggle={toggleCollapsed} />
       </div>
 
       {/* Sidebar como drawer no mobile */}

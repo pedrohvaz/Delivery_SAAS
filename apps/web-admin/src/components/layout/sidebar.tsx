@@ -28,6 +28,8 @@ import {
   Star,
   Gift,
   CreditCard,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react'
 import { useStockAlerts } from '@/hooks/use-stock'
 import { StoreLogo } from './store-logo'
@@ -55,20 +57,37 @@ const navItems = [
   { label: 'Configurações', href: '/dashboard/configuracoes', icon: Settings },
 ]
 
-export function Sidebar() {
+/**
+ * Menu lateral. No computador pode ser recolhido (só ícones, o nome aparece ao passar o mouse);
+ * `onToggle` só é passado no computador — no celular o menu é a gaveta que abre pelo ☰.
+ */
+export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
   const pathname = usePathname()
   const { store, logout } = useAuthStore()
   const { data: stockAlerts = [] } = useStockAlerts()
+  const item = cn('flex items-center rounded-lg py-2 text-sm transition-colors', collapsed ? 'justify-center px-0' : 'gap-3 px-3')
 
   return (
-    <aside className="flex h-screen w-60 flex-col border-r bg-card">
+    <aside className={cn('flex h-screen flex-col border-r bg-card transition-[width] duration-200', collapsed ? 'w-16' : 'w-60')}>
       {/* Logo / Nome da loja */}
-      <div className="flex items-center gap-3 border-b px-4 py-4">
+      <div className={cn('flex items-center border-b py-4', collapsed ? 'flex-col gap-2 px-2' : 'gap-3 px-4')}>
         <StoreLogo />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-foreground">{store?.name ?? 'Minha Loja'}</p>
-          <p className="truncate text-xs text-muted-foreground">/{store?.slug ?? ''}</p>
-        </div>
+        {!collapsed && (
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-foreground">{store?.name ?? 'Minha Loja'}</p>
+            <p className="truncate text-xs text-muted-foreground">/{store?.slug ?? ''}</p>
+          </div>
+        )}
+        {onToggle && (
+          <button
+            onClick={onToggle}
+            aria-label={collapsed ? 'Mostrar menu' : 'Recolher menu'}
+            title={collapsed ? 'Mostrar menu (Ctrl+B)' : 'Recolher menu (Ctrl+B)'}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          </button>
+        )}
       </div>
 
       {/* Navegação */}
@@ -82,17 +101,21 @@ export function Sidebar() {
             <Link
               key={href}
               href={href}
+              title={collapsed ? label : undefined}
+              aria-label={collapsed ? label : undefined}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                item,
+                'relative',
                 active
                   ? 'bg-primary/10 text-primary font-medium'
                   : 'text-muted-foreground hover:bg-accent hover:text-foreground',
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              <span className="flex-1">{label}</span>
+              {!collapsed && <span className="flex-1">{label}</span>}
               {badge && (
-                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                <span className={cn('flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground',
+                  collapsed && 'absolute right-1.5 top-0.5')}>
                   {badge}
                 </span>
               )}
@@ -103,26 +126,29 @@ export function Sidebar() {
 
       {/* KDS + Logout */}
       <div className="border-t p-2 space-y-0.5">
-        <Link href="/kds" target="_blank"
-          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+        <Link href="/kds" target="_blank" title={collapsed ? 'Tela da Cozinha' : undefined} aria-label={collapsed ? 'Tela da Cozinha' : undefined}
+          className={cn(item, 'text-muted-foreground hover:bg-accent hover:text-foreground')}>
           <ChefHat className="h-4 w-4 shrink-0" />
-          <span className="flex-1">Tela da Cozinha</span>
-          <ExternalLink className="h-3 w-3 text-muted-foreground/50" />
+          {!collapsed && <span className="flex-1">Tela da Cozinha</span>}
+          {!collapsed && <ExternalLink className="h-3 w-3 text-muted-foreground/50" />}
         </Link>
         {store?.slug && (
           <Link href={`${process.env.NEXT_PUBLIC_STORE_URL ?? 'http://localhost:3001'}/${store.slug}`} target="_blank"
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+            title={collapsed ? 'Vitrine da Loja' : undefined} aria-label={collapsed ? 'Vitrine da Loja' : undefined}
+            className={cn(item, 'text-muted-foreground hover:bg-accent hover:text-foreground')}>
             <Store className="h-4 w-4 shrink-0" />
-            <span className="flex-1">Vitrine da Loja</span>
-            <ExternalLink className="h-3 w-3 text-muted-foreground/50" />
+            {!collapsed && <span className="flex-1">Vitrine da Loja</span>}
+            {!collapsed && <ExternalLink className="h-3 w-3 text-muted-foreground/50" />}
           </Link>
         )}
         <button
           onClick={logout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          title={collapsed ? 'Sair' : undefined}
+          aria-label={collapsed ? 'Sair' : undefined}
+          className={cn(item, 'w-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive')}
         >
           <LogOut className="h-4 w-4" />
-          Sair
+          {!collapsed && 'Sair'}
         </button>
       </div>
     </aside>

@@ -547,7 +547,7 @@ export default function HorariosPage() {
 
       {/* Barra fixa quando há alterações não salvas */}
       {dirty && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 backdrop-blur md:left-60">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 backdrop-blur md:left-[var(--sidebar-w,15rem)]">
           <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-6">
             <span className="text-sm font-medium">Você tem alterações nos horários que ainda não foram salvas.</span>
             <div className="flex gap-2">
