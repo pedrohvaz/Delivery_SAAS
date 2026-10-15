@@ -3,6 +3,7 @@ import { OrderError, computeSubtotal, resolveDeliveryFee } from '../../order-ser
 import { setState } from '../session.js'
 import type { BotProfile, BotProfileAddress, BotStore, DraftAddress, OrderDraft } from '../types.js'
 import { enterPayment } from './payment.js'
+import { brl } from '../../money.js'
 
 function formatSaved(a: BotProfileAddress): string {
   const base = `${a.street}, ${a.number} — ${a.district}`
@@ -112,7 +113,7 @@ function storeDistricts(store: BotStore): { name: string; fee: number }[] {
     .map((a) => ({ name: a.district!, fee: a.fee }))
 }
 
-const money = (v: number) => (v === 0 ? 'grátis' : `R$ ${v.toFixed(2).replace('.', ',')}`)
+const money = (v: number) => (v === 0 ? 'grátis' : `${brl(v)}`)
 
 function askDistrict(store: BotStore, intro = '🏘️ Qual o *bairro*?'): string {
   const list = storeDistricts(store)

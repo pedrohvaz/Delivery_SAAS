@@ -8,6 +8,7 @@ import { ArrowLeft, MapPin, User, CreditCard, CheckCircle2, Tag, X, Plus } from 
 import { api } from '@/lib/api'
 import { saveLocalOrder } from '@/lib/local-orders'
 import { currency } from '@/lib/utils'
+import { MoneyInput } from '@delivery/ui'
 import { useCartStore, itemTotal } from '@/store/cart'
 import { useCustomerAuth } from '@/store/customer-auth'
 import { useMounted } from '@/hooks/use-mounted'
@@ -531,15 +532,20 @@ export default function CheckoutPage() {
               {needsChange && (
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-foreground">Troco para quanto?</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                    <input
-                      value={changeForValue}
-                      onChange={(e) => setChangeForValue(e.target.value.replace(/[^\d.,]/g, ''))}
-                      placeholder="50,00"
-                      inputMode="decimal"
-                      className="h-10 w-full rounded-xl border border-input bg-white pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
+                  <MoneyInput
+                    value={changeForValue}
+                    onValueChange={setChangeForValue}
+                    placeholder="R$ 50,00"
+                    aria-label="Troco para quanto"
+                    className="h-11 w-full rounded-xl border border-input bg-white px-3 text-base tabular-nums placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {[20, 50, 100, 200].filter((n) => n >= total).slice(0, 3).map((n) => (
+                      <button key={n} type="button" onClick={() => setChangeForValue(n.toFixed(2))}
+                        className="min-h-9 rounded-lg border bg-white px-3 text-sm font-medium hover:bg-gray-50">
+                        {currency(n)}
+                      </button>
+                    ))}
                   </div>
                   {changeForValue && (() => {
                     const v = parseFloat(changeForValue.replace(',', '.'))

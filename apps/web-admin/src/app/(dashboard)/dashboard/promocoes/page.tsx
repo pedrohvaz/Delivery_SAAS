@@ -8,7 +8,7 @@ import {
   Tag, Gift, TrendingDown, Percent, Plus, Pencil, Trash2, Copy,
   Check, ToggleLeft, ToggleRight, X, RefreshCw,
 } from 'lucide-react'
-import { cn } from '@delivery/ui'
+import { cn, MoneyInput } from '@delivery/ui'
 import { currency } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -85,18 +85,25 @@ function CouponForm({ initial, onSave, onCancel, loading, error }: {
         {needsValue && (
           <div className="space-y-1">
             <label className="text-xs font-medium">Valor * {isPercent && <span className="text-muted-foreground">(máx 100)</span>}</label>
-            <input
-              type="number" min="0" max={isPercent ? 100 : undefined} step={isPercent ? '1' : '0.01'}
-              value={value} onChange={(e) => setValue(e.target.value)}
-              placeholder={isPercent ? '10' : '5.00'}
-              className="w-full h-9 rounded-xl border px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
-            />
+            {isPercent ? (
+              <input
+                type="number" min="0" max={100} step="1" inputMode="numeric"
+                value={value} onChange={(e) => setValue(e.target.value)}
+                placeholder="10"
+                className="w-full h-10 rounded-xl border px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            ) : (
+              <MoneyInput
+                value={value} onValueChange={setValue}
+                className="w-full h-10 rounded-xl border px-3 text-sm tabular-nums bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            )}
           </div>
         )}
         <div className="space-y-1">
           <label className="text-xs font-medium">Pedido mínimo (R$)</label>
-          <input type="number" min="0" value={minOrder} onChange={(e) => setMinOrder(e.target.value)}
-            className="w-full h-9 rounded-xl border px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40" />
+          <MoneyInput value={minOrder} onValueChange={setMinOrder} placeholder="Sem mínimo"
+            className="w-full h-10 rounded-xl border px-3 text-sm tabular-nums bg-background focus:outline-none focus:ring-2 focus:ring-primary/40" />
         </div>
         <div className="space-y-1">
           <label className="text-xs font-medium">Limite de usos</label>
@@ -245,11 +252,8 @@ export default function PromocoesPage() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium">Pedido mínimo</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
-                  <input type="number" min="0" value={minOrderCb} onChange={(e) => setMinOrderCb(e.target.value)}
-                    className="w-full h-9 rounded-xl border pl-8 pr-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40" />
-                </div>
+                <MoneyInput value={minOrderCb} onValueChange={setMinOrderCb} placeholder="Sem mínimo"
+                  className="w-full h-10 rounded-xl border px-3 text-sm tabular-nums bg-background focus:outline-none focus:ring-2 focus:ring-primary/40" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium">Válido por (dias)</label>

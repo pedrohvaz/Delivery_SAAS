@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { authenticate } from '../../middlewares/authenticate.js'
 import { z } from 'zod'
+import { brl } from '../../lib/money.js'
 
 const createCouponSchema = z.object({
   code: z.string().min(3).max(20).toUpperCase(),
@@ -136,7 +137,7 @@ export const couponPublicRoutes: FastifyPluginAsync = async (app) => {
     if (subtotal < Number(coupon.minOrder)) {
       return reply.status(422).send({
         error: 'MinOrder',
-        message: `Pedido mínimo para este cupom: R$${Number(coupon.minOrder).toFixed(2).replace('.', ',')}`,
+        message: `Pedido mínimo para este cupom: ${brl(Number(coupon.minOrder))}`,
         statusCode: 422,
       })
     }
@@ -149,7 +150,7 @@ export const couponPublicRoutes: FastifyPluginAsync = async (app) => {
 
     const TYPE_LABELS: Record<string, string> = {
       PERCENT_DISCOUNT: `${coupon.value}% de desconto`,
-      FIXED_DISCOUNT: `R$${Number(coupon.value).toFixed(2).replace('.', ',')} de desconto`,
+      FIXED_DISCOUNT: `${brl(Number(coupon.value))} de desconto`,
       FREE_DELIVERY: 'Frete grátis',
       ITEM_DISCOUNT: 'Desconto no item',
     }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
+import { MoneyField } from '@/components/ui/money-field'
 import { Button } from '@/components/ui/button'
 import { cn } from '@delivery/ui'
 import { X, Upload, ImageIcon, Loader2, Trash2 } from 'lucide-react'
@@ -207,8 +208,7 @@ export function ProductModal({ open, onClose, categoryId, product }: Props) {
               value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
           <div>
-            <Input label="Preço (R$) *" placeholder="0,00"
-              value={price} onChange={(e) => setPrice(e.target.value)} required />
+            <MoneyField label="Preço *" value={price} onValueChange={setPrice} required />
           </div>
         </div>
 
@@ -279,8 +279,7 @@ export function ProductModal({ open, onClose, categoryId, product }: Props) {
                 value={stockQty} onChange={(e) => setStockQty(e.target.value)} />
               <Input label="Estoque mínimo" type="number" min="0" placeholder="0"
                 value={minStock} onChange={(e) => setMinStock(e.target.value)} />
-              <Input label="Custo médio (R$)" placeholder="0,00"
-                value={avgCost} onChange={(e) => setAvgCost(e.target.value)} />
+              <MoneyField label="Custo médio" value={avgCost} onValueChange={setAvgCost} />
             </div>
           )}
         </div>

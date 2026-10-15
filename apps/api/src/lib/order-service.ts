@@ -6,6 +6,7 @@ import { acceptingOrdersNow, isPaused } from '../routes/schedules/index.js'
 import { notifyOrderStatus } from './notifications.js'
 import { enqueueOrderNotification } from './queue.js'
 import { invalidateStorePublicCache } from './cache.js'
+import { brl } from './money.js'
 
 // ─── Schema de criação de pedido (fonte única para a rota e o bot) ──────────
 // Preços e nomes enviados pelo cliente são IGNORADOS: o servidor recalcula tudo
@@ -313,7 +314,7 @@ export async function createOrder(app: FastifyInstance, input: CreateOrderInput)
   // Valida pedido mínimo
   const minOrder = Number(store.minOrderValue)
   if (minOrder > 0 && subtotal < minOrder) {
-    throw new OrderError('MIN_ORDER', `Pedido mínimo de R$ ${minOrder.toFixed(2).replace('.', ',')}`, 422)
+    throw new OrderError('MIN_ORDER', `Pedido mínimo de ${brl(minOrder)}`, 422)
   }
 
   // Busca ou cria cliente pelo telefone (opcional para TABLE).

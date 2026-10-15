@@ -1,6 +1,7 @@
+import { formatBRL } from '@delivery/ui'
 import type { Order } from '@/hooks/use-orders'
 
-const money = (n: number) => `R$ ${Number(n).toFixed(2).replace('.', ',')}`
+const money = (n: number) => formatBRL(Number(n) || 0)
 
 const TYPE_LABEL: Record<Order['type'], string> = {
   DELIVERY: 'ENTREGA',

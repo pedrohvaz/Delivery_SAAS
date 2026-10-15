@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
+import { MoneyField } from '@/components/ui/money-field'
 import { Button } from '@/components/ui/button'
 import { cn } from '@delivery/ui'
 import { Plus, Trash2, ChevronDown, ChevronRight, Pencil, Check, X, Power } from 'lucide-react'
@@ -295,10 +296,11 @@ export function AddonPanel({ product, onClose }: Props) {
                               />
                             </div>
                             <div className="w-28">
-                              <Input
-                                placeholder="Preço (+R$)"
+                              <MoneyField
+                                aria-label="Preço adicional"
+                                placeholder="+ R$ 0,00"
                                 value={editOptionForm.price}
-                                onChange={(e) => setEditOptionForm((f) => ({ ...f, price: e.target.value }))}
+                                onValueChange={(v) => setEditOptionForm((f) => ({ ...f, price: v }))}
                               />
                             </div>
                             <button
@@ -367,10 +369,11 @@ export function AddonPanel({ product, onClose }: Props) {
                         />
                       </div>
                       <div className="w-28">
-                        <Input
-                          placeholder="Preço (+R$)"
+                        <MoneyField
+                          aria-label="Preço adicional"
+                          placeholder="+ R$ 0,00"
                           value={newOptionPrice[group.id] ?? ''}
-                          onChange={(e) => setNewOptionPrice((p) => ({ ...p, [group.id]: e.target.value }))}
+                          onValueChange={(v) => setNewOptionPrice((p) => ({ ...p, [group.id]: v }))}
                         />
                       </div>
                       <Button type="submit" size="sm" variant="secondary" loading={createOption.isPending}>

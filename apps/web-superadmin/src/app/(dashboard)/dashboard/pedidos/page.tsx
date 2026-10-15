@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { format } from 'date-fns'
-import { cn } from '@/lib/utils'
+import { cn, brl } from '@/lib/utils'
 import Link from 'next/link'
 
 const STATUS_OPTIONS = [
@@ -151,7 +151,7 @@ export default function PedidosPage() {
                     {STATUS_OPTIONS.find((s) => s.value === o.status)?.label ?? o.status}
                   </span>
                 </td>
-                <td className="px-4 py-3">R$ {Number(o.total).toFixed(2).replace('.', ',')}</td>
+                <td className="px-4 py-3">{brl(Number(o.total))}</td>
                 <td className="px-4 py-3 text-muted-foreground">{format(new Date(o.createdAt), 'dd/MM/yy HH:mm')}</td>
               </tr>
             ))}

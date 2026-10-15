@@ -8,6 +8,7 @@ import type { MenuLookup } from './menu.js'
 import { enterAddress } from './fixed-flow/address.js'
 import { enterPayment } from './fixed-flow/payment.js'
 import { enterConfirmation } from './fixed-flow/confirmation.js'
+import { brl } from '../money.js'
 
 interface ParsedResponse {
   reply: string
@@ -214,13 +215,13 @@ export async function handleLlmFree(
     const subtotal = computeSubtotal(draft.items)
     if (store.minOrderValue > 0 && subtotal < store.minOrderValue) {
       await setState(app, conv.id, 'LLM_FREE', draft)
-      return `${reply}\n\nO pedido mínimo é de R$ ${store.minOrderValue.toFixed(2).replace('.', ',')}. Quer adicionar mais alguma coisa?`
+      return `${reply}\n\nO pedido mínimo é de ${brl(store.minOrderValue)}. Quer adicionar mais alguma coisa?`
     }
     // Teto de valor: pedido muito alto não finaliza sozinho (evita carrinho absurdo/erro).
     if (subtotal > MAX_VALOR_PEDIDO) {
       app.log.warn(`bot: pedido acima do teto (R$ ${subtotal}) loja=${store.id} phone=${conv.id}`)
       await setState(app, conv.id, 'LLM_FREE', draft)
-      return `${reply}\n\nEste pedido ficou bem alto (R$ ${subtotal.toFixed(2).replace('.', ',')}). Para pedidos grandes, peço que fale com nosso atendimento para confirmarmos tudo certinho. 🙂`
+      return `${reply}\n\nEste pedido ficou bem alto (${brl(subtotal)}). Para pedidos grandes, peço que fale com nosso atendimento para confirmarmos tudo certinho. 🙂`
     }
     draft.subtotal = subtotal
 

@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { cn } from '@/lib/utils'
+import { cn, brl } from '@/lib/utils'
 import {
   ArrowLeft, Store, Phone, MapPin, Users, ShoppingBag,
   Package, UserCircle, ToggleLeft, ToggleRight, Clock,
@@ -91,7 +91,7 @@ export default function LojaDetalhesPage() {
 
   const metrics = [
     { label: 'Pedidos', value: data._count.orders, icon: ShoppingBag, color: 'text-blue-600 bg-blue-50' },
-    { label: 'Receita', value: `R$ ${Number(data.revenueTotal).toFixed(2).replace('.', ',')}`, icon: Package, color: 'text-green-600 bg-green-50' },
+    { label: 'Receita', value: `${brl(Number(data.revenueTotal))}`, icon: Package, color: 'text-green-600 bg-green-50' },
     { label: 'Clientes', value: data._count.customers, icon: Users, color: 'text-purple-600 bg-purple-50' },
     { label: 'Produtos', value: data._count.products, icon: Package, color: 'text-orange-600 bg-orange-50' },
   ]
@@ -293,7 +293,7 @@ export default function LojaDetalhesPage() {
                         <td className="px-4 py-3">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${s.color}`}>{s.label}</span>
                         </td>
-                        <td className="px-4 py-3">R$ {Number(o.total).toFixed(2).replace('.', ',')}</td>
+                        <td className="px-4 py-3">{brl(Number(o.total))}</td>
                         <td className="px-4 py-3 text-muted-foreground">{format(new Date(o.createdAt), 'dd/MM/yy HH:mm')}</td>
                       </tr>
                     )

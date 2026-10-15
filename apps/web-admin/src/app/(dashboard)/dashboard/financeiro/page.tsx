@@ -148,7 +148,7 @@ ${data.byPaymentMethod.map((m: any) =>
 ${data.expectedBalance != null ? `<div class="row bold"><span>Saldo esperado</span><span>${fmt(Number(data.expectedBalance))}</span></div>` : ''}
 ${data.closingBalance != null ? `<div class="row"><span>Contado no fechamento</span><span>${fmt(Number(data.closingBalance))}</span></div>` : ''}
 ${diff !== null ? `<div class="row bold ${diff < 0 ? 'red' : diff > 0 ? 'green' : ''}">
-  <span>${diff >= 0 ? 'Sobra' : 'Falta'}</span><span>R$ ${Math.abs(diff).toFixed(2).replace('.', ',')}</span>
+  <span>${diff >= 0 ? 'Sobra' : 'Falta'}</span><span>${fmt(Math.abs(diff))}</span>
 </div>` : ''}
 ${data.notes ? `<hr class="sep"/><p>Obs: ${esc(data.notes)}</p>` : ''}
 <hr class="sep"/>
@@ -224,7 +224,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                       return (
                         <div className={cn('flex justify-between font-medium', diff === 0 ? 'text-green-600' : diff > 0 ? 'text-blue-600' : 'text-red-600')}>
                           <span>{diff >= 0 ? 'Sobra' : 'Falta'}</span>
-                          <span>R$ {Math.abs(diff).toFixed(2).replace('.', ',')}</span>
+                          <span>{fmt(Math.abs(diff))}</span>
                         </div>
                       )
                     })()}

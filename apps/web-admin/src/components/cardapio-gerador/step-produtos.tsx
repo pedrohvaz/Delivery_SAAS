@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { MoneyField } from '@/components/ui/money-field'
 import { Button } from '@/components/ui/button'
+import { formatBRL } from '@delivery/ui'
 import type { CardapioWizardState, WizardProduto } from './wizard-state'
 
 interface StepProdutosProps {
@@ -101,7 +103,7 @@ export function StepProdutos({ state, update }: StepProdutosProps) {
                           </span>
                         )}
                       </p>
-                      <p className="text-xs text-muted-foreground">R$ {produto.preco.toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground">{formatBRL(produto.preco)}</p>
                     </div>
                     {produto.selected && (
                       <div className="flex items-center gap-1.5">
@@ -142,13 +144,11 @@ export function StepProdutos({ state, update }: StepProdutosProps) {
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <Input placeholder="Nome do combo" value={comboNome} onChange={(e) => setComboNome(e.target.value)} />
-          <Input
-            type="number"
-            min={0}
-            step="0.01"
-            placeholder="Preço total (R$)"
+          <MoneyField
+            aria-label="Preço total do combo"
+            placeholder="Preço total (R$ 0,00)"
             value={comboPreco}
-            onChange={(e) => setComboPreco(e.target.value)}
+            onValueChange={setComboPreco}
           />
           <Input
             placeholder="Descrição (opcional)"

@@ -13,7 +13,7 @@ import {
   ChefHat, Package, Grid3X3, Receipt, Lock, Unlock,
   ArrowDownCircle, ArrowUpCircle, DollarSign,
 } from 'lucide-react'
-import { cn } from '@delivery/ui'
+import { cn, MoneyInput, formatBRL } from '@delivery/ui'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -116,7 +116,7 @@ function AddonModal({
           <div>
             <h2 className="font-semibold text-foreground">{product.name}</h2>
             <p className="text-sm text-muted-foreground">
-              R$ {Number(product.price).toFixed(2).replace('.', ',')}
+              {formatBRL(Number(product.price))}
             </p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground">
@@ -152,7 +152,7 @@ function AddonModal({
                         <span>{option.name}</span>
                         <div className="flex items-center gap-2">
                           {Number(option.price) > 0 && (
-                            <span className="text-muted-foreground">+R$ {Number(option.price).toFixed(2).replace('.', ',')}</span>
+                            <span className="text-muted-foreground">+{formatBRL(Number(option.price))}</span>
                           )}
                           <div className={cn('h-4 w-4 rounded-full border-2 flex items-center justify-center', checked ? 'border-primary bg-primary' : 'border-muted-foreground')}>
                             {checked && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
@@ -200,7 +200,7 @@ function AddonModal({
               onClick={handleConfirm}
               className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
             >
-              Adicionar · R$ {(unitPrice * qty).toFixed(2).replace('.', ',')}
+              Adicionar · {formatBRL((unitPrice * qty))}
             </button>
           </div>
         </div>
@@ -243,13 +243,9 @@ function CaixaFechado() {
           </div>
           <div className="space-y-1.5 text-left">
             <label className="text-sm font-medium text-foreground">Fundo de Caixa (R$)</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0,00"
+            <MoneyInput
               value={balance}
-              onChange={(e) => setBalance(e.target.value)}
+              onValueChange={setBalance}
               className="w-full h-11 rounded-xl border px-4 text-lg font-semibold text-center focus:outline-none focus:ring-2 focus:ring-primary/40"
             />
           </div>
@@ -290,11 +286,11 @@ function CaixaBar({
       </span>
       <div className="h-4 w-px bg-green-200" />
       <span className="text-green-700">
-        Receita: <b>R$ {Number(register.totalRevenue ?? 0).toFixed(2).replace('.', ',')}</b>
+        Receita: <b>{formatBRL(Number(register.totalRevenue ?? 0))}</b>
       </span>
       <div className="h-4 w-px bg-green-200" />
       <span className="text-green-700">
-        Saldo esperado: <b>R$ {Number(register.expectedBalance ?? 0).toFixed(2).replace('.', ',')}</b>
+        Saldo esperado: <b>{formatBRL(Number(register.expectedBalance ?? 0))}</b>
       </span>
       <div className="flex-1" />
       <button
@@ -347,24 +343,23 @@ function FecharCaixaModal({ register, onClose }: { register: any; onClose: () =>
 
         {/* Resumo */}
         <div className="bg-muted rounded-xl p-4 space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-muted-foreground">Fundo inicial</span><span className="font-medium">R$ {Number(register.openingBalance).toFixed(2).replace('.', ',')}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Vendas (dinheiro)</span><span className="font-medium text-green-600">+ R$ {Number(register.cashRevenue ?? 0).toFixed(2).replace('.', ',')}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Suprimentos</span><span className="font-medium text-green-600">+ R$ {Number(register.deposits ?? 0).toFixed(2).replace('.', ',')}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Sangrias</span><span className="font-medium text-red-600">- R$ {Number(register.withdrawals ?? 0).toFixed(2).replace('.', ',')}</span></div>
-          <div className="border-t pt-2 flex justify-between font-semibold"><span>Saldo esperado</span><span>R$ {Number(register.expectedBalance ?? 0).toFixed(2).replace('.', ',')}</span></div>
-          <div className="flex justify-between text-muted-foreground"><span>Total de pedidos</span><span>{register.ordersCount ?? 0} pedidos · R$ {Number(register.totalRevenue ?? 0).toFixed(2).replace('.', ',')}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Fundo inicial</span><span className="font-medium">{formatBRL(Number(register.openingBalance))}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Vendas (dinheiro)</span><span className="font-medium text-green-600">+ {formatBRL(Number(register.cashRevenue ?? 0))}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Suprimentos</span><span className="font-medium text-green-600">+ {formatBRL(Number(register.deposits ?? 0))}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Sangrias</span><span className="font-medium text-red-600">- {formatBRL(Number(register.withdrawals ?? 0))}</span></div>
+          <div className="border-t pt-2 flex justify-between font-semibold"><span>Saldo esperado</span><span>{formatBRL(Number(register.expectedBalance ?? 0))}</span></div>
+          <div className="flex justify-between text-muted-foreground"><span>Total de pedidos</span><span>{register.ordersCount ?? 0} pedidos · {formatBRL(Number(register.totalRevenue ?? 0))}</span></div>
         </div>
 
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-foreground">Valor contado no caixa (R$)</label>
-          <input
-            type="number" min="0" step="0.01" placeholder="0,00"
-            value={closingBalance} onChange={(e) => setClosingBalance(e.target.value)}
+          <MoneyInput
+            value={closingBalance} onValueChange={setClosingBalance}
             className="w-full h-11 rounded-xl border px-4 text-lg font-semibold text-center focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
           {diff !== null && (
             <p className={cn('text-sm text-center font-medium', diff === 0 ? 'text-green-600' : diff > 0 ? 'text-blue-600' : 'text-red-600')}>
-              {diff === 0 ? '✓ Caixa conferido' : diff > 0 ? `Sobra de R$ ${diff.toFixed(2).replace('.', ',')}` : `Falta de R$ ${Math.abs(diff).toFixed(2).replace('.', ',')}`}
+              {diff === 0 ? '✓ Caixa conferido' : diff > 0 ? `Sobra de ${formatBRL(diff)}` : `Falta de ${formatBRL(Math.abs(diff))}`}
             </p>
           )}
         </div>
@@ -426,7 +421,7 @@ function TransactionModal({ registerId, onClose }: { registerId: string; onClose
 
         <div className="space-y-1.5">
           <label className="text-sm font-medium">Valor (R$)</label>
-          <input type="number" min="0.01" step="0.01" placeholder="0,00" value={amount} onChange={(e) => setAmount(e.target.value)}
+          <MoneyInput value={amount} onValueChange={setAmount}
             className="w-full h-11 rounded-xl border px-4 text-lg font-semibold text-center focus:outline-none focus:ring-2 focus:ring-primary/40" />
         </div>
 
@@ -635,7 +630,7 @@ export default function CaixaPage() {
                   <div className="p-2 space-y-0.5">
                     <p className="text-xs font-medium text-foreground leading-tight line-clamp-2">{product.name}</p>
                     <p className="text-xs font-semibold text-primary">
-                      R$ {Number(product.price).toFixed(2).replace('.', ',')}
+                      {formatBRL(Number(product.price))}
                     </p>
                   </div>
                 </button>
@@ -685,7 +680,7 @@ export default function CaixaPage() {
                     )}
                     {item.notes && <p className="text-[10px] text-muted-foreground italic truncate">{item.notes}</p>}
                     <p className="text-xs font-semibold text-primary mt-0.5">
-                      R$ {itemTotal(item).toFixed(2).replace('.', ',')}
+                      {formatBRL(itemTotal(item))}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
@@ -756,8 +751,9 @@ export default function CaixaPage() {
                   <option value="">Forma...</option>
                   {paymentMethods.map((m) => <option key={m.id} value={m.type}>{m.label}</option>)}
                 </select>
-                <input type="number" placeholder="R$" value={ep.amount} onChange={(e) => setExtraPayments(prev => prev.map((p, j) => j === i ? { ...p, amount: e.target.value } : p))}
-                  className="w-20 h-9 rounded-xl border px-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40" />
+                <MoneyInput value={ep.amount} onValueChange={(v) => setExtraPayments(prev => prev.map((p, j) => j === i ? { ...p, amount: v } : p))}
+                  aria-label="Valor deste pagamento"
+                  className="w-28 h-9 tabular-nums rounded-xl border px-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40" />
                 <button onClick={() => setExtraPayments(prev => prev.filter((_, j) => j !== i))}
                   className="h-9 w-9 flex items-center justify-center rounded-xl border hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition">
                   <Trash2 className="h-3.5 w-3.5" />
@@ -782,7 +778,7 @@ export default function CaixaPage() {
             <div className="flex items-center justify-between py-1">
               <span className="text-sm text-muted-foreground">Total</span>
               <span className="text-lg font-bold text-foreground">
-                R$ {subtotal.toFixed(2).replace('.', ',')}
+                {formatBRL(subtotal)}
               </span>
             </div>
 
@@ -800,7 +796,7 @@ export default function CaixaPage() {
               disabled={loading || cart.length === 0}
               className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
             >
-              {loading ? 'Criando pedido...' : `Finalizar Pedido · R$ ${subtotal.toFixed(2).replace('.', ',')}`}
+              {loading ? 'Criando pedido...' : `Finalizar Pedido · ${formatBRL(subtotal)}`}
             </button>
           </div>
         </div>

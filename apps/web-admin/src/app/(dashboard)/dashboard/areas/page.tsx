@@ -11,6 +11,7 @@ import {
   type DeliveryAreaInput,
 } from '@/hooks/use-delivery-areas'
 import { currency } from '@/lib/utils'
+import { MoneyInput } from '@delivery/ui'
 
 type AreaType = 'DISTRICT' | 'RADIUS'
 
@@ -197,23 +198,23 @@ export default function AreasPage() {
 
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium">Taxa de entrega (R$) *</label>
-              <input type="number" step="0.50" min="0"
-                className="h-10 w-full rounded-xl border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="5.00" value={form.fee} onChange={(e) => set('fee', e.target.value)} required />
+              <MoneyInput
+                className="h-10 w-full rounded-xl border px-3 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-ring"
+                value={form.fee} onValueChange={(v) => set('fee', v)} required />
             </div>
 
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium">Pedido mínimo (R$)</label>
-              <input type="number" step="1" min="0"
-                className="h-10 w-full rounded-xl border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="0" value={form.minOrder} onChange={(e) => set('minOrder', e.target.value)} />
+              <MoneyInput
+                className="h-10 w-full rounded-xl border px-3 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Sem mínimo" value={form.minOrder} onValueChange={(v) => set('minOrder', v)} />
             </div>
 
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium">Entrega grátis a partir de (R$)</label>
-              <input type="number" step="1" min="0"
-                className="h-10 w-full rounded-xl border px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="Deixe vazio para não aplicar" value={form.freeFrom} onChange={(e) => set('freeFrom', e.target.value)} />
+              <MoneyInput
+                className="h-10 w-full rounded-xl border px-3 text-sm tabular-nums placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Deixe vazio para não aplicar" value={form.freeFrom} onValueChange={(v) => set('freeFrom', v)} />
             </div>
 
             <div className="flex flex-col gap-1">

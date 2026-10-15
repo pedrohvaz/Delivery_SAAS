@@ -11,6 +11,7 @@ import {
   type Coupon,
 } from '@/hooks/use-coupons'
 import { currency } from '@/lib/utils'
+import { MoneyInput } from '@delivery/ui'
 
 type CouponType = Coupon['type']
 
@@ -208,27 +209,34 @@ export default function CuponsPage() {
                 <label className="text-xs font-medium">
                   {form.type === 'PERCENT_DISCOUNT' ? 'Percentual (%)' : 'Valor (R$)'} *
                 </label>
-                <input
-                  type="number" step={form.type === 'PERCENT_DISCOUNT' ? '1' : '0.50'} min="0"
-                  max={form.type === 'PERCENT_DISCOUNT' ? '100' : undefined}
-                  className="h-10 w-full rounded-xl border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder={form.type === 'PERCENT_DISCOUNT' ? '10' : '5.00'}
-                  value={form.value}
-                  onChange={(e) => set('value', e.target.value)}
-                  required
-                />
+                {form.type === 'PERCENT_DISCOUNT' ? (
+                  <input
+                    type="number" step="1" min="0" max="100" inputMode="numeric"
+                    className="h-10 w-full rounded-xl border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="10"
+                    value={form.value}
+                    onChange={(e) => set('value', e.target.value)}
+                    required
+                  />
+                ) : (
+                  <MoneyInput
+                    className="h-10 w-full rounded-xl border px-3 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-ring"
+                    value={form.value}
+                    onValueChange={(v) => set('value', v)}
+                    required
+                  />
+                )}
               </div>
             )}
 
             {/* Pedido mínimo */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium">Pedido mínimo (R$)</label>
-              <input
-                type="number" step="1" min="0"
-                className="h-10 w-full rounded-xl border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="0"
+              <MoneyInput
+                className="h-10 w-full rounded-xl border px-3 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Sem mínimo"
                 value={form.minOrder}
-                onChange={(e) => set('minOrder', e.target.value)}
+                onValueChange={(v) => set('minOrder', v)}
               />
             </div>
 

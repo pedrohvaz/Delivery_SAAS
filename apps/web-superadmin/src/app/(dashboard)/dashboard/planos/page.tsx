@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { MoneyInput } from '@/components/money-input'
 import { Plus, Pencil, Trash2, Check, X, ToggleLeft, ToggleRight, Sparkles, RefreshCw } from 'lucide-react'
 
 // Períodos de contrato (pago adiantado). O mensal vem do "Valor mensal"; os outros são opcionais.
@@ -263,9 +264,9 @@ export default function PlanosPage() {
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Valor mensal (R$) *</label>
-              <input type="number" min="0" step="0.01" value={form.monthlyPrice}
-                onChange={e => setForm(f => ({ ...f, monthlyPrice: e.target.value }))}
-                className="w-full h-10 rounded-xl border px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" required />
+              <MoneyInput value={form.monthlyPrice} placeholder="R$ 0,00 (grátis)"
+                onValueChange={v => setForm(f => ({ ...f, monthlyPrice: v || '0' }))}
+                className="w-full h-10 rounded-xl border px-3 text-sm tabular-nums bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
               <p className="text-xs text-muted-foreground">0 = grátis. Acima disso, cria produto + preço na Stripe.</p>
             </div>
             <div className="space-y-1.5">
@@ -283,8 +284,8 @@ export default function PlanosPage() {
                 return (
                   <div key={c.cycle} className="space-y-1.5">
                     <label className="text-sm font-medium">{c.label} (R$ por mês)</label>
-                    <input type="number" min="0" step="0.01" value={form[c.key]} placeholder="não oferece"
-                      onChange={e => setForm(f => ({ ...f, [c.key]: e.target.value }))}
+                    <MoneyInput value={form[c.key]} placeholder="não oferece"
+                      onValueChange={v => setForm(f => ({ ...f, [c.key]: v }))}
                       className="w-full h-10 rounded-xl border px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
                     <p className="text-xs text-muted-foreground">
                       {v ? brl(v * c.months) + ' a cada ' + c.months + ' meses' + (pct > 0 ? ' · ' + pct + '% off' : '') : 'vazio = não oferece'}

@@ -3,9 +3,10 @@ import { computeSubtotal, resolveDeliveryFee } from '../../order-service.js'
 import { resetToFree, setState } from '../session.js'
 import type { BotProfile, BotStore, OrderDraft } from '../types.js'
 import { registerOrder } from './register.js'
+import { brl } from '../../money.js'
 
 function money(value: number): string {
-  return `R$ ${value.toFixed(2).replace('.', ',')}`
+  return `${brl(value)}`
 }
 
 function formatAddress(a: NonNullable<OrderDraft['address']>): string {
