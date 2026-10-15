@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Menu, X, Store } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import { Sidebar } from '@/components/layout/sidebar'
+import { StoreLogo } from '@/components/layout/store-logo'
 import { StoreTheme } from '@/hooks/use-store-theme'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -70,9 +71,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2 min-w-0">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground shrink-0">
-              <Store className="h-4 w-4" />
-            </div>
+            <StoreLogo size="sm" />
             <span className="truncate text-sm font-semibold">{store?.name ?? 'Minha Loja'}</span>
           </div>
         </header>

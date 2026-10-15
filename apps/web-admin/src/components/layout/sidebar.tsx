@@ -30,6 +30,7 @@ import {
   CreditCard,
 } from 'lucide-react'
 import { useStockAlerts } from '@/hooks/use-stock'
+import { StoreLogo } from './store-logo'
 
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -63,9 +64,7 @@ export function Sidebar() {
     <aside className="flex h-screen w-60 flex-col border-r bg-card">
       {/* Logo / Nome da loja */}
       <div className="flex items-center gap-3 border-b px-4 py-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Store className="h-5 w-5" />
-        </div>
+        <StoreLogo />
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-foreground">{store?.name ?? 'Minha Loja'}</p>
           <p className="truncate text-xs text-muted-foreground">/{store?.slug ?? ''}</p>
