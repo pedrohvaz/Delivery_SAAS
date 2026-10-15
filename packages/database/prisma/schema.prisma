@@ -545,7 +545,9 @@ model Deliveryman {
   phone      String?
   vehicle    String?
   isActive   Boolean  @default(true)
-  commission Decimal  @default(0) // % ou valor fixo
+  commission Decimal  @default(0) // PERCENT: % da taxa de entrega · FIXED: R$ por entrega
+  commissionType String @default("PERCENT") // PERCENT | FIXED
+  plate      String? // placa do veículo
   createdAt  DateTime @default(now())
 
   store  Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
