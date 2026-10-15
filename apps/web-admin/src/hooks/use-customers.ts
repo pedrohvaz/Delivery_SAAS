@@ -9,7 +9,13 @@ export interface CustomerSummary {
   cpf: string | null
   createdAt: string
   _count: { orders: number }
+  ordersCount: number
+  totalSpent: number
+  lastOrderAt: string | null
 }
+
+export type CustomerSegment = 'all' | 'new' | 'recurring' | 'inactive' | 'never'
+export type CustomerSort = 'recent' | 'orders' | 'spent' | 'last' | 'name'
 
 export interface CustomerAddress {
   id: string
@@ -46,6 +52,8 @@ export interface CustomerStats {
   completedOrders: number
   totalSpent: number
   avgTicket: number
+  lastOrderAt: string | null
+  favorites: { name: string; quantity: number }[]
 }
 
 export interface CustomerDetail extends CustomerSummary {
@@ -59,6 +67,7 @@ export interface CustomersMeta {
   total: number
   page: number
   take: number
+  counts: Record<CustomerSegment, number>
 }
 
 export interface AddressInput {
@@ -75,13 +84,16 @@ export interface AddressInput {
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
-export function useCustomers(search?: string, page = 1) {
+export function useCustomers(search?: string, page = 1, segment: CustomerSegment = 'all', sort: CustomerSort = 'recent') {
   return useQuery({
-    queryKey: ['customers', search, page],
+    queryKey: ['customers', search, page, segment, sort],
+    placeholderData: (prev) => prev,
     queryFn: () => {
       const q = new URLSearchParams()
       if (search) q.set('search', search)
       q.set('page', String(page))
+      q.set('segment', segment)
+      q.set('sort', sort)
       return api.get<{ data: CustomerSummary[]; meta: CustomersMeta }>(`/customers?${q}`).then((r) => r.data)
     },
   })
@@ -89,9 +101,11 @@ export function useCustomers(search?: string, page = 1) {
 
 export function useExportCustomers() {
   return useMutation({
-    mutationFn: (search?: string) => {
+    mutationFn: ({ search, segment = 'all', sort = 'recent' }: { search?: string; segment?: CustomerSegment; sort?: CustomerSort }) => {
       const q = new URLSearchParams()
       if (search) q.set('search', search)
+      q.set('segment', segment)
+      q.set('sort', sort)
       q.set('all', 'true')
       return api.get<{ data: CustomerSummary[] }>(`/customers?${q}`).then((r) => r.data.data)
     },
@@ -120,7 +134,7 @@ export function useCreateCustomer() {
 export function useUpdateCustomer() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: string; name?: string; phone?: string; email?: string; cpf?: string; notes?: string }) =>
+    mutationFn: ({ id, ...data }: { id: string; name?: string; phone?: string | null; email?: string | null; cpf?: string | null; notes?: string | null }) =>
       api.patch(`/customers/${id}`, data),
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ['customers'] })
