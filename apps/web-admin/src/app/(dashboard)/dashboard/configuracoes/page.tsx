@@ -82,6 +82,7 @@ export default function ConfiguracoesPage() {
   const [primaryColor, setPrimaryColor] = useState('#f97316')
   const [layoutStyle, setLayoutStyle] = useState<'grid' | 'list'>('grid')
   const [bannerUrl, setBannerUrl] = useState('')
+  const [bannerMobileUrl, setBannerMobileUrl] = useState('')
   const [logoUrl, setLogoUrl] = useState('')
   const [appearanceSuccess, setAppearanceSuccess] = useState(false)
   const [appearanceError, setAppearanceError] = useState('')
@@ -100,6 +101,7 @@ export default function ConfiguracoesPage() {
       setPrimaryColor(settings.primaryColor ?? '#f97316')
       setLayoutStyle(settings.layoutStyle ?? 'grid')
       setBannerUrl(settings.bannerUrl ?? '')
+      setBannerMobileUrl(settings.bannerMobileUrl ?? '')
       setLogoUrl(settings.logoUrl ?? '')
     }
   }, [settings])
@@ -263,6 +265,7 @@ export default function ConfiguracoesPage() {
         layoutStyle,
         // '' remove a imagem (antes era undefined e não dava para tirar o banner)
         bannerUrl: bannerUrl.trim(),
+        bannerMobileUrl: bannerMobileUrl.trim(),
         logoUrl: logoUrl.trim(),
       })
       setAppearanceSuccess(true)
@@ -780,24 +783,41 @@ export default function ConfiguracoesPage() {
             </div>
           </div>
 
-          {/* Logo e banner (upload) */}
-          <div className="grid gap-5 sm:grid-cols-[10rem_1fr]">
+          {/* Logo */}
+          <ImageUploadField
+            label="Logo"
+            hint="Quadrada (ex.: 500 × 500 px). Aparece no topo do painel e na vitrine."
+            value={logoUrl}
+            onChange={setLogoUrl}
+            folder="logos"
+            aspectClass="aspect-square"
+            previewClass="w-40"
+          />
+
+          {/* Banners: um para computador e outro para celular, cada um com a proporção exata da vitrine */}
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Banners da vitrine</p>
+            <p className="text-xs text-muted-foreground">
+              Envie nas medidas indicadas para o banner aparecer inteiro, sem cortes. O logo redondo da loja fica por cima do canto
+              inferior esquerdo do banner: deixe textos e produtos mais para o centro ou para a direita.
+            </p>
+          </div>
+          <div className="grid gap-5 lg:grid-cols-[1fr_18rem]">
             <ImageUploadField
-              label="Logo"
-              hint="Quadrada, aparece no topo e na vitrine"
-              value={logoUrl}
-              onChange={setLogoUrl}
-              folder="logos"
-              aspectClass="aspect-square"
-              previewClass="w-40"
-            />
-            <ImageUploadField
-              label="Banner"
-              hint="Imagem larga no topo da loja (ideal 1500×500). No celular as laterais são cortadas: deixe textos e logo no centro."
+              label="🖥️ Computador e tablet — 1920 × 384 px (5:1)"
+              hint="Faixa larga. A prévia abaixo mostra exatamente como fica."
               value={bannerUrl}
               onChange={setBannerUrl}
               folder="banners"
-              aspectClass="aspect-[3/1]"
+              aspectClass="aspect-[5/1]"
+            />
+            <ImageUploadField
+              label="📱 Celular — 1080 × 540 px (2:1)"
+              hint={bannerMobileUrl ? 'Mostrado em telas de celular.' : 'Opcional: sem ele, o celular usa o banner do computador (com as laterais cortadas).'}
+              value={bannerMobileUrl}
+              onChange={setBannerMobileUrl}
+              folder="banners"
+              aspectClass="aspect-[2/1]"
             />
           </div>
           <p className="text-xs text-muted-foreground">Depois de enviar, clique em <strong>Salvar aparência</strong> para publicar na vitrine.</p>

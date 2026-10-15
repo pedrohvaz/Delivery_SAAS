@@ -54,6 +54,7 @@ model Store {
   primaryColor String  @default("#f97316")
   layoutStyle  String  @default("grid")
   bannerUrl    String?
+  bannerMobileUrl String? // banner próprio para celular (2:1); sem ele, o celular usa o bannerUrl
 
   // Integrações de marketing
   facebookPixelId    String?

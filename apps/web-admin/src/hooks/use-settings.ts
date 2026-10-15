@@ -25,6 +25,7 @@ export interface StoreSettings {
   layoutStyle: 'grid' | 'list'
   bannerUrl: string | null
   logoUrl: string | null
+  bannerMobileUrl: string | null
   facebookPixelId: string | null
   googleTagManagerId: string | null
   storeNotice: string | null

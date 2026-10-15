@@ -80,6 +80,7 @@ const storePublicRoutes: FastifyPluginAsync = async (app) => {
         primaryColor: true,
         layoutStyle: true,
         bannerUrl: true,
+        bannerMobileUrl: true,
         facebookPixelId: true,
         googleTagManagerId: true,
         storeNotice: true,

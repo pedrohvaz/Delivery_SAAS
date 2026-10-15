@@ -12,7 +12,7 @@ import { useState } from 'react'
 
 interface Schedule { dayOfWeek: number; openTime: string; closeTime: string }
 interface StoreData {
-  name: string; slug: string; logoUrl: string | null; bannerUrl: string | null
+  name: string; slug: string; logoUrl: string | null; bannerUrl: string | null; bannerMobileUrl?: string | null
   description: string | null; isOpen: boolean; estimatedTime: number
   minOrderValue: number
   address: string | null; number: string | null; district: string | null
@@ -66,13 +66,18 @@ export function StoreHeader({ store }: { store: StoreData }) {
   return (
     <header className="relative w-full bg-white shadow-sm">
       {/* Banner */}
-      <div className="relative w-full h-48 sm:h-56 overflow-hidden">
-        {store.bannerUrl ? (
-          <img src={store.bannerUrl} alt={store.name} className="absolute inset-0 w-full h-full object-cover" />
+      {/* Proporção travada (celular 2:1 = 1080×540, computador 5:1 = 1920×384): o banner enviado na medida aparece inteiro */}
+      <div className="relative w-full overflow-hidden aspect-[2/1] max-h-[60vh] md:aspect-[5/1] md:max-h-none md:min-h-[176px]">
+        {store.bannerUrl || store.bannerMobileUrl ? (
+          <picture>
+            {store.bannerUrl && <source media="(min-width: 768px)" srcSet={store.bannerUrl} />}
+            <img src={store.bannerMobileUrl || store.bannerUrl!} alt={store.name} className="absolute inset-0 w-full h-full object-cover" />
+          </picture>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-primary" />
         )}
-        <div className="absolute inset-0 bg-black/40" />
+        {/* Escurece só o topo, para os botões ficarem legíveis sem apagar as cores do banner */}
+        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/45 to-transparent" />
 
         {/* Topo: user + status */}
         <div className="absolute top-3 left-0 right-0 px-4 flex items-center justify-between">
