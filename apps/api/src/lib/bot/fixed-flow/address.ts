@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import { OrderError, computeSubtotal, resolveDeliveryFee } from '../../order-service.js'
+import { OrderError, computeSubtotal, resolveDelivery, deliveryDistance, assertAreaMinOrder } from '../../order-service.js'
 import { setState } from '../session.js'
 import type { BotProfile, BotProfileAddress, BotStore, DraftAddress, OrderDraft } from '../types.js'
 import { enterPayment } from './payment.js'
@@ -144,13 +144,32 @@ async function finalizeAddress(
   try {
     const subtotal = computeSubtotal(draft.items)
     draft.subtotal = subtotal
-    draft.deliveryFee = resolveDeliveryFee({
+    const quote = resolveDelivery({
       areas: store.deliveryAreas,
       type: 'DELIVERY',
       district: draft.address?.district,
       subtotal,
+      distanceKm: await deliveryDistance({ lat: store.lat ?? null, lng: store.lng ?? null, deliveryAreas: store.deliveryAreas }, draft.address),
     })
+    assertAreaMinOrder(quote, subtotal)
+    draft.deliveryFee = quote.fee
   } catch (err) {
+    if (err instanceof OrderError && err.code === 'MIN_ORDER') {
+      // Endereço atendido, mas o pedido está abaixo do mínimo da área: volta para o cardápio
+      draft.addressPrompted = false
+      await setState(app, convId, 'LLM_FREE', draft)
+      return `😕 ${err.message}. Quer adicionar mais alguma coisa ao pedido?`
+    }
+    if (err instanceof OrderError && err.code === 'DELIVERY_UNAVAILABLE' && storeDistricts(store).length === 0) {
+      // Loja cobra por distância/taxa fixa: perguntar bairro não resolve; pede outro endereço
+      draft.address = undefined
+      draft.addressId = undefined
+      draft.addressPrompted = false
+      draft.pendingAddress = undefined
+      draft.addressAsk = undefined
+      await setState(app, convId, 'COLLECTING_ADDRESS', draft)
+      return `😔 ${err.message}\nMande outro endereço (rua, número, bairro e cidade) ou peça para *retirar* na loja.`
+    }
     if (err instanceof OrderError && err.code === 'DELIVERY_UNAVAILABLE') {
       // Rua/número continuam valendo: pergunta só o bairro de novo, mostrando os atendidos
       draft.pendingAddress = { ...draft.address, district: undefined }

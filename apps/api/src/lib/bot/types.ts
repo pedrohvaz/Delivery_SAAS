@@ -91,7 +91,12 @@ export interface BotStore {
   pausedUntil?: Date | null
   specialDays?: { date: string; isClosed: boolean; openTime: string | null; closeTime: string | null }[]
   paymentMethods: { id: string; type: string; label: string }[]
-  deliveryAreas: { type: string; fee: number; freeFrom: number | null; district: string | null; name: string | null }[]
+  deliveryAreas: {
+    type: string; fee: number; freeFrom: number | null; district: string | null; name: string | null
+    minOrder?: number; radiusKm?: number | null; baseKm?: number | null; perKmFee?: number | null
+  }[]
+  lat?: number | null
+  lng?: number | null
   automationConfig: {
     isEnabled: boolean
     aiProvider: string

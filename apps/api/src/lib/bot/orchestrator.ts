@@ -46,12 +46,14 @@ async function loadStoreForBot(app: FastifyInstance, slug: string): Promise<BotS
       evolutionInstance: true,
       city: true,
       state: true,
+      lat: true,
+      lng: true,
       schedules: { where: { isActive: true }, select: { dayOfWeek: true, openTime: true, closeTime: true } },
       specialDays: { select: { date: true, isClosed: true, openTime: true, closeTime: true } },
       paymentMethods: { where: { isActive: true }, select: { id: true, type: true, label: true } },
       deliveryAreas: {
         where: { isActive: true },
-        select: { type: true, fee: true, district: true, freeFrom: true, name: true },
+        select: { type: true, fee: true, district: true, freeFrom: true, name: true, minOrder: true, radiusKm: true, baseKm: true, perKmFee: true },
       },
       automationConfig: true,
     },
@@ -67,6 +69,10 @@ async function loadStoreForBot(app: FastifyInstance, slug: string): Promise<BotS
       name: a.name,
       fee: Number(a.fee),
       freeFrom: a.freeFrom != null ? Number(a.freeFrom) : null,
+      minOrder: Number(a.minOrder ?? 0),
+      radiusKm: a.radiusKm,
+      baseKm: a.baseKm,
+      perKmFee: a.perKmFee != null ? Number(a.perKmFee) : null,
     })),
     automationConfig: s.automationConfig
       ? {

@@ -7,6 +7,7 @@ import { notifyOrderStatus } from './notifications.js'
 import { enqueueOrderNotification } from './queue.js'
 import { invalidateStorePublicCache } from './cache.js'
 import { brl } from './money.js'
+import { geocodeAddress, distanceKm, isValidPoint, type AddressLike } from './geocode.js'
 
 // ─── Schema de criação de pedido (fonte única para a rota e o bot) ──────────
 // Preços e nomes enviados pelo cliente são IGNORADOS: o servidor recalcula tudo
@@ -49,6 +50,9 @@ export const createOrderSchema = z.object({
       state: z.string().max(40),
       zipCode: z.string().max(12),
       reference: z.string().max(200).optional(),
+      // GPS do cliente (opcional): usado só se o endereço não for achado no mapa
+      lat: z.number().min(-90).max(90).optional(),
+      lng: z.number().min(-180).max(180).optional(),
     })
     .optional(),
   // Pagamento
@@ -108,51 +112,129 @@ export function computeSubtotal(items: OrderItemInput[]): number {
 const roundMoney = (v: number) => Math.round(v * 100) / 100
 const digits = (v?: string | null) => (v ?? '').replace(/\D/g, '')
 
-interface DeliveryAreaLike {
+export interface DeliveryAreaLike {
+  id?: string
+  name?: string | null
   type: string
   fee: unknown
   freeFrom: unknown | null
   district: string | null
+  minOrder?: unknown
+  radiusKm?: number | null
+  baseKm?: number | null
+  perKmFee?: unknown | null
+  isActive?: boolean
+}
+
+export interface DeliveryQuote {
+  fee: number
+  /** Área usada no cálculo (para pedido mínimo e mensagens). */
+  area: DeliveryAreaLike | null
+  /** Distância em linha reta até a loja, quando calculada. */
+  distanceKm: number | null
+  /** Taxa antes de aplicar o "grátis a partir de". */
+  baseFee: number
+}
+
+const normDistrict = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+
+/** Taxa de uma área por distância: base cobre até baseKm; cada km (ou fração) acima soma perKmFee. */
+export function distanceFee(area: DeliveryAreaLike, km: number): number {
+  const extraKm = Math.max(0, Math.ceil(km - Number(area.baseKm ?? 0) - 1e-9))
+  return roundMoney(Number(area.fee) + extraKm * Number(area.perKmFee ?? 0))
 }
 
 /**
- * Resolve a taxa de entrega a partir das áreas configuradas. Mesma regra usada
- * tanto na criação do pedido quanto na pré-visualização do bot.
- * Lança OrderError('DELIVERY_UNAVAILABLE') quando há bairros configurados e o
- * bairro informado não está na lista. Sem áreas configuradas a taxa é 0 — o
- * sistema não inventa cobrança que o lojista não definiu.
+ * Resolve a entrega a partir das áreas configuradas. Mesma regra na vitrine, no pedido e no bot.
+ * Ordem: 1) bairro cadastrado  2) por distância (se a distância for conhecida)  3) taxa fixa.
+ * Lança OrderError('DELIVERY_UNAVAILABLE') quando o endereço não é atendido. Sem áreas
+ * configuradas a taxa é 0 — o sistema não inventa cobrança que o lojista não definiu.
  */
-export function resolveDeliveryFee(params: {
+export function resolveDelivery(params: {
   areas: DeliveryAreaLike[]
   type: string
   district?: string
   subtotal: number
-}): number {
-  const { areas, type, district, subtotal } = params
-  if (type === 'PICKUP' || type === 'TABLE') return 0
-  if (areas.length === 0) return 0
+  /** Distância até a loja; undefined = não foi possível calcular. */
+  distanceKm?: number | null
+}): DeliveryQuote {
+  const { type, district, subtotal } = params
+  const none: DeliveryQuote = { fee: 0, area: null, distanceKm: params.distanceKm ?? null, baseFee: 0 }
+  if (type === 'PICKUP' || type === 'TABLE') return none
+  const areas = params.areas.filter((a) => a.isActive !== false)
+  if (areas.length === 0) return none
 
-  // Compara sem acento/maiúsculas/espaços extras ("São José" == "sao  jose")
-  const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
-  const inputDistrict = district ? norm(district) : ''
+  const finish = (area: DeliveryAreaLike, baseFee: number): DeliveryQuote => ({
+    fee: area.freeFrom != null && Number(area.freeFrom) > 0 && subtotal >= Number(area.freeFrom) ? 0 : baseFee,
+    area,
+    distanceKm: params.distanceKm ?? null,
+    baseFee,
+  })
+
+  // 1) Bairro com taxa própria
+  const inputDistrict = district ? normDistrict(district) : ''
   const districtMatch = inputDistrict
-    ? areas.find((a) => a.type === 'DISTRICT' && a.district && norm(a.district) === inputDistrict)
+    ? areas.find((a) => a.type === 'DISTRICT' && a.district && normDistrict(a.district) === inputDistrict)
     : undefined
+  if (districtMatch) return finish(districtMatch, Number(districtMatch.fee))
 
-  if (districtMatch) {
-    const base = Number(districtMatch.fee)
-    return districtMatch.freeFrom && subtotal >= Number(districtMatch.freeFrom) ? 0 : base
-  }
-  // "Taxa fixa" (gravada como RADIUS): vale para qualquer endereço fora dos bairros cadastrados
+  // 2) Por distância
+  const byDistance = areas
+    .filter((a) => a.type === 'DISTANCE')
+    .sort((a, b) => (a.radiusKm ?? Infinity) - (b.radiusKm ?? Infinity))
   const fixedArea = areas.find((a) => a.type === 'RADIUS')
-  if (fixedArea) {
-    const base = Number(fixedArea.fee)
-    return fixedArea.freeFrom && subtotal >= Number(fixedArea.freeFrom) ? 0 : base
+  if (byDistance.length > 0) {
+    const km = params.distanceKm
+    if (km != null) {
+      const area = byDistance.find((a) => a.radiusKm == null || km <= a.radiusKm)
+      if (area) return finish(area, distanceFee(area, km))
+      const max = Math.max(...byDistance.map((a) => a.radiusKm ?? 0))
+      throw new OrderError('DELIVERY_UNAVAILABLE',
+        `Seu endereço fica a ${km.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km e entregamos até ${max.toLocaleString('pt-BR')} km.`, 422)
+    }
+    if (!fixedArea) {
+      throw new OrderError('DELIVERY_UNAVAILABLE', 'Não encontramos seu endereço no mapa. Confira rua, número, bairro e cidade.', 422)
+    }
   }
+
+  // 3) Taxa fixa: qualquer endereço fora dos bairros cadastrados
+  if (fixedArea) return finish(fixedArea, Number(fixedArea.fee))
+
   if (areas.some((a) => a.type === 'DISTRICT')) {
     throw new OrderError('DELIVERY_UNAVAILABLE', 'Não fazemos entregas neste bairro. Verifique o endereço.', 422)
   }
-  return 0
+  return none
+}
+
+/** Só a taxa (compatível com o uso antigo). */
+export function resolveDeliveryFee(params: Parameters<typeof resolveDelivery>[0]): number {
+  return resolveDelivery(params).fee
+}
+
+/** Pedido mínimo da área de entrega (além do pedido mínimo da loja). */
+export function assertAreaMinOrder(quote: DeliveryQuote, subtotal: number) {
+  const min = Number(quote.area?.minOrder ?? 0)
+  if (min > 0 && subtotal < min) {
+    const onde = quote.area?.type === 'DISTRICT' && quote.area.district ? ` para ${quote.area.district}` : ' para o seu endereço'
+    throw new OrderError('MIN_ORDER', `Pedido mínimo${onde}: ${brl(min)}`, 422)
+  }
+}
+
+/**
+ * Distância (km) do endereço até a loja, só quando a loja cobra por distância.
+ * Usa as coordenadas do endereço (busca no mapa); se não achar, aceita as do GPS do cliente.
+ */
+export async function deliveryDistance(
+  store: { lat: number | null; lng: number | null; deliveryAreas: DeliveryAreaLike[] },
+  address: (AddressLike & { lat?: number | null; lng?: number | null }) | undefined | null,
+): Promise<number | null> {
+  if (!address) return null
+  if (!store.deliveryAreas.some((a) => a.type === 'DISTANCE' && a.isActive !== false)) return null
+  const loja = { lat: store.lat, lng: store.lng }
+  if (!isValidPoint(loja)) return null
+  const ponto = (await geocodeAddress(address)) ?? (isValidPoint({ lat: address.lat ?? undefined, lng: address.lng ?? undefined }) ? { lat: address.lat!, lng: address.lng! } : null)
+  if (!ponto) return null
+  return Math.round(distanceKm(loja, ponto) * 10) / 10
 }
 
 /**
@@ -351,12 +433,16 @@ export async function createOrder(app: FastifyInstance, input: CreateOrderInput)
   }
 
   // Taxa de entrega com base nas áreas configuradas (TABLE e PICKUP = grátis)
-  const deliveryFee = resolveDeliveryFee({
+  const distance = d.type === 'DELIVERY' ? await deliveryDistance(store, d.address) : null
+  const delivery = resolveDelivery({
     areas: store.deliveryAreas,
     type: d.type,
     district: d.address?.district,
     subtotal,
+    distanceKm: distance,
   })
+  if (d.type === 'DELIVERY') assertAreaMinOrder(delivery, subtotal)
+  const deliveryFee = delivery.fee
 
   // Cria o pedido em transação com a linha da loja travada: serializa os pedidos
   // da mesma loja, o que garante orderNumber único e uso de cupom sem corrida.

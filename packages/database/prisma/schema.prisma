@@ -564,8 +564,10 @@ model DeliveryArea {
   minOrder Decimal  @default(0)
   freeFrom Decimal? // entrega grátis a partir de R$
   polygon  Json? // GeoJSON para área poligonal
-  radiusKm Float? // para tipo RADIUS
+  radiusKm Float? // DISTANCE: distância máxima atendida (km)
   district String? // para tipo DISTRICT
+  baseKm   Float? // DISTANCE: km incluídos na taxa base
+  perKmFee Decimal? // DISTANCE: valor por km acima de baseKm
   isActive Boolean  @default(true)
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
@@ -573,8 +575,9 @@ model DeliveryArea {
 
 enum AreaType {
   POLYGON
-  RADIUS
+  RADIUS // "Taxa fixa" no painel: qualquer endereço fora dos bairros cadastrados
   DISTRICT
+  DISTANCE // por distância da loja (taxa base + R$ por km)
 }
 
 // ─────────────────────────────────────────

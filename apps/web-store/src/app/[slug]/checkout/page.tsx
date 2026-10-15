@@ -16,6 +16,12 @@ import { useMounted } from '@/hooks/use-mounted'
 interface DeliveryArea {
   id: string; type: string; fee: number; freeFrom: number | null
   minOrder: number; district: string | null; radiusKm: number | null; name: string | null
+  baseKm?: number | null; perKmFee?: number | null
+}
+
+interface DeliveryQuote {
+  available: boolean; fee: number; distanceKm: number | null; minOrder: number; belowMinOrder: boolean
+  areaType: string | null; areaLabel: string | null; distanceUnknown: boolean; message: string | null
 }
 
 interface StoreData {
@@ -57,6 +63,9 @@ export default function CheckoutPage() {
   const [city, setCity] = useState('')
   const [zipCode, setZipCode] = useState('')
   const [state, setState] = useState('')
+  // GPS do cliente (opcional) — ajuda a calcular a taxa por distância quando o endereço não é achado no mapa
+  const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null)
+  const [gpsMsg, setGpsMsg] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('')
   const [needsChange, setNeedsChange] = useState(false)
   const [changeForValue, setChangeForValue] = useState('')
@@ -202,6 +211,87 @@ export default function CheckoutPage() {
     if (items.length === 0) router.replace(`/${slug}`)
   }, [mounted, items.length, slug, router])
 
+  const cartSubtotal = subtotal()
+  const districtAreas = store?.deliveryAreas.filter((a) => a.type === 'DISTRICT') ?? []
+  const hasDistrictConfig = districtAreas.length > 0
+  const fixedArea = store?.deliveryAreas.find((a) => a.type === 'RADIUS')
+  const distanceAreas = store?.deliveryAreas.filter((a) => a.type === 'DISTANCE') ?? []
+  const usesDistance = distanceAreas.length > 0
+  // Com taxa fixa ou por distância o cliente digita qualquer bairro; senão escolhe da lista atendida
+  const districtAsList = hasDistrictConfig && !fixedArea && !usesDistance
+
+  // Por distância: a taxa vem da API (o endereço é localizado no mapa). Espera o cliente parar de digitar.
+  const normD = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+  const districtHit = districtAreas.find((a) => district.trim() && normD(a.district ?? '') === normD(district))
+  const needQuote = orderType === 'DELIVERY' && usesDistance && !districtHit && !!street.trim() && !!number.trim() && !!city.trim()
+  const addressKey = JSON.stringify([street.trim(), number.trim(), district.trim(), city.trim(), state.trim(), zipCode.replace(/\D/g, ''), gps])
+  const [debouncedKey, setDebouncedKey] = useState(addressKey)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedKey(addressKey), 700)
+    return () => clearTimeout(t)
+  }, [addressKey])
+  const { data: quote, isFetching: quoteLoading } = useQuery({
+    queryKey: ['delivery-quote', slug, debouncedKey, Math.round(cartSubtotal)],
+    enabled: needQuote && debouncedKey === addressKey,
+    staleTime: 5 * 60_000,
+    queryFn: () => api.post<{ data: DeliveryQuote }>(`/store/${slug}/delivery-quote`, {
+      street, number, district, city, state, zipCode, subtotal: cartSubtotal, ...(gps ?? {}),
+    }).then((r) => r.data.data),
+  })
+
+  function useMyLocation() {
+    setGpsMsg('')
+    if (!navigator.geolocation) { setGpsMsg('Seu aparelho não permite localização'); return }
+    setGpsMsg('Pegando sua localização...')
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGpsMsg('Localização usada para calcular a taxa') },
+      () => setGpsMsg('Não foi possível pegar sua localização. Confira o endereço digitado.'),
+      { enableHighAccuracy: true, timeout: 10_000 },
+    )
+  }
+
+  // Calcula taxa de entrega com base nas áreas configuradas
+  function calcDeliveryFee(): { fee: number; matched: boolean; areaError: string } {
+    if (orderType === 'PICKUP') return { fee: 0, matched: true, areaError: '' }
+    const areas = store?.deliveryAreas ?? []
+    // Sem áreas configuradas a loja não cobra taxa (mesma regra da API)
+    if (areas.length === 0) return { fee: 0, matched: true, areaError: '' }
+
+    const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+    const minMsg = (a: DeliveryArea) =>
+      Number(a.minOrder) > 0 && cartSubtotal < Number(a.minOrder) ? `Pedido mínimo para este endereço: ${currency(Number(a.minOrder))}` : ''
+    if (hasDistrictConfig && district.trim()) {
+      const match = districtAreas.find((a) => norm(a.district ?? '') === norm(district))
+      if (match) {
+        const isFree = match.freeFrom != null && cartSubtotal >= match.freeFrom
+        const m = minMsg(match)
+        return { fee: isFree ? 0 : Number(match.fee), matched: !m, areaError: m }
+      }
+    }
+
+    // Por distância: resultado da API
+    if (usesDistance) {
+      if (!street.trim() || !number.trim() || !city.trim()) return { fee: 0, matched: false, areaError: 'Preencha rua, número e cidade para calcular a taxa' }
+      if (quoteLoading || !quote || debouncedKey !== addressKey) return { fee: 0, matched: false, areaError: 'Calculando a taxa de entrega...' }
+      if (!quote.available) return { fee: 0, matched: false, areaError: quote.message ?? 'Não entregamos neste endereço' }
+      if (quote.belowMinOrder) return { fee: quote.fee, matched: false, areaError: `Pedido mínimo para este endereço: ${currency(quote.minOrder)}` }
+      return { fee: quote.fee, matched: true, areaError: '' }
+    }
+
+    // Taxa fixa (gravada como RADIUS): qualquer endereço fora dos bairros cadastrados (mesma regra da API)
+    if (fixedArea) {
+      const isFree = fixedArea.freeFrom != null && cartSubtotal >= fixedArea.freeFrom
+      const m = minMsg(fixedArea)
+      return { fee: isFree ? 0 : Number(fixedArea.fee), matched: !m, areaError: m }
+    }
+    if (hasDistrictConfig && district.trim()) return { fee: 0, matched: false, areaError: 'Não entregamos neste bairro' }
+    return { fee: 0, matched: true, areaError: '' }
+  }
+
+  const { fee: deliveryFee, matched: districtMatched, areaError } = calcDeliveryFee()
+  const effectiveDeliveryFee = couponResult?.type === 'FREE_DELIVERY' ? 0 : deliveryFee
+  const total = Math.max(0, cartSubtotal - (couponResult?.discount ?? 0) + effectiveDeliveryFee)
+
   // Evita mismatch de hidratação: o carrinho vem do localStorage (só existe no cliente)
   if (!mounted) return null
   if (items.length === 0 && !submittingRef.current) return null
@@ -222,42 +312,6 @@ export default function CheckoutPage() {
       </div>
     )
   }
-
-  const cartSubtotal = subtotal()
-  const districtAreas = store?.deliveryAreas.filter((a) => a.type === 'DISTRICT') ?? []
-  const hasDistrictConfig = districtAreas.length > 0
-  const fixedArea = store?.deliveryAreas.find((a) => a.type === 'RADIUS')
-  // Com taxa fixa o cliente digita qualquer bairro; sem ela, escolhe da lista de bairros atendidos
-  const districtAsList = hasDistrictConfig && !fixedArea
-
-  // Calcula taxa de entrega com base nas áreas configuradas
-  function calcDeliveryFee(): { fee: number; matched: boolean; areaError: string } {
-    if (orderType === 'PICKUP') return { fee: 0, matched: true, areaError: '' }
-    const areas = store?.deliveryAreas ?? []
-    // Sem áreas configuradas a loja não cobra taxa (mesma regra da API)
-    if (areas.length === 0) return { fee: 0, matched: true, areaError: '' }
-
-    const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
-    if (hasDistrictConfig && district.trim()) {
-      const match = districtAreas.find((a) => norm(a.district ?? '') === norm(district))
-      if (match) {
-        const isFree = match.freeFrom != null && cartSubtotal >= match.freeFrom
-        return { fee: isFree ? 0 : Number(match.fee), matched: true, areaError: '' }
-      }
-    }
-
-    // Taxa fixa (gravada como RADIUS): qualquer endereço fora dos bairros cadastrados (mesma regra da API)
-    if (fixedArea) {
-      const isFree = fixedArea.freeFrom != null && cartSubtotal >= fixedArea.freeFrom
-      return { fee: isFree ? 0 : Number(fixedArea.fee), matched: true, areaError: '' }
-    }
-    if (hasDistrictConfig && district.trim()) return { fee: 0, matched: false, areaError: 'Não entregamos neste bairro' }
-    return { fee: 0, matched: true, areaError: '' }
-  }
-
-  const { fee: deliveryFee, matched: districtMatched, areaError } = calcDeliveryFee()
-  const effectiveDeliveryFee = couponResult?.type === 'FREE_DELIVERY' ? 0 : deliveryFee
-  const total = Math.max(0, cartSubtotal - (couponResult?.discount ?? 0) + effectiveDeliveryFee)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -297,7 +351,7 @@ export default function CheckoutPage() {
           notes: item.notes,
           addons: item.addons,
         })),
-        address: orderType === 'DELIVERY' ? { street, number, complement, district, city, state, zipCode } : undefined,
+        address: orderType === 'DELIVERY' ? { street, number, complement, district, city, state, zipCode, ...(gps ?? {}) } : undefined,
         paymentMethod,
         changeFor: paymentMethod === 'CASH' && needsChange && changeForValue
           ? parseFloat(changeForValue.replace(',', '.'))
@@ -470,14 +524,24 @@ export default function CheckoutPage() {
                   />
                 )}
                 {/* Feedback da taxa */}
-                {orderType === 'DELIVERY' && district && (
-                  <p className={`text-xs mt-0.5 ${districtMatched ? 'text-green-600' : 'text-red-600'}`}>
-                    {areaError || (deliveryFee === 0 ? 'Entrega grátis para este bairro!' : `Taxa: ${currency(deliveryFee)}`)}
+                {orderType === 'DELIVERY' && (district || (usesDistance && street && number && city)) && (
+                  <p className={`text-xs mt-0.5 ${districtMatched ? 'text-green-600' : areaError.startsWith('Calculando') || areaError.startsWith('Preencha') ? 'text-muted-foreground' : 'text-red-600'}`}>
+                    {areaError || (deliveryFee === 0 ? 'Entrega grátis para este endereço!' : `Taxa de entrega: ${currency(deliveryFee)}`)}
+                    {!areaError && usesDistance && !districtHit && quote?.distanceKm != null && ` (${quote.distanceKm.toLocaleString('pt-BR')} km)`}
                   </p>
                 )}
               </div>
               <Input label="Cidade *" placeholder="Cidade" value={city} onChange={(e) => setCity(e.target.value)} required />
             </div>
+            {usesDistance && (
+              <div className="space-y-1">
+                <button type="button" onClick={useMyLocation}
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border bg-white px-3 text-sm font-medium hover:bg-gray-50">
+                  <MapPin className="h-4 w-4 text-primary" /> {gps ? 'Atualizar minha localização' : 'Usar minha localização'}
+                </button>
+                <p className="text-xs text-muted-foreground">{gpsMsg || 'A taxa é calculada pela distância até a loja.'}</p>
+              </div>
+            )}
             </>
             )}
 

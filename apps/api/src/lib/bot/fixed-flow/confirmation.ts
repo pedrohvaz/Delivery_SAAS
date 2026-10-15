@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import { computeSubtotal, resolveDeliveryFee } from '../../order-service.js'
+import { computeSubtotal, resolveDeliveryFee, deliveryDistance } from '../../order-service.js'
 import { resetToFree, setState } from '../session.js'
 import type { BotProfile, BotStore, OrderDraft } from '../types.js'
 import { registerOrder } from './register.js'
@@ -63,6 +63,7 @@ export async function enterConfirmation(
       type: 'DELIVERY',
       district: draft.address?.district,
       subtotal,
+      distanceKm: await deliveryDistance({ lat: store.lat ?? null, lng: store.lng ?? null, deliveryAreas: store.deliveryAreas }, draft.address),
     })
   }
   draft.subtotal = subtotal

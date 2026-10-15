@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { cacheGet, cacheSet, cacheDel } from '../../lib/cache.js'
+import { cotar, quoteSchema } from '../delivery-areas/index.js'
 
 const storePublicRoutes: FastifyPluginAsync = async (app) => {
   // ─── GET /store (lista pública de lojas) ──────────────────────────
@@ -35,6 +36,21 @@ const storePublicRoutes: FastifyPluginAsync = async (app) => {
 
   // ─── GET /store/:slug ─────────────────────────────────────────────
   // Retorna dados públicos da loja + cardápio + áreas de entrega
+  // ─── POST /store/:slug/delivery-quote ──────────────────────────────
+  // Taxa de entrega para o endereço digitado no checkout (por bairro, distância ou taxa fixa).
+  // Limite próprio: cada endereço novo pode consultar o mapa.
+  app.post('/:slug/delivery-quote', { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (request, reply) => {
+    const { slug } = request.params as { slug: string }
+    const r = quoteSchema.safeParse(request.body)
+    if (!r.success) return reply.status(400).send({ error: 'Validation Error', message: 'Endereço inválido', statusCode: 400 })
+    const store = await app.prisma.store.findUnique({
+      where: { slug },
+      select: { lat: true, lng: true, city: true, state: true, status: true, deliveryAreas: { where: { isActive: true } } },
+    })
+    if (!store || store.status !== 'ACTIVE') return reply.status(404).send({ error: 'Not Found', message: 'Loja não encontrada', statusCode: 404 })
+    return { data: await cotar(store, r.data) }
+  })
+
   app.get('/:slug', async (request, reply) => {
     const { slug } = request.params as { slug: string }
 
@@ -87,7 +103,7 @@ const storePublicRoutes: FastifyPluginAsync = async (app) => {
         },
         deliveryAreas: {
           where: { isActive: true },
-          select: { id: true, name: true, type: true, fee: true, minOrder: true, freeFrom: true, radiusKm: true, district: true },
+          select: { id: true, name: true, type: true, fee: true, minOrder: true, freeFrom: true, radiusKm: true, district: true, baseKm: true, perKmFee: true },
         },
       },
     })
