@@ -786,12 +786,13 @@ export default function ConfiguracoesPage() {
           {/* Logo */}
           <ImageUploadField
             label="Logo"
-            hint="Quadrada (ex.: 500 × 500 px). Aparece no topo do painel e na vitrine."
+            hint="Ao enviar, você ajusta a posição e o zoom. Aparece no topo do painel e, redonda, na vitrine."
             value={logoUrl}
             onChange={setLogoUrl}
             folder="logos"
             aspectClass="aspect-square"
             previewClass="w-40"
+            crop={{ aspect: 1, width: 512, height: 512, round: true }}
           />
 
           {/* Banners: um para computador e outro para celular, cada um com a proporção exata da vitrine */}
@@ -810,6 +811,7 @@ export default function ConfiguracoesPage() {
               onChange={setBannerUrl}
               folder="banners"
               aspectClass="aspect-[5/1]"
+              crop={{ aspect: 5, width: 1920, height: 384 }}
             />
             <ImageUploadField
               label="📱 Celular — 1080 × 540 px (2:1)"
@@ -818,6 +820,7 @@ export default function ConfiguracoesPage() {
               onChange={setBannerMobileUrl}
               folder="banners"
               aspectClass="aspect-[2/1]"
+              crop={{ aspect: 2, width: 1080, height: 540 }}
             />
           </div>
           <p className="text-xs text-muted-foreground">Depois de enviar, clique em <strong>Salvar aparência</strong> para publicar na vitrine.</p>

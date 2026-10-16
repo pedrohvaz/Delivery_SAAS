@@ -1,9 +1,10 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { ImageIcon, Link2, Loader2, Trash2, Upload } from 'lucide-react'
+import { Crop, ImageIcon, Link2, Loader2, Trash2, Upload } from 'lucide-react'
 import { cn } from '@delivery/ui'
 import { api } from '@/lib/api'
+import { ImageCropper, type CropOptions } from './image-cropper'
 
 interface ImageUploadFieldProps {
   label: string
@@ -16,6 +17,8 @@ interface ImageUploadFieldProps {
   aspectClass?: string
   /** Classe extra da área de pré-visualização (ex.: largura da logo). */
   previewClass?: string
+  /** Abre o editor de recorte antes de enviar (proporção e tamanho final). */
+  crop?: CropOptions
 }
 
 const MAX_BYTES = 5 * 1024 * 1024
@@ -24,15 +27,34 @@ const MAX_BYTES = 5 * 1024 * 1024
  * Campo de imagem com upload (clique ou arraste), pré-visualização, troca e remoção.
  * Também aceita colar um link, para quem já tem a imagem hospedada.
  */
-export function ImageUploadField({ label, hint, value, onChange, folder, aspectClass = 'aspect-[3/1]', previewClass }: ImageUploadFieldProps) {
+export function ImageUploadField({ label, hint, value, onChange, folder, aspectClass = 'aspect-[3/1]', previewClass, crop }: ImageUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [dragOver, setDragOver] = useState(false)
   const [showLink, setShowLink] = useState(false)
+  // Imagem aberta no editor de recorte (arquivo novo ou a imagem atual)
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
 
-  async function handleFile(file: File) {
+  function closeCropper() {
+    if (cropSrc?.startsWith('blob:')) URL.revokeObjectURL(cropSrc)
+    setCropSrc(null)
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  function handleFile(file: File) {
     if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) { setError('Use uma imagem JPG, PNG, WebP ou GIF.'); return }
+    if (crop) {
+      // O arquivo pode ser grande aqui: o editor gera a imagem já no tamanho final
+      if (file.size > 20 * 1024 * 1024) { setError('A imagem pode ter no máximo 20 MB.'); return }
+      setError('')
+      setCropSrc(URL.createObjectURL(file))
+      return
+    }
+    upload(file)
+  }
+
+  async function upload(file: File) {
     if (file.size > MAX_BYTES) { setError('A imagem pode ter no máximo 5 MB.'); return }
     setError('')
     setUploading(true)
@@ -102,6 +124,12 @@ export function ImageUploadField({ label, hint, value, onChange, folder, aspectC
           className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold hover:bg-muted disabled:opacity-60">
           <Upload className="h-3.5 w-3.5" /> {value ? 'Trocar' : 'Enviar imagem'}
         </button>
+        {value && crop && (
+          <button type="button" onClick={() => { setError(''); setCropSrc(value) }} disabled={uploading}
+            className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold hover:bg-muted disabled:opacity-60">
+            <Crop className="h-3.5 w-3.5" /> Ajustar
+          </button>
+        )}
         {value && (
           <button type="button" onClick={() => onChange('')} disabled={uploading}
             className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/5 disabled:opacity-60">
@@ -119,6 +147,15 @@ export function ImageUploadField({ label, hint, value, onChange, folder, aspectC
           className="w-full h-9 rounded-xl border border-input px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
       )}
       {error && <p className="text-xs text-destructive">{error}</p>}
+
+      {cropSrc && crop && (
+        <ImageCropper
+          src={cropSrc}
+          options={crop}
+          onCancel={closeCropper}
+          onConfirm={(file) => { closeCropper(); upload(file) }}
+        />
+      )}
     </div>
   )
 }
