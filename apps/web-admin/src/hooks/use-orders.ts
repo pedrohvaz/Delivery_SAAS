@@ -31,7 +31,7 @@ export interface Order {
   notes: string | null
   address: {
     street: string; number: string; complement?: string
-    district: string; city: string; state: string; zipCode?: string
+    district: string; city: string; state: string; zipCode?: string; reference?: string
   } | null
   scheduledTo: string | null
   cancelReason: string | null
@@ -39,6 +39,7 @@ export interface Order {
   customer: { name: string; phone: string } | null
   items: OrderItem[]
   deliveryman: { id: string; name: string } | null
+  table?: { number: number; label: string | null } | null
 }
 
 // ─── GET /orders ──────────────────────────────────────────────────────────────

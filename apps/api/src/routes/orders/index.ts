@@ -235,6 +235,7 @@ const orderRoutes: FastifyPluginAsync = async (app) => {
         customer: { select: { name: true, phone: true } },
         items: { select: { name: true, quantity: true, price: true, addons: true, notes: true } }, // notes = "sem bacon" etc. (painel, KDS e comanda)
         deliveryman: { select: { id: true, name: true } },
+        table: { select: { number: true, label: true } },
       },
     })
 

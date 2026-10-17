@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Bike, Home, MapPin, Phone, CreditCard, FileText, ChevronRight, UserCheck, Link, Check, Printer, MessageCircle } from 'lucide-react'
+import { X, Bike, Home, MapPin, Phone, CreditCard, FileText, ChevronRight, UserCheck, Link, Check, MessageCircle } from 'lucide-react'
 import {
   type Order,
   STATUS_CONFIG,
@@ -16,7 +16,7 @@ import { useDeliverymen, useAssignDeliveryman } from '@/hooks/use-deliverymen'
 import { useAuthStore } from '@/store/auth'
 import { currency } from '@/lib/utils'
 import { CustomerReview } from './customer-review'
-import { printOrder } from './order-ticket'
+import { PrintMenu } from './print-menu'
 
 const PAYMENT_LABELS: Record<string, string> = {
   CASH: 'Dinheiro', PIX: 'Pix', CREDIT_CARD: 'Cartão de crédito', DEBIT_CARD: 'Cartão de débito', PICPAY: 'PicPay',
@@ -112,10 +112,7 @@ export function OrderModal({ order, onClose, initialCancelling = false }: Props)
                 <MessageCircle className="h-4 w-4" />
               </a>
             )}
-            <button onClick={() => store && printOrder(order, store.name)} title="Imprimir comanda"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted">
-              <Printer className="h-4 w-4" />
-            </button>
+            <PrintMenu order={order} size="md" />
             <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted">
               <X className="h-4 w-4" />
             </button>

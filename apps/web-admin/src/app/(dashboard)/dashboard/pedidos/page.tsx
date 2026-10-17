@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { RefreshCw, Bell, RotateCcw, AlertTriangle, X, LayoutGrid, Columns3 } from 'lucide-react'
+import { RefreshCw, Bell, RotateCcw, AlertTriangle, X, LayoutGrid, Columns3, Printer } from 'lucide-react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useQueryClient } from '@tanstack/react-query'
@@ -12,6 +12,9 @@ import { OrderBoard } from '@/components/pedidos/order-board'
 import { OrderModal } from '@/components/pedidos/order-modal'
 import { useAuthStore } from '@/store/auth'
 import { createSocket, playNewOrderSound } from '@/lib/socket'
+import { usePrinter } from '@/components/pedidos/order-ticket'
+import { PrintSettingsDialog } from '@/components/pedidos/print-menu'
+import { usePrintSettings, wasAutoPrinted, markAutoPrinted } from '@/lib/print-settings'
 
 type Tab = 'active' | 'scheduled' | 'done'
 
@@ -90,6 +93,39 @@ export default function PedidosPage() {
   const isLoading = tab === 'scheduled' ? scheduled.isLoading : regular.isLoading
   const isFetching = regular.isFetching || scheduled.isFetching
   const refetch = () => { regular.refetch(); scheduled.refetch() }
+
+  // ── Impressão automática ───────────────────────────────────────────
+  // Só imprime pedidos que chegaram/foram aceitos com esta tela aberta: os que já estavam
+  // na lista ao abrir são marcados como "vistos" e nunca saem sozinhos.
+  const [printPrefs] = usePrintSettings()
+  const [showPrintConfig, setShowPrintConfig] = useState(false)
+  const print = usePrinter()
+  const seenRef = useRef<Set<string> | null>(null)
+  const pendingRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    const list = [...(regular.data ?? []), ...(scheduled.data ?? [])]
+    if (!regular.data) return
+    if (seenRef.current === null) {
+      seenRef.current = new Set(list.map((o) => o.id))
+      list.filter((o) => o.status === 'PENDING').forEach((o) => pendingRef.current.add(o.id))
+      return
+    }
+    for (const o of list) {
+      const novo = !seenRef.current.has(o.id)
+      if (novo) seenRef.current.add(o.id)
+      if (o.status === 'PENDING') { pendingRef.current.add(o.id); }
+      const deveImprimir =
+        printPrefs.auto === 'new' ? novo
+        : printPrefs.auto === 'confirmed' ? (o.status !== 'PENDING' && o.status !== 'CANCELLED' && (novo || pendingRef.current.has(o.id)))
+        : false
+      if (o.status !== 'PENDING') pendingRef.current.delete(o.id)
+      if (deveImprimir && !wasAutoPrinted(o.id)) {
+        markAutoPrinted(o.id)
+        print(o)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [regular.data, scheduled.data, printPrefs.auto])
 
   // Filtra client-side por tab + statusFilter + search
   const filteredOrders = allOrders.filter((order) => {
@@ -184,6 +220,11 @@ export default function PedidosPage() {
               <AlertTriangle className="h-3.5 w-3.5" /> Aviso interno
             </button>
           )}
+          <button onClick={() => setShowPrintConfig(true)} title="Configurar impressão"
+            className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition ${printPrefs.auto !== 'off' ? 'border-green-300 bg-green-50 text-green-700' : 'text-muted-foreground hover:bg-muted'}`}>
+            <Printer className="h-3.5 w-3.5" />
+            {printPrefs.auto !== 'off' ? 'Impressão automática' : 'Impressão'}
+          </button>
           <button onClick={() => refetch()} disabled={isFetching}
             className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50 transition">
             <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
@@ -191,6 +232,8 @@ export default function PedidosPage() {
           </button>
         </div>
       </div>
+
+      {showPrintConfig && <PrintSettingsDialog sample={allOrders[0]} onClose={() => setShowPrintConfig(false)} />}
 
       {/* Avisos internos */}
       {notices.length > 0 && (

@@ -1,6 +1,6 @@
 'use client'
 
-import { Bike, Home, Clock, ChevronRight, Printer, MessageCircle } from 'lucide-react'
+import { Bike, Home, Clock, ChevronRight, MessageCircle } from 'lucide-react'
 import {
   type Order,
   STATUS_CONFIG,
@@ -13,7 +13,7 @@ import {
 } from '@/hooks/use-orders'
 import { currency } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
-import { printOrder } from './order-ticket'
+import { PrintMenu } from './print-menu'
 
 interface Props {
   order: Order
@@ -71,10 +71,7 @@ export function OrderCard({ order, onAdvance, onCancel, onClick }: Props) {
               <MessageCircle className="h-3.5 w-3.5" />
             </a>
           )}
-          <button onClick={() => store && printOrder(order, store.name)} title="Imprimir comanda"
-            className="flex h-7 w-7 items-center justify-center rounded-lg border text-muted-foreground hover:bg-muted transition">
-            <Printer className="h-3.5 w-3.5" />
-          </button>
+          <PrintMenu order={order} />
           <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${status.color}`}>
             {status.label}
           </span>
