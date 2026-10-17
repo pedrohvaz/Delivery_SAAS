@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CreditCard, Zap, Plus, Trash2, Check, X, MessageCircle, Palette, LayoutGrid, AlignJustify, ExternalLink, Building2, Bell, BarChart3 } from 'lucide-react'
+import { CreditCard, Zap, Plus, Trash2, Check, X, MessageCircle, Palette, LayoutGrid, AlignJustify, ExternalLink, Building2, Bell, BarChart3, Printer } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import { ImageUploadField } from '@/components/ui/image-upload'
+import { PrintSettingsForm } from '@/components/pedidos/print-menu'
 import {
   useSettings, useUpdateSettings, useTogglePaymentMethod,
   useCreatePaymentMethod, useDeletePaymentMethod,
@@ -18,12 +19,13 @@ const PAYMENT_TYPE_OPTIONS = [
   { type: 'PICPAY',      label: 'PicPay',             emoji: '📱' },
 ]
 
-type TabKey = 'loja' | 'pagamentos' | 'aparencia' | 'notificacoes' | 'marketing'
+type TabKey = 'loja' | 'pagamentos' | 'aparencia' | 'impressao' | 'notificacoes' | 'marketing'
 
 const TABS: { key: TabKey; label: string; icon: typeof Building2 }[] = [
   { key: 'loja', label: 'Loja', icon: Building2 },
   { key: 'pagamentos', label: 'Pagamentos', icon: CreditCard },
   { key: 'aparencia', label: 'Aparência', icon: Palette },
+  { key: 'impressao', label: 'Impressão', icon: Printer },
   { key: 'notificacoes', label: 'Notificações', icon: Bell },
   { key: 'marketing', label: 'Marketing', icon: BarChart3 },
 ]
@@ -836,6 +838,22 @@ export default function ConfiguracoesPage() {
         </form>
       </section>
 
+      )}
+
+      {/* ── Impressão de pedidos (fica neste computador) ── */}
+      {activeTab === 'impressao' && (
+        <section className="rounded-2xl border bg-card p-5 space-y-4">
+          <div className="flex items-start gap-3">
+            <Printer className="mt-0.5 h-5 w-5 text-primary" />
+            <div>
+              <h2 className="font-semibold text-base">Impressão de pedidos</h2>
+              <p className="text-xs text-muted-foreground">
+                Impressão automática, vias (completa e cozinha), papel e cópias. Vale para <b>este computador</b>: configure em cada caixa ou cozinha que tem impressora.
+              </p>
+            </div>
+          </div>
+          <PrintSettingsForm inline />
+        </section>
       )}
 
       {/* ── Marketing & Rastreamento ── */}

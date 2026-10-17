@@ -57,27 +57,32 @@ const AUTO: { k: PrintSettings['auto']; t: string; d: string }[] = [
   { k: 'confirmed', t: 'Quando aceito', d: 'Imprime ao confirmar o pedido' },
 ]
 
-/** Preferências de impressão deste computador, com prévia da comanda. */
-export function PrintSettingsDialog({ sample, onClose }: { sample?: Order; onClose: () => void }) {
+/** Pedido de exemplo para a prévia e o teste quando ainda não há pedido na tela. */
+export const DEMO_ORDER: Order = {
+  id: 'exemplo', orderNumber: 123, type: 'DELIVERY', status: 'CONFIRMED', paymentStatus: 'PENDING', paymentMethod: 'CASH',
+  changeFor: 100, subtotal: 62, deliveryFee: 6, discount: 0, total: 68, notes: 'Tocar a campainha', scheduledTo: null, cancelReason: null,
+  createdAt: new Date().toISOString(),
+  address: { street: 'Rua das Flores', number: '120', complement: 'Apto 201', district: 'Centro', city: 'Sua cidade', state: 'MG', reference: 'Ao lado da padaria' },
+  customer: { name: 'Cliente Exemplo', phone: '(31) 99999-0000' },
+  deliveryman: null,
+  items: [
+    { name: 'X-Tudo', quantity: 2, price: 21, notes: 'sem cebola', addons: [{ groupName: 'Adicionais', optionName: 'Bacon', price: 5 }] },
+    { name: 'Coca-Cola Lata 350ml', quantity: 1, price: 7, notes: null, addons: [] },
+  ],
+}
+
+/** Campos de configuração da impressão (usado na janela da tela Pedidos e em Configurações). */
+export function PrintSettingsForm({ sample, inline = false }: { sample?: Order; inline?: boolean }) {
   const [s, save] = usePrintSettings()
   const print = usePrinter()
   const header = useTicketStore()
   const set = <K extends keyof PrintSettings>(k: K, v: PrintSettings[K]) => save({ ...s, [k]: v })
   const chip = (on: boolean) => cn('min-h-10 rounded-xl border px-3 text-sm', on ? 'border-primary bg-primary/10 font-semibold text-primary' : 'hover:bg-muted')
+  const exemplo = sample ?? DEMO_ORDER
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Configurar impressão"
-        className="grid max-h-[94vh] w-full max-w-3xl gap-5 overflow-y-auto rounded-t-2xl bg-card p-5 shadow-xl sm:rounded-2xl md:grid-cols-[1fr_auto]">
-        <div className="space-y-4">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-bold">Impressão de pedidos</h2>
-              <p className="text-xs text-muted-foreground">Vale para este computador. Cada caixa ou cozinha pode ter a sua configuração.</p>
-            </div>
-            <button onClick={onClose} aria-label="Fechar" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg hover:bg-muted"><X className="h-4 w-4" /></button>
-          </div>
-
+    <div className={cn('grid gap-5', inline ? 'lg:grid-cols-[1fr_auto]' : 'md:grid-cols-[1fr_auto]')}>
+      <div className="space-y-4">
           <div className="space-y-1.5">
             <p className="text-sm font-medium">Largura do papel</p>
             <div className="flex gap-2">
@@ -132,22 +137,36 @@ export function PrintSettingsDialog({ sample, onClose }: { sample?: Order; onClo
             )}
           </div>
 
-          {sample && (
-            <button onClick={() => print(sample)}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-              <Printer className="h-4 w-4" /> Imprimir teste com o pedido #{sample.orderNumber}
-            </button>
-          )}
+          <button onClick={() => print(exemplo)}
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+            <Printer className="h-4 w-4" /> {sample ? `Imprimir teste com o pedido #${sample.orderNumber}` : 'Imprimir teste'}
+          </button>
         </div>
 
         {/* Prévia */}
-        {sample && (
-          <div className="hidden md:block">
-            <p className="mb-1 text-xs font-medium text-muted-foreground">Prévia</p>
-            <iframe title="Prévia da comanda" srcDoc={buildTicketHtml(sample, header, s)}
-              className="h-[70vh] rounded-xl border bg-white" style={{ width: s.paper === '58' ? 230 : 320 }} />
+        <div className={inline ? 'hidden lg:block' : 'hidden md:block'}>
+          <p className="mb-1 text-xs font-medium text-muted-foreground">Prévia{sample ? '' : ' (pedido de exemplo)'}</p>
+          <iframe title="Prévia da comanda" srcDoc={buildTicketHtml(exemplo, header, s)}
+            className="h-[70vh] max-h-[640px] rounded-xl border bg-white" style={{ width: s.paper === '58' ? 230 : 320 }} />
+        </div>
+    </div>
+  )
+}
+
+/** Preferências de impressão deste computador, com prévia da comanda (janela). */
+export function PrintSettingsDialog({ sample, onClose }: { sample?: Order; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Configurar impressão"
+        className="max-h-[94vh] w-full max-w-3xl space-y-4 overflow-y-auto rounded-t-2xl bg-card p-5 shadow-xl sm:rounded-2xl">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-bold">Impressão de pedidos</h2>
+            <p className="text-xs text-muted-foreground">Vale para este computador. Cada caixa ou cozinha pode ter a sua configuração.</p>
           </div>
-        )}
+          <button onClick={onClose} aria-label="Fechar" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg hover:bg-muted"><X className="h-4 w-4" /></button>
+        </div>
+        <PrintSettingsForm sample={sample} />
       </div>
     </div>
   )
